@@ -1,9 +1,11 @@
 #pragma once
 
+#include "Event.hpp"
 #include "IObserver.hpp"
 #include "IContext.hpp"
 #include "input/MouseButton.hpp"
 #include "input/Key.hpp"
+#include <cstdio>
 
 enum struct DragMode {
 	None,
@@ -24,10 +26,19 @@ public:
 	void run() {
 		_context = createContext();
 
-		_context->bindMouseButton(MouseButton::Left, ModKey::Alt);
-		_context->bindMouseButton(MouseButton::Left, ModKey::Alt|ModKey::Shift);
+		_context->bindMouseButton(ModKey::Alt, MouseButton::Left);
+		_context->bindMouseButton(ModKey::Alt|ModKey::Shift, MouseButton::Left);
 
 		_context->listen(this);
+
+	}
+
+	virtual void onWindowCreate(WindowEvent const& e) override {
+		printf("window.created %p\n", e.window);
+	}
+
+	virtual void onWindowDestroy(WindowEvent const& e) override {
+		printf("window.destroyed %p\n", e.window);
 	}
 
 	virtual void onMousePress(MouseButtonEvent const& e) override {
@@ -44,7 +55,9 @@ public:
 		_dragState.initialMousePos = _context->getMousePos();
 
 		if (e.button == MouseButton::Left) {
-			_dragState.mode = DragMode::Move;
+			if (e.modKey == (ModKey::Alt)) {
+				_dragState.mode = DragMode::Move;
+			}
 			if (e.modKey == (ModKey::Alt|ModKey::Shift)) {
 				_dragState.mode = DragMode::Resize;
 			}
@@ -54,9 +67,7 @@ public:
 	}
 
 	virtual void onMouseRelease(MouseButtonEvent const& e) override {
-		if (_dragState.mode != DragMode::None) {
-			_dragState.mode = DragMode::None;
-		}
+		_dragState.mode = DragMode::None;
 		_dragState.window = nullptr;
 		_context->unbindMouseMovement();
 	}

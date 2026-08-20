@@ -14,6 +14,10 @@ public:
 		_root = _screen->root;
 	}
 
+	~X11Connection() {
+		xcb_disconnect(_conn);
+	}
+
 	xcb_connection_t* get() {
 		return _conn;
 	}

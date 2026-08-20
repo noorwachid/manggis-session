@@ -7,7 +7,7 @@
 
 class IContext {
 public:
-	virtual void bindMouseButton(MouseButton button, ModKey modKey) = 0;
+	virtual void bindMouseButton(ModKey modKey, MouseButton button) = 0;
 
 	virtual void bindMouseMovement() = 0;
 
@@ -16,6 +16,9 @@ public:
 	virtual Point getMousePos() = 0;
 
 	virtual void listen(IObserver* observer) = 0;
+
+	virtual ~IContext() {
+	}
 };
 
 IContext* createContext();

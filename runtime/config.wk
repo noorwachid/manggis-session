@@ -1,4 +1,12 @@
 (
+  monitors: [
+		( port: "eDPI", primary: true ),
+		(
+			port: "HDMI", 
+			position: ( rightOf: "eDPI" ),
+		)
+	],
+
 	workspaces: [
 		( id: "1" ),
 		( id: "2" ),
@@ -7,7 +15,8 @@
 		( id: "5", monitor: "HDMI" ),
 	],
 
-	keybindings: [
+	keybindings: {
+
 		"alt + return": ( exec: ["xterm"] ),
 		"alt + space": ( exec: ["dmenu"] ),
 
@@ -33,5 +42,5 @@
 		"alt + shift + 4": ( moveWindowToWorkspace: "4" ),
 		"alt + shift + 5": ( moveWindowToWorkspace: "5" ),
 
-	],
+	},
 )

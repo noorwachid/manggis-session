@@ -4,6 +4,10 @@
 
 class IObserver {
 public:
+	virtual void onWindowCreate(WindowEvent const& e) = 0;
+
+	virtual void onWindowDestroy(WindowEvent const& e) = 0;
+
 	virtual void onMousePress(MouseButtonEvent const& e) = 0;
 
 	virtual void onMouseRelease(MouseButtonEvent const& e) = 0;

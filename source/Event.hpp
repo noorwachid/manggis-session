@@ -6,6 +6,10 @@
 #include "input/MouseButton.hpp"
 #include "wx/core/String.hpp"
 
+struct WindowEvent {
+	IWindow* window;
+};
+
 struct MouseButtonEvent {
 	Point pos;
 	MouseButton button;
