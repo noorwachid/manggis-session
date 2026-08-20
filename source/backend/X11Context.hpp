@@ -89,14 +89,15 @@ public:
 				case XCB_MAP_REQUEST: {
 					xcb_map_request_event_t* e = (xcb_map_request_event_t*) ev;
 
-					X11Window* window = _getWindowByClient(e->window);
+					Window* window = _getWindowByClient(e->window);
 					if (window == nullptr) {
-						window = new X11Window(_conn, e->window);
+						X11Window* backend = new X11Window(_conn, e->window);
+						window = new Window(backend);
 						WindowEvent event;
 						event.window = window;
 
 						_clientWindowMap.set(e->window, window);
-						_frameWindowMap.set(window->getFrameHandle(), window);
+						_frameWindowMap.set(backend->getFrameHandle(), window);
 
 						observer->onWindowCreate(event);
 					}
@@ -114,7 +115,7 @@ public:
 					uint32_t values[7];
 					uint32_t i = 0;
 
-					X11Window* window = _getWindowByClient(e->window);
+					Window* window = _getWindowByClient(e->window);
 					if (window != nullptr) {
 						bool moved = false;
 						if (e->value_mask & XCB_CONFIG_WINDOW_X) {
@@ -170,7 +171,7 @@ public:
 
 				case XCB_UNMAP_NOTIFY: {
 					xcb_unmap_notify_event_t* e = (xcb_unmap_notify_event_t*) ev;
-					X11Window* window = _getWindowByClient(e->window);
+					Window* window = _getWindowByClient(e->window);
 					if (window == nullptr) {
 						break;
 					}
@@ -180,7 +181,7 @@ public:
 
 				case XCB_DESTROY_NOTIFY: {
 					xcb_destroy_notify_event_t* e = (xcb_destroy_notify_event_t*) ev;
-					X11Window* window = _getWindowByClient(e->window);
+					Window* window = _getWindowByClient(e->window);
 					if (window == nullptr) {
 						break;
 					}
@@ -198,11 +199,11 @@ public:
 
 				case XCB_EXPOSE: {
 					xcb_expose_event_t* e = (xcb_expose_event_t*) ev;
-					X11Window* window = _getWindowByFrame(e->window);
+					Window* window = _getWindowByFrame(e->window);
 					if (window == nullptr) {
 						break;
 					}
-					window->draw();
+					((X11Window*)window->getBackend())->draw();
 					break;
 				}
 
@@ -250,16 +251,16 @@ public:
 	}
 
 private:
-	X11Window* _getWindowByFrame(xcb_window_t handle) {
+	Window* _getWindowByFrame(xcb_window_t handle) {
 		if (handle == XCB_NONE) return nullptr;
-		X11Window** window = _frameWindowMap.getOrNull(handle);
+		Window** window = _frameWindowMap.getOrNull(handle);
 		if (window != nullptr) return *window;
 		return nullptr;
 	}
 
-	X11Window* _getWindowByClient(xcb_window_t handle) {
+	Window* _getWindowByClient(xcb_window_t handle) {
 		if (handle == XCB_NONE) return nullptr;
-		X11Window** window = _clientWindowMap.getOrNull(handle);
+		Window** window = _clientWindowMap.getOrNull(handle);
 		if (window != nullptr) return *window;
 		return nullptr;
 	}
@@ -309,6 +310,6 @@ private:
 
 private:
 	X11Connection* _conn;
-	wx::HashTable<xcb_window_t, X11Window*> _clientWindowMap;
-	wx::HashTable<xcb_window_t, X11Window*> _frameWindowMap;
+	wx::HashTable<xcb_window_t, Window*> _clientWindowMap;
+	wx::HashTable<xcb_window_t, Window*> _frameWindowMap;
 };

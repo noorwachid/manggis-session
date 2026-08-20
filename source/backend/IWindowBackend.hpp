@@ -2,7 +2,7 @@
 
 #include "Common.hpp"
 
-class IWindow {
+class IWindowBackend {
 public:
 	virtual Rect getRect() = 0;
 
@@ -16,6 +16,6 @@ public:
 
 	virtual void hide() = 0;
 
-	virtual ~IWindow() {
+	virtual ~IWindowBackend() {
 	}
 };

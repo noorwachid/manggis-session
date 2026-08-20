@@ -15,7 +15,7 @@ enum struct DragMode {
 
 struct DragState {
 	DragMode mode = DragMode::None;
-	IWindow* window;
+	Window* window;
 	Point initialMousePos;
 	Rect initialWindowRect;
 };

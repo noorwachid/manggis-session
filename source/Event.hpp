@@ -1,20 +1,20 @@
 #pragma once
 
 #include "Common.hpp"
-#include "IWindow.hpp"
+#include "Window.hpp"
 #include "input/Key.hpp"
 #include "input/MouseButton.hpp"
 #include "wx/core/String.hpp"
 
 struct WindowEvent {
-	IWindow* window;
+	Window* window;
 };
 
 struct MouseButtonEvent {
 	Point pos;
 	MouseButton button;
 	ModKey modKey;
-	IWindow* window;
+	Window* window;
 };
 
 struct MouseMovementEvent {

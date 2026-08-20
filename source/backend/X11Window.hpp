@@ -1,11 +1,11 @@
 #pragma once
 
 #include "Common.hpp"
-#include "IWindow.hpp"
+#include "backend/IWindowBackend.hpp"
 #include "backend/X11Connection.hpp"
 #include <cstdlib>
 
-class X11Window: public IWindow {
+class X11Window: public IWindowBackend {
 public:
 	X11Window(X11Connection* conn, xcb_window_t handle): _conn{conn}, _client{handle} {
 		_reframe();
