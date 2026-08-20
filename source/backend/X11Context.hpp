@@ -5,6 +5,8 @@
 #include "IObserver.hpp"
 #include "backend/X11Connection.hpp"
 #include "backend/X11Window.hpp"
+#include "input/Key.hpp"
+#include "input/MouseButton.hpp"
 #include "wx/core/HashTable.hpp"
 #include <cstdio>
 #include <cstdlib>
@@ -38,9 +40,11 @@ public:
 			XCB_GRAB_MODE_ASYNC, 
 			_conn->getRoot(), XCB_NONE, _fromMouseButton(button), _fromModKey(modKey)
 		);
-		int mb = _fromMouseButton(button);
-		int km = _fromModKey(modKey);
-		printf("omb: %d, okm: %d, mb: %d, km: %d\n", (int)button, (int)modKey, mb, km);
+		_conn->flush();
+	}
+
+	virtual void unbindMouseButton(ModKey modKey, MouseButton button) override {
+		xcb_ungrab_button(_conn->get(), _fromMouseButton(button), _conn->getRoot(), _fromModKey(modKey));
 		_conn->flush();
 	}
 
@@ -57,6 +61,12 @@ public:
 	virtual void unbindMouseMovement() override {
 		xcb_ungrab_pointer(_conn->get(), XCB_CURRENT_TIME);
 		_conn->flush();
+	}
+
+	virtual void bindKey(ModKey modKey, Key key) override {
+	}
+
+	virtual void unbindKey(ModKey modKey, Key key) override {
 	}
 
 	virtual Point getMousePos() override {
@@ -183,6 +193,16 @@ public:
 					// _frameWindowMap.remove(window->getFrameHandle());
 
 					delete window;
+					break;
+				}
+
+				case XCB_EXPOSE: {
+					xcb_expose_event_t* e = (xcb_expose_event_t*) ev;
+					X11Window* window = _getWindowByFrame(e->window);
+					if (window == nullptr) {
+						break;
+					}
+					window->draw();
 					break;
 				}
 

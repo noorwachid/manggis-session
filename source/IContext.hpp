@@ -9,9 +9,15 @@ class IContext {
 public:
 	virtual void bindMouseButton(ModKey modKey, MouseButton button) = 0;
 
+	virtual void unbindMouseButton(ModKey modKey, MouseButton button) = 0;
+
 	virtual void bindMouseMovement() = 0;
 
 	virtual void unbindMouseMovement() = 0;
+
+	virtual void bindKey(ModKey modKey, Key key) = 0;
+
+	virtual void unbindKey(ModKey modKey, Key key) = 0;
 
 	virtual Point getMousePos() = 0;
 

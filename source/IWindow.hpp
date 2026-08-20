@@ -10,7 +10,7 @@ public:
 
 	virtual void move(int x, int y) = 0;
 
-	virtual void resize(int x, int y) = 0;
+	virtual void resize(int width, int height) = 0;
 
 	virtual void show() = 0;
 
