@@ -23,30 +23,61 @@ struct DragState {
 
 class Workspace {
 public:
+	Window* getActiveWindow() {
+		return _activeWindow;
+	}
+
 	void activateWindow(Window* window) {
-		for (int i = 0; i < _windows.count(); i++) {
-			_windows[i]->deactivate();
+		if (_activeWindow != nullptr) {
+			_activeWindow->deactivate();
 		}
 		window->activate();
+		_activeWindow = window;
 	}
 
 	void addWindow(Window* window) {
-		for (int i = 0; i < _windows.count(); i++) {
-			_windows[i]->deactivate();
-		}
 		_windows.append(window);
-		window->activate();
+		activateWindow(window);
 	}
 
 	void removeWindow(Window* window) {
 		int index = _windows.find(window);
 		if (index != -1) {
+			bool activeWindowRemoved = _windows[index] == _activeWindow;
 			_windows.remove(index);
+			if (activeWindowRemoved) {
+				_activeWindow = nullptr;
+				if (!_windows.isEmpty()) {
+					activateWindow(_windows.getLast());
+				}
+			}
 		}
 	}
 
 private:
+	Window* _activeWindow = nullptr;
 	wx::List<Window*> _windows;
+};
+
+class Monitor {
+public:
+	Workspace* getActiveWorkspace() {
+		return _activeWorkspace;
+	}
+
+	void activateWorkspace(Workspace* workspace) {
+	}
+
+	void addWorkspace(Workspace* workspace) {
+	}
+
+	void removeWorkspace(Workspace* workspace) {
+	}
+
+
+private:
+	Workspace* _activeWorkspace = nullptr;
+	wx::List<Workspace*> _workspaces;
 };
 
 
@@ -65,14 +96,10 @@ public:
 	}
 
 	virtual void onWindowCreate(WindowEvent const& e) override {
-		printf("window.created %p\n", e.window);
-
 		_workspace->addWindow(e.window);
 	}
 
 	virtual void onWindowDestroy(WindowEvent const& e) override {
-		printf("window.destroyed %p\n", e.window);
-
 		_workspace->removeWindow(e.window);
 	}
 
