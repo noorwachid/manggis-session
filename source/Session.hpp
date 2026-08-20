@@ -81,7 +81,7 @@ private:
 };
 
 
-class WM: public IObserver {
+class Session: public IObserver {
 public:
 	void run() {
 		_context = createContext();
