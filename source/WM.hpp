@@ -74,6 +74,18 @@ public:
 		}
 	}
 
+	virtual void onKeyPress(KeyEvent const& e) override {
+	}
+
+	virtual void onKeyRelease(KeyEvent const& e) override {
+	}
+
+	virtual void onMonitorConnect(MonitorEvent const& e) override {
+	}
+
+	virtual void onMonitorDisconnect(MonitorEvent const& e) override {
+	}
+
 private:
 	IContext* _context;
 	DragState _dragState;

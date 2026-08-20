@@ -12,4 +12,12 @@ struct Point {
 	int y = 0;
 };
 
+struct MinMax {
+	int min;
+	int max;
+};
 
+struct Constrain {
+	MinMax width;
+	MinMax height;
+};

@@ -9,5 +9,13 @@ public:
 	virtual void onMouseRelease(MouseButtonEvent const& e) = 0;
 
 	virtual void onMouseMove(MouseMovementEvent const& e) = 0;
+
+	virtual void onKeyPress(KeyEvent const& e) = 0;
+
+	virtual void onKeyRelease(KeyEvent const& e) = 0;
+
+	virtual void onMonitorConnect(MonitorEvent const& e) = 0;
+
+	virtual void onMonitorDisconnect(MonitorEvent const& e) = 0;
 };
 

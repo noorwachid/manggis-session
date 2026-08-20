@@ -4,6 +4,7 @@
 #include "IWindow.hpp"
 #include "input/Key.hpp"
 #include "input/MouseButton.hpp"
+#include "wx/core/String.hpp"
 
 struct MouseButtonEvent {
 	Point pos;
@@ -14,6 +15,14 @@ struct MouseButtonEvent {
 
 struct MouseMovementEvent {
 	Point pos;
+};
+
+struct KeyEvent {
+	Key key;
+};
+
+struct MonitorEvent {
+	wx::String port;
 };
 
 

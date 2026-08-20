@@ -11,3 +11,6 @@ enum struct ModKey {
 };
 
 WX_FLAGS(ModKey);
+
+enum struct Key {
+};

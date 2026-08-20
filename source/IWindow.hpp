@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Common.hpp"
+
 class IWindow {
 public:
 	virtual Rect getRect() = 0;
