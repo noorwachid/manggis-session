@@ -5,9 +5,25 @@
 #include "backend/X11Connection.hpp"
 #include <cstdlib>
 
-class X11Window: public IWindowBackend {
+namespace Config {
+	namespace Active {
+		constexpr uint32_t borderColor = 0xDF1238;
+		constexpr uint32_t borderWidth = 1;
+		constexpr uint32_t titlebarColor = 0xFF3258; 
+		constexpr uint32_t titlebarHeight = 20; 
+	}
+
+	namespace Inactive {
+		constexpr uint32_t borderColor = 0x888888;
+		constexpr uint32_t borderWidth = 1;
+		constexpr uint32_t titlebarColor = 0x888888; 
+		constexpr uint32_t titlebarHeight = 20; 
+	}
+}
+
+class X11WindowBackend: public IWindowBackend {
 public:
-	X11Window(X11Connection* conn, xcb_window_t handle): _conn{conn}, _client{handle} {
+	X11WindowBackend(X11Connection* conn, xcb_window_t handle): _conn{conn}, _client{handle} {
 		_reframe();
 	}
 
@@ -66,6 +82,22 @@ public:
 	virtual void hide() override {
 		xcb_unmap_window(_conn->get(), _frame);
 		_conn->flush();
+	}
+
+	virtual void activate() override {
+		_borderColor = Config::Active::borderColor;
+		_borderWidth = Config::Active::borderWidth;
+		_titlebarColor = Config::Active::titlebarColor; 
+		_titlebarHeight = Config::Active::titlebarHeight; 
+		draw();
+	}
+
+	virtual void deactivate() override {
+		_borderColor = Config::Inactive::borderColor;
+		_borderWidth = Config::Inactive::borderWidth;
+		_titlebarColor = Config::Inactive::titlebarColor; 
+		_titlebarHeight = Config::Inactive::titlebarHeight; 
+		draw();
 	}
 
 	xcb_window_t getFrameHandle() {
@@ -165,10 +197,10 @@ private:
 	xcb_window_t _frame;
 	xcb_gcontext_t _gc;
 
-	uint32_t _borderColor = 0xDF1238;
-	uint32_t _borderWidth = 1;
-	uint32_t _titlebarColor = 0xFF3258; 
-	uint32_t _titlebarHeight = 20; 
+	uint32_t _borderColor = Config::Active::borderColor;
+	uint32_t _borderWidth = Config::Active::borderWidth;
+	uint32_t _titlebarColor = Config::Active::titlebarColor; 
+	uint32_t _titlebarHeight = Config::Active::titlebarHeight; 
 };
 
 

@@ -4,7 +4,7 @@
 #include "IContext.hpp"
 #include "IObserver.hpp"
 #include "backend/X11Connection.hpp"
-#include "backend/X11Window.hpp"
+#include "backend/X11WindowBackend.hpp"
 #include "input/Key.hpp"
 #include "input/MouseButton.hpp"
 #include "wx/core/HashTable.hpp"
@@ -25,6 +25,13 @@ public:
 		);
 		xcb_change_window_attributes(_conn->get(), _conn->getRoot(), XCB_CW_EVENT_MASK, &mask);
 
+		// NOTE: click to focus
+		xcb_grab_button(
+			_conn->get(), 0, _conn->getScreen()->root, 
+			XCB_EVENT_MASK_BUTTON_PRESS,
+			XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, 
+			XCB_NONE, XCB_NONE, 1, XCB_NONE
+		);
 	}
 
 	virtual ~X11Context() override {
@@ -91,7 +98,7 @@ public:
 
 					Window* window = _getWindowByClient(e->window);
 					if (window == nullptr) {
-						X11Window* backend = new X11Window(_conn, e->window);
+						X11WindowBackend* backend = new X11WindowBackend(_conn, e->window);
 						window = new Window(backend);
 						WindowEvent event;
 						event.window = window;
@@ -203,7 +210,7 @@ public:
 					if (window == nullptr) {
 						break;
 					}
-					((X11Window*)window->getBackend())->draw();
+					((X11WindowBackend*)window->getBackend())->draw();
 					break;
 				}
 
@@ -217,6 +224,9 @@ public:
 					event.button = _toMouseButton(e->detail);
 					event.modKey = _toModKey(e->state);
 					event.window = _getWindowByFrame(e->child);
+
+					xcb_allow_events(_conn->get(), XCB_ALLOW_REPLAY_POINTER, e->time);
+					_conn->flush();
 
 					observer->onMousePress(event);
 					break;

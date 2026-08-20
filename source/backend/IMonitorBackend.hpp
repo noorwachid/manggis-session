@@ -3,7 +3,7 @@
 #include "Common.hpp"
 #include "wx/core/String.hpp"
 
-class IMonitor {
+class IMonitorBackend {
 public:
 	virtual Rect getRect() = 0;
 

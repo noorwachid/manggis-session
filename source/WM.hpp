@@ -5,6 +5,7 @@
 #include "IContext.hpp"
 #include "input/MouseButton.hpp"
 #include "input/Key.hpp"
+#include "wx/core/List.hpp"
 #include <cstdio>
 
 enum struct DragMode {
@@ -20,6 +21,34 @@ struct DragState {
 	Rect initialWindowRect;
 };
 
+class Workspace {
+public:
+	void activateWindow(Window* window) {
+		for (int i = 0; i < _windows.count(); i++) {
+			_windows[i]->deactivate();
+		}
+		window->activate();
+	}
+
+	void addWindow(Window* window) {
+		for (int i = 0; i < _windows.count(); i++) {
+			_windows[i]->deactivate();
+		}
+		_windows.append(window);
+		window->activate();
+	}
+
+	void removeWindow(Window* window) {
+		int index = _windows.find(window);
+		if (index != -1) {
+			_windows.remove(index);
+		}
+	}
+
+private:
+	wx::List<Window*> _windows;
+};
+
 
 class WM: public IObserver {
 public:
@@ -29,16 +58,22 @@ public:
 		_context->bindMouseButton(ModKey::Alt, MouseButton::Left);
 		_context->bindMouseButton(ModKey::Alt|ModKey::Shift, MouseButton::Left);
 
+		_workspace = new Workspace();
+
 		_context->listen(this);
 
 	}
 
 	virtual void onWindowCreate(WindowEvent const& e) override {
 		printf("window.created %p\n", e.window);
+
+		_workspace->addWindow(e.window);
 	}
 
 	virtual void onWindowDestroy(WindowEvent const& e) override {
 		printf("window.destroyed %p\n", e.window);
+
+		_workspace->removeWindow(e.window);
 	}
 
 	virtual void onMousePress(MouseButtonEvent const& e) override {
@@ -50,6 +85,7 @@ public:
 
 		 // raise to top (if background wallpaper or desktop orginizer you dont have to move it forward)
 		_dragState.window->raise();
+		_workspace->activateWindow(e.window);
 
 		_dragState.initialWindowRect = _dragState.window->getRect();
 		_dragState.initialMousePos = _context->getMousePos();
@@ -99,5 +135,6 @@ public:
 
 private:
 	IContext* _context;
+	Workspace* _workspace;
 	DragState _dragState;
 };

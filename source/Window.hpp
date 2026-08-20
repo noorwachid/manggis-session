@@ -7,6 +7,10 @@ public:
 	Window(IWindowBackend* backend): _backend{backend} {
 	}
 
+	~Window() {
+		delete _backend;
+	}
+
 	IWindowBackend* getBackend() {
 		return _backend;
 	}
@@ -33,6 +37,14 @@ public:
 
 	void hide() {
 		_backend->hide();
+	}
+
+	void activate() {
+		_backend->activate();
+	}
+
+	void deactivate() {
+		_backend->deactivate();
 	}
 
 private:
