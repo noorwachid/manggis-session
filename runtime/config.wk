@@ -1,0 +1,37 @@
+(
+	workspaces: [
+		( id: "1" ),
+		( id: "2" ),
+		( id: "3" ),
+		( id: "4" ),
+		( id: "5", monitor: "HDMI" ),
+	],
+
+	keybindings: [
+		"alt + return": ( exec: ["xterm"] ),
+		"alt + space": ( exec: ["dmenu"] ),
+
+		"alt + left": ( focusWindow: "left" ),
+		"alt + right": ( focusWindow: "right" ),
+		"alt + up": ( focusWindow: "top" ),
+		"alt + down": ( focusWindow: "bottom" ),
+
+		"alt + shift + left": ( maximizeWindow: [0.0, 0.0, 0.5, 1.0] ),
+		"alt + shift + right": ( maximizeWindow: [0.5, 0.0, 0.5, 1.0] ),
+		"alt + shift + up": ( maximizeWindow: [0.0, 0.0, 1.0, 1.0] ),
+		"alt + shift + down": ( restoreWindow: null ),
+
+		"alt + 1": ( focusWorkspace: "1" ),
+		"alt + 2": ( focusWorkspace: "2" ),
+		"alt + 3": ( focusWorkspace: "3" ),
+		"alt + 4": ( focusWorkspace: "4" ),
+		"alt + 5": ( focusWorkspace: "5" ),
+
+		"alt + shift + 1": ( moveWindowToWorkspace: "1" ),
+		"alt + shift + 2": ( moveWindowToWorkspace: "2" ),
+		"alt + shift + 3": ( moveWindowToWorkspace: "3" ),
+		"alt + shift + 4": ( moveWindowToWorkspace: "4" ),
+		"alt + shift + 5": ( moveWindowToWorkspace: "5" ),
+
+	],
+)
