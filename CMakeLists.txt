@@ -8,8 +8,8 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(SOURCES
 	source/EntryPoint.cpp
-	source/Exec.cpp
 	source/backend/X11Context.cpp
+	source/system/Exec.cpp
 )
 
 add_executable(manggis-session ${SOURCES})

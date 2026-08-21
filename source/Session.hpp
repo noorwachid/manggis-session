@@ -1,11 +1,11 @@
 #pragma once
 
 #include "Event.hpp"
-#include "Exec.hpp"
 #include "IObserver.hpp"
 #include "IContext.hpp"
 #include "input/MouseButton.hpp"
 #include "input/Key.hpp"
+#include "system/Exec.hpp"
 #include "wx/core/List.hpp"
 #include <cstdio>
 
@@ -24,6 +24,13 @@ struct DragState {
 
 class Workspace {
 public:
+	Workspace(wx::String const& id): _id{id} {
+	}
+
+	wx::String const& getID() {
+		return _id;
+	}
+
 	Window* getActiveWindow() {
 		return _activeWindow;
 	}
@@ -55,8 +62,21 @@ public:
 		}
 	}
 
+	void activate() {
+		for (int i = 0; i < _windows.count(); i++) {
+			_windows[i]->show();
+		}
+	}
+
+	void deactivate() {
+		for (int i = 0; i < _windows.count(); i++) {
+			_windows[i]->hide();
+		}
+	}
+
 private:
 	Window* _activeWindow = nullptr;
+	wx::String _id;
 	wx::List<Window*> _windows;
 };
 
@@ -66,13 +86,42 @@ public:
 		return _activeWorkspace;
 	}
 
+	Workspace* queryWorkspace(wx::String const& id) {
+		for (int i = 0; i < _workspaces.count(); i++) {
+			if (_workspaces[i]->getID() == id) {
+				return _workspaces[i];
+			}
+		}
+		return nullptr;
+	}
+
 	void activateWorkspace(Workspace* workspace) {
+		if (_activeWorkspace != nullptr) {
+			_activeWorkspace->deactivate();
+		}
+		workspace->activate();
+		_activeWorkspace = workspace;
 	}
 
 	void addWorkspace(Workspace* workspace) {
+		_workspaces.append(workspace);
+		if (_activeWorkspace == nullptr) {
+			_activeWorkspace = workspace;
+		}
 	}
 
 	void removeWorkspace(Workspace* workspace) {
+		int index = _workspaces.find(workspace);
+		if (index != -1) {
+			bool activeWorkspaceRemoved = _workspaces[index] == _activeWorkspace;
+			_workspaces.remove(index);
+			if (activeWorkspaceRemoved) {
+				_activeWorkspace = nullptr;
+				if (!_workspaces.isEmpty()) {
+					activateWorkspace(_workspaces.getLast());
+				}
+			}
+		}
 	}
 
 
@@ -90,21 +139,28 @@ public:
 		_context->bindMouseButton(ModKey::Alt, MouseButton::Left);
 		_context->bindMouseButton(ModKey::Alt|ModKey::Shift, MouseButton::Left);
 
-		_context->bindKey(ModKey::Alt, Key::E);
 		_context->bindKey(ModKey::Alt, Key::Return);
+		_context->bindKey(ModKey::Alt, Key::Num1);
+		_context->bindKey(ModKey::Alt, Key::Num2);
+		_context->bindKey(ModKey::Alt, Key::Num3);
+		_context->bindKey(ModKey::Alt, Key::Num4);
 
-		_workspace = new Workspace();
+		_monitor = new Monitor();
+		_monitor->addWorkspace(new Workspace("1"));
+		_monitor->addWorkspace(new Workspace("2"));
+		_monitor->addWorkspace(new Workspace("3"));
+		_monitor->addWorkspace(new Workspace("4"));
 
 		_context->listen(this);
 
 	}
 
 	virtual void onWindowCreate(WindowEvent const& e) override {
-		_workspace->addWindow(e.window);
+		_monitor->getActiveWorkspace()->addWindow(e.window);
 	}
 
 	virtual void onWindowDestroy(WindowEvent const& e) override {
-		_workspace->removeWindow(e.window);
+		_monitor->getActiveWorkspace()->removeWindow(e.window);
 	}
 
 	virtual void onMousePress(MouseButtonEvent const& e) override {
@@ -116,7 +172,7 @@ public:
 
 		 // raise to top (if background wallpaper or desktop orginizer you dont have to move it forward)
 		_dragState.window->raise();
-		_workspace->activateWindow(e.window);
+		_monitor->getActiveWorkspace()->activateWindow(e.window);
 
 		_dragState.initialWindowRect = _dragState.window->getRect();
 		_dragState.initialMousePos = _context->getMousePos();
@@ -157,6 +213,23 @@ public:
 			wx::List<wx::String> args;
 			args.append("xterm");
 			exec(args);
+			return;
+		}
+		if (e.modKey == ModKey::Alt && e.key == Key::Num1) {
+			activateWorkspace("1");
+			return;
+		}
+		if (e.modKey == ModKey::Alt && e.key == Key::Num2) {
+			activateWorkspace("2");
+			return;
+		}
+		if (e.modKey == ModKey::Alt && e.key == Key::Num3) {
+			activateWorkspace("3");
+			return;
+		}
+		if (e.modKey == ModKey::Alt && e.key == Key::Num4) {
+			activateWorkspace("4");
+			return;
 		}
 	}
 
@@ -171,8 +244,18 @@ public:
 
 	virtual void onMonitorPropertyChange(MonitorEvent const& e) override {
 	}
+
+	void activateWorkspace(wx::String const& id) {
+		Workspace* workspace = _monitor->queryWorkspace(id);
+		if (workspace == nullptr) {
+			printf("no workspace with id %s\n", id.cptr());
+			return;
+		}
+		printf("activate workspace %s\n", id.cptr());
+		_monitor->activateWorkspace(workspace);
+	}
 private:
 	IContext* _context;
-	Workspace* _workspace;
+	Monitor* _monitor;
 	DragState _dragState;
 };
