@@ -2,9 +2,18 @@
 
 #include "backend/IWindowBackend.hpp"
 
+enum struct WindowFlags {
+	None          = 0,
+	Moveable      = 1 << 0,
+	Resizeable    = 1 << 1,
+	Framed        = 1 << 2,
+	Reserved      = 1 << 3, // it consume the space they placed in (statusbar, dock)
+};
+
 class Window {
 public:
-	Window(IWindowBackend* backend): _backend{backend} {
+	Window(IWindowBackend* backend, WindowFlags flags = WindowFlags::None): 
+		_backend{backend}, _flags{flags} {
 	}
 
 	~Window() {
@@ -49,4 +58,5 @@ public:
 
 private:
 	IWindowBackend* _backend;
+	WindowFlags _flags = WindowFlags::None;
 };

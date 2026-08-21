@@ -28,6 +28,8 @@ target_link_libraries(manggis-session
 	xcb-xkb
 	xkbcommon
 	xkbcommon-x11
+
+	xcb-randr
 )
 
 

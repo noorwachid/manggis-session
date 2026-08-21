@@ -22,9 +22,9 @@
 #include <xkbcommon/xkbcommon.h>
 #include <xkbcommon/xkbcommon-x11.h>
 
-class X11Keyboard {
+class X11KeyboardManager {
 public:
-	X11Keyboard(X11Connection* conn): _conn{conn} {
+	X11KeyboardManager(X11Connection* conn): _conn{conn} {
 	}
 
 	void initialize() {

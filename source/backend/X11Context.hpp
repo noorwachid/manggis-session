@@ -3,8 +3,10 @@
 #include "Event.hpp"
 #include "IContext.hpp"
 #include "IObserver.hpp"
+#include "MonitorInfo.hpp"
 #include "backend/X11Connection.hpp"
-#include "backend/X11Keyboard.hpp"
+#include "backend/X11KeyboardManager.hpp"
+#include "backend/X11MonitorManager.hpp"
 #include "backend/X11WindowBackend.hpp"
 #include "input/Key.hpp"
 #include "input/MouseButton.hpp"
@@ -13,6 +15,7 @@
 #include "wx/core/String.hpp"
 #include <cstdio>
 #include <cstdlib>
+#include <xcb/randr.h>
 #include <xcb/xproto.h>
 
 struct X11KeyBinding {
@@ -35,8 +38,11 @@ public:
 		);
 		xcb_change_window_attributes(_conn->get(), _conn->getRoot(), XCB_CW_EVENT_MASK, &mask);
 
-		_keyboard = new X11Keyboard(_conn);
-		_keyboard->initialize();
+		_keyboardManager = new X11KeyboardManager(_conn);
+		_keyboardManager->initialize();
+
+		_monitorManager = new X11MonitorManager(_conn);
+		_monitorManager->initialize();
 
 		// NOTE: click to focus
 		xcb_grab_button(
@@ -48,7 +54,7 @@ public:
 	}
 
 	virtual ~X11Context() override {
-		delete _keyboard;
+		delete _keyboardManager;
 		delete _conn;
 	}
 
@@ -105,8 +111,13 @@ public:
 		return pos;
 	}
 
+	virtual wx::List<MonitorInfo> getConnectedMonitorInfos() override {
+		return _monitorManager->getConnectedMonitorInfos();
+	}
+
 	virtual void listen(IObserver* observer) override {
 		_attachKeyBindings();
+		_updateMonitors(observer);
 
 		while (true) {
 			xcb_generic_event_t* ev = xcb_wait_for_event(_conn->get());
@@ -304,7 +315,7 @@ public:
 				}
 
 				default: {
-					if (type == _keyboard->getEventOffset()) {
+					if (type == _keyboardManager->getEventOffset()) {
 						switch (ev->pad0) {
 							case XCB_XKB_NEW_KEYBOARD_NOTIFY: {
 								xcb_xkb_new_keyboard_notify_event_t* event = (xcb_xkb_new_keyboard_notify_event_t*) ev;
@@ -316,6 +327,27 @@ public:
 							case XCB_XKB_MAP_NOTIFY:
 								_updateKeyBindings();
 								break;
+						}
+						break;
+					}
+					if (type == _monitorManager->getEventOffset() + XCB_RANDR_SCREEN_CHANGE_NOTIFY) {
+						_updateMonitors(observer);
+						break;
+					}
+
+					if (type == _monitorManager->getEventOffset() + XCB_RANDR_NOTIFY) {
+						xcb_randr_notify_event_t* event = (xcb_randr_notify_event_t *) ev;
+						if (event->subCode == XCB_RANDR_NOTIFY_OUTPUT_CHANGE) {
+							xcb_randr_output_change_t oc = event->u.oc;
+							if (oc.connection == XCB_RANDR_CONNECTION_CONNECTED) {
+								_updateMonitors(observer);
+							} else if (oc.connection == XCB_RANDR_CONNECTION_DISCONNECTED) {
+								_updateMonitors(observer);
+							}
+						}
+						if (event->subCode == XCB_RANDR_NOTIFY_CRTC_CHANGE) {
+							xcb_randr_crtc_change_t cc = event->u.cc;
+							_updateMonitors(observer);
 						}
 						break;
 					}
@@ -389,7 +421,7 @@ private:
 
 		for (int i = 0; i < _keyBindings.count(); i++) {
 			X11KeyBinding& binding = _keyBindings[i];
-			binding.keyCode = _keyboard->queryKeyCode(binding.key);
+			binding.keyCode = _keyboardManager->queryKeyCode(binding.key);
 			binding.modKeyCode = _fromModKey(binding.modKey);
 			if (binding.keyCode == 0) {
 				printf("ERROR: key %d is invalid\n", (int)binding.key);
@@ -424,8 +456,8 @@ private:
 	}
 
 	void _updateKeyBindings() {
-		_keyboard->updateKeymap();
-		wx::String layout = _keyboard->getLayout();
+		_keyboardManager->updateKeymap();
+		wx::String layout = _keyboardManager->getLayout();
 
 		if (layout == _activeKeyboardLayout) {
 			return;
@@ -438,14 +470,75 @@ private:
 		_activeKeyboardLayout = layout;
 	}
 
+	MonitorInfo* _getMonitorInfoByPort(wx::String const& port, wx::List<MonitorInfo>& infos) {
+		for (int i = 0; i < infos.count(); i++) {
+			if (infos[i].port == port) return &infos[i];
+		}
+		return nullptr;
+	}
+
+	void _updateMonitors(IObserver* observer) {
+		wx::List<MonitorInfo> currentMonitorInfos = _monitorManager->getConnectedMonitorInfos();
+
+		wx::List<wx::String> connectedPorts;
+		wx::List<wx::String> disconnectedPorts;
+		wx::List<wx::String> propertyChangedPorts;
+		wx::List<wx::String> stayPorts;
+
+		for (int i = 0; i < currentMonitorInfos.count(); i++) {
+			MonitorInfo const& current = currentMonitorInfos[i];
+			MonitorInfo* old = _getMonitorInfoByPort(current.port, _monitorInfos);
+			if (old == nullptr) {
+				connectedPorts.append(current.port);
+			} else {
+				if (old->rect.x != current.rect.x ||
+					old->rect.y != current.rect.y ||
+					old->rect.width != current.rect.width ||
+					old->rect.height != current.rect.height) {
+					propertyChangedPorts.append(current.port);
+				}
+				stayPorts.append(current.port);
+			}
+		}
+		for (int i = 0; i < _monitorInfos.count(); i++) {
+			MonitorInfo const& old = _monitorInfos[i];
+			MonitorInfo* current = _getMonitorInfoByPort(old.port, currentMonitorInfos);
+			if (current == nullptr) {
+				disconnectedPorts.append(old.port);
+			}
+		}
+
+		for (int i = 0; i < connectedPorts.count(); i++) {
+			MonitorEvent event;
+			event.port = connectedPorts[i];
+			observer->onMonitorConnect(event);
+		}
+
+		for (int i = 0; i < disconnectedPorts.count(); i++) {
+			MonitorEvent event;
+			event.port = disconnectedPorts[i];
+			observer->onMonitorDisconnect(event);
+		}
+
+		for (int i = 0; i < propertyChangedPorts.count(); i++) {
+			MonitorEvent event;
+			event.port = propertyChangedPorts[i];
+			observer->onMonitorPropertyChange(event);
+		}
+
+		_monitorInfos = static_cast<wx::List<MonitorInfo>&&>(currentMonitorInfos);
+	}
 
 private:
 	X11Connection* _conn;
-	X11Keyboard* _keyboard;
+	X11KeyboardManager* _keyboardManager;
 	wx::HashTable<xcb_window_t, Window*> _clientWindowMap;
 	wx::HashTable<xcb_window_t, Window*> _frameWindowMap;
 
 	wx::List<X11KeyBinding> _keyBindings;
 	wx::String _activeKeyboardLayout;
 	wx::HashTable<xcb_keycode_t, Key> _keyCodeMap;
+
+	X11MonitorManager* _monitorManager;
+	wx::List<MonitorInfo> _monitorInfos;
 };

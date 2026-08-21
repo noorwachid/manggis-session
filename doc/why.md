@@ -1,25 +1,33 @@
 # Why Do I Create Yet Another Window Manager?
 
-i am long user of OpenBox then i moved to XFCE. both of them lack of good monitor support.
-when my sencondary monitor disconnected all of my window on that monitor just there.
-i have to pray i dragging the correct window bar and put it to my primary monitor.
+I have been a long-time user of Openbox, 
+but then I moved to XFCE. Both of them lack good multi-monitor support.
 
-second, the workspace is shared across monitor, i think GNOME is the only one that implement it in my taste.
-that every monitor should have its own workspace.
-i tried the latest KDE that they said they implement workspace independently across monitor, 
-but they do it to independently, both monitor have 4 workspace with the same shortcut.
-i have to click the monitor i want to switch the workspace.
+When my secondary monitor gets disconnected, 
+all of the windows on that monitor just stay there. 
+I have to pray that I'm dragging the correct window bar and can move it back to my primary monitor.
 
-one thing that i miss from OpenBox after switching to XFCE is the focus nearest window.
-this is really helpful for my workflow. i have window scaterred around the screen i know i can get to desired window in two key-stroke because of this.
-alt-tab give me the dreaded feeling because it ordered by the last focus (z-index) and took longer to get there.
-openbox give me the power of tiling window-manager without having a tiling system.
-why not tiling wm? some application are just designed to be floating and the are alot of them.
-i dont like to fight them with auto-tiling.
+Second, workspaces are shared across monitors. 
+I think GNOME is the only one that implements them the way I like: every monitor should have its own workspace.
+
+I tried the latest KDE, which they said supports independent workspaces across monitors, 
+but they took it too far. Both monitors have four workspaces, with the same shortcuts. 
+I have to click on the monitor I want before switching workspaces.
+
+One thing I miss from Openbox after switching to XFCE is the ability to focus the nearest window.
+
+This is really helpful for my workflow. 
+I have windows scattered around the screen, and I know I can get to the desired window in two keystrokes because of this.
+
+Alt-Tab gives me the dreaded feeling because it orders windows by their last focus (z-index), 
+which can make it take longer to get where I want.
+
+Openbox gives me the power of a tiling window manager without actually having a tiling system.
+
+Why not use a tiling WM? Some applications are simply designed to be floating, 
+and there are a lot of them. I don't like fighting with them using auto-tiling.
 
 # Why C++ and not Rust?
-i already know C++, and i dont have time to learn another language.
 
-
-
+I already know C++, and I don't have time to learn another language.
 

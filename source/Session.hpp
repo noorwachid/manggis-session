@@ -3,6 +3,7 @@
 #include "Event.hpp"
 #include "IObserver.hpp"
 #include "IContext.hpp"
+#include "MonitorInfo.hpp"
 #include "input/MouseButton.hpp"
 #include "input/Key.hpp"
 #include "system/Exec.hpp"
@@ -145,6 +146,19 @@ public:
 		_context->bindKey(ModKey::Alt, Key::Num3);
 		_context->bindKey(ModKey::Alt, Key::Num4);
 
+		wx::List<MonitorInfo> monitorInfos = _context->getConnectedMonitorInfos();
+
+		for (int i = 0; i < monitorInfos.count(); i++) {
+			MonitorInfo const& info = monitorInfos[i];
+			printf("monitor %s (%d, %d, %d, %d)\n", 
+				info.port.cptr(), 
+				info.rect.x, 
+				info.rect.y, 
+				info.rect.width, 
+				info.rect.height
+			);
+		}
+
 		_monitor = new Monitor();
 		_monitor->addWorkspace(new Workspace("1"));
 		_monitor->addWorkspace(new Workspace("2"));
@@ -237,12 +251,15 @@ public:
 	}
 
 	virtual void onMonitorConnect(MonitorEvent const& e) override {
+		printf("monitor connected %s\n", e.port.cptr());
 	}
 
 	virtual void onMonitorDisconnect(MonitorEvent const& e) override {
+		printf("monitor disconnected %s\n", e.port.cptr());
 	}
 
 	virtual void onMonitorPropertyChange(MonitorEvent const& e) override {
+		printf("monitor property changed %s\n", e.port.cptr());
 	}
 
 	void activateWorkspace(wx::String const& id) {

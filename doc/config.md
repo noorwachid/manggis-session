@@ -1,37 +1,5 @@
 # Configuration
 
-## Monitors
-| Key | Value | Description |
-|---|---|---|
-| port | `HDMI-1` | the name of the port of the output monitor |
-| primary | `true` | set the monitor as primary |
-| position | See `position segment` |
-
-### Monitor Positions
-| Value | Description |
-|---|---|
-| `( x: 0, y: 0 )` | exact pixel position |
-| `( rightOf: "PORT" )` | relative position to the right of specified port |
-| `( leftOf: "PORT" )` | relative position to the left of specified port |
-| `( above: "PORT" )` | relative position to the above specified port |
-| `( below: "PORT" )` | relative position to the belowe specified port |
-
-### Example
-```
-(
-  monitors: [
-		(
-            port: "e-DPI",
-            primary: true
-        ),
-		(
-			port: "HDMI-1", 
-			position: ( rightOf: "eDPI" ),
-		),
-	],
-)
-```
-
 ## Workspaces
 
 ### Example
@@ -74,10 +42,12 @@ when called `( focus: "right" )` it will focus on number 3 and automatically foc
 ### Example
 ```
 (
-	keyBindings: {
+	bindings: {
 
 		"alt + return": ( exec: ["xterm"] ),
 		"alt + space": ( exec: ["dmenu"] ),
+
+		"alt + backspace": ( closeWindow: null ),
 
 		"alt + left": ( focusWindow: "left" ),
 		"alt + right": ( focusWindow: "right" ),
