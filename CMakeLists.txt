@@ -8,6 +8,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(SOURCES
 	source/EntryPoint.cpp
+	source/Exec.cpp
 	source/backend/X11Context.cpp
 )
 
@@ -22,6 +23,11 @@ target_include_directories(manggis-session
 target_link_libraries(manggis-session
 	wxcore
 	xcb
+
+	xcb-keysyms
+	xcb-xkb
+	xkbcommon
+	xkbcommon-x11
 )
 
 

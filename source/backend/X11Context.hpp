@@ -4,13 +4,23 @@
 #include "IContext.hpp"
 #include "IObserver.hpp"
 #include "backend/X11Connection.hpp"
+#include "backend/X11Keyboard.hpp"
 #include "backend/X11WindowBackend.hpp"
 #include "input/Key.hpp"
 #include "input/MouseButton.hpp"
+#include "wx/core/List.hpp"
 #include "wx/core/HashTable.hpp"
+#include "wx/core/String.hpp"
 #include <cstdio>
 #include <cstdlib>
 #include <xcb/xproto.h>
+
+struct X11KeyBinding {
+	ModKey modKey;
+	Key key;
+	xcb_keycode_t keyCode = 0;
+	int modKeyCode = 0;
+};
 
 class X11Context: public IContext {
 public:
@@ -25,6 +35,9 @@ public:
 		);
 		xcb_change_window_attributes(_conn->get(), _conn->getRoot(), XCB_CW_EVENT_MASK, &mask);
 
+		_keyboard = new X11Keyboard(_conn);
+		_keyboard->initialize();
+
 		// NOTE: click to focus
 		xcb_grab_button(
 			_conn->get(), 0, _conn->getScreen()->root, 
@@ -35,6 +48,7 @@ public:
 	}
 
 	virtual ~X11Context() override {
+		delete _keyboard;
 		delete _conn;
 	}
 
@@ -71,6 +85,12 @@ public:
 	}
 
 	virtual void bindKey(ModKey modKey, Key key) override {
+		X11KeyBinding binding;
+		binding.modKey = modKey;
+		binding.key = key;
+		_keyBindings.append(binding);
+
+		
 	}
 
 	virtual void unbindKey(ModKey modKey, Key key) override {
@@ -86,9 +106,12 @@ public:
 	}
 
 	virtual void listen(IObserver* observer) override {
+		_attachKeyBindings();
+
 		while (true) {
 			xcb_generic_event_t* ev = xcb_wait_for_event(_conn->get());
-			switch (ev->response_type & ~0x80) {
+			int type = ev->response_type & ~0x80;
+			switch (type) {
 				case XCB_CREATE_NOTIFY: {
 					break;
 				}
@@ -196,9 +219,8 @@ public:
 					event.window = window;
 					observer->onWindowDestroy(event);
 
-					// TODO: implement hashtable remove
-					// _clientWindowMap.remove(e->window);
-					// _frameWindowMap.remove(window->getFrameHandle());
+					_clientWindowMap.remove(e->window);
+					_frameWindowMap.remove(((X11WindowBackend*)window->getBackend())->getFrameHandle());
 
 					delete window;
 					break;
@@ -255,6 +277,50 @@ public:
 					break;
 				}
 
+				case XCB_KEY_PRESS: {
+					xcb_key_press_event_t* e = (xcb_key_press_event_t*) ev;
+					Key* key = _keyCodeMap.getOrNull(e->detail);
+					if (key == nullptr) {
+						break;
+					}
+					KeyEvent event;
+					event.modKey = _toModKey(e->state);
+					event.key = *key;
+					observer->onKeyPress(event);
+					break;
+				}
+
+				case XCB_KEY_RELEASE: {
+					xcb_key_release_event_t* e = (xcb_key_release_event_t*) ev;
+					Key* key = _keyCodeMap.getOrNull(e->detail);
+					if (key == nullptr) {
+						break;
+					}
+					KeyEvent event;
+					event.modKey = _toModKey(e->state);
+					event.key = *key;
+					observer->onKeyRelease(event);
+					break;
+				}
+
+				default: {
+					if (type == _keyboard->getEventOffset()) {
+						switch (ev->pad0) {
+							case XCB_XKB_NEW_KEYBOARD_NOTIFY: {
+								xcb_xkb_new_keyboard_notify_event_t* event = (xcb_xkb_new_keyboard_notify_event_t*) ev;
+								if (event->changed & XCB_XKB_NKN_DETAIL_KEYCODES) {
+									_updateKeyBindings();
+								}
+								break;
+							}
+							case XCB_XKB_MAP_NOTIFY:
+								_updateKeyBindings();
+								break;
+						}
+						break;
+					}
+					break;
+				}
 			}
 			free(ev);
 		}
@@ -318,8 +384,68 @@ private:
 		return (MouseButton)button;
 	}
 
+	void _attachKeyBindings() {
+		_keyCodeMap.clear();
+
+		for (int i = 0; i < _keyBindings.count(); i++) {
+			X11KeyBinding& binding = _keyBindings[i];
+			binding.keyCode = _keyboard->queryKeyCode(binding.key);
+			binding.modKeyCode = _fromModKey(binding.modKey);
+			if (binding.keyCode == 0) {
+				printf("ERROR: key %d is invalid\n", (int)binding.key);
+				continue;
+			}
+
+			_keyCodeMap.set(binding.keyCode, binding.key);
+
+			xcb_grab_key(
+				_conn->get(), 0, _conn->getScreen()->root, 
+				binding.modKeyCode,
+				binding.keyCode,
+				XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC
+			);
+		}
+		_conn->flush();
+	}
+
+	void _detachKeyBindings() {
+		for (int i = 0; i < _keyBindings.count(); i++) {
+			X11KeyBinding& binding = _keyBindings[i];
+			if (binding.keyCode == 0) continue;
+
+			xcb_ungrab_key(
+				_conn->get(),
+				binding.keyCode,
+				_conn->getScreen()->root,
+				binding.modKeyCode
+			);
+		}
+		_conn->flush();
+	}
+
+	void _updateKeyBindings() {
+		_keyboard->updateKeymap();
+		wx::String layout = _keyboard->getLayout();
+
+		if (layout == _activeKeyboardLayout) {
+			return;
+		}
+
+		_detachKeyBindings();
+		_attachKeyBindings();
+
+		printf("changing keyboard layout to %s\n", layout.cptr());
+		_activeKeyboardLayout = layout;
+	}
+
+
 private:
 	X11Connection* _conn;
+	X11Keyboard* _keyboard;
 	wx::HashTable<xcb_window_t, Window*> _clientWindowMap;
 	wx::HashTable<xcb_window_t, Window*> _frameWindowMap;
+
+	wx::List<X11KeyBinding> _keyBindings;
+	wx::String _activeKeyboardLayout;
+	wx::HashTable<xcb_keycode_t, Key> _keyCodeMap;
 };

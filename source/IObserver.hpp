@@ -21,5 +21,7 @@ public:
 	virtual void onMonitorConnect(MonitorEvent const& e) = 0;
 
 	virtual void onMonitorDisconnect(MonitorEvent const& e) = 0;
+
+	virtual void onMonitorPropertyChange(MonitorEvent const& e) = 0;
 };
 

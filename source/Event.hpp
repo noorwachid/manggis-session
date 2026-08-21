@@ -22,6 +22,7 @@ struct MouseMovementEvent {
 };
 
 struct KeyEvent {
+	ModKey modKey;
 	Key key;
 };
 

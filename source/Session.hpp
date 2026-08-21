@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Event.hpp"
+#include "Exec.hpp"
 #include "IObserver.hpp"
 #include "IContext.hpp"
 #include "input/MouseButton.hpp"
@@ -89,6 +90,9 @@ public:
 		_context->bindMouseButton(ModKey::Alt, MouseButton::Left);
 		_context->bindMouseButton(ModKey::Alt|ModKey::Shift, MouseButton::Left);
 
+		_context->bindKey(ModKey::Alt, Key::E);
+		_context->bindKey(ModKey::Alt, Key::Return);
+
 		_workspace = new Workspace();
 
 		_context->listen(this);
@@ -149,6 +153,11 @@ public:
 	}
 
 	virtual void onKeyPress(KeyEvent const& e) override {
+		if (e.modKey == ModKey::Alt && e.key == Key::Return) {
+			wx::List<wx::String> args;
+			args.append("xterm");
+			exec(args);
+		}
 	}
 
 	virtual void onKeyRelease(KeyEvent const& e) override {
@@ -160,6 +169,8 @@ public:
 	virtual void onMonitorDisconnect(MonitorEvent const& e) override {
 	}
 
+	virtual void onMonitorPropertyChange(MonitorEvent const& e) override {
+	}
 private:
 	IContext* _context;
 	Workspace* _workspace;
