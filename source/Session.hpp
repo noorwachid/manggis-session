@@ -242,10 +242,6 @@ private:
 	wx::List<Workspace*> _workspaces;
 	wx::List<Window*> _unmanagedWindows;
 	wx::List<Window*> _dockWindows;
-	int _dockTop = 0;
-	int _dockBottom = 0;
-	int _dockRight = 0;
-	int _dockLeft = 0;
 	Rect _workingRect;
 };
 
@@ -292,6 +288,11 @@ public:
 
 	virtual void onMousePress(MouseButtonEvent const& e) override {
 		if (e.window == nullptr) {
+			return;
+		}
+
+		WindowType type = e.window->getType();
+		if (type != WindowType::Normal) {
 			return;
 		}
 

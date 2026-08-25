@@ -9,32 +9,32 @@
 
 	],
 
-	bindings: {
+	bindings: [
 
-		"alt + return": ( exec: ["xterm"] ),
-		"alt + space": ( exec: ["dmenu"] ),
+		( key: "alt + return", exec: ["xterm"] ),
+		( key: "alt + space", exec: ["dmenu"] ),
 
-		"alt + left": ( focusNearestWindow: "left" ),
-		"alt + right": ( focusNearestWindow: "right" ),
-		"alt + up": ( focusNearestWindow: "top" ),
-		"alt + down": ( focusNearestWindow: "bottom" ),
+		( key: "alt + left", focusNearestWindow: "left" ),
+		( key: "alt + right", focusNearestWindow: "right" ),
+		( key: "alt + up", focusNearestWindow: "top" ),
+		( key: "alt + down", focusNearestWindow: "bottom" ),
 
-		"alt + shift + left": ( tileWindow: [0.0, 0.0, 0.5, 1.0] ),
-		"alt + shift + right": ( tileWindow: [0.5, 0.0, 0.5, 1.0] ),
-		"alt + shift + up": ( maximizeWindow: null ),
-		"alt + shift + down": ( restoreWindow: null ),
+		( key: "alt + shift + left", tileWindow: [0.0, 0.0, 0.5, 1.0] ),
+		( key: "alt + shift + right", tileWindow: [0.5, 0.0, 0.5, 1.0] ),
+		( key: "alt + shift + up", maximizeWindow: null ),
+		( key: "alt + shift + down", restoreWindow: null ),
 
-		"alt + 1": ( focusWorkspace: "1" ),
-		"alt + 2": ( focusWorkspace: "2" ),
-		"alt + 3": ( focusWorkspace: "3" ),
-		"alt + 4": ( focusWorkspace: "4" ),
-		"alt + 5": ( focusWorkspace: "5" ),
+		( key: "alt + 1", focusWorkspace: "1" ),
+		( key: "alt + 2", focusWorkspace: "2" ),
+		( key: "alt + 3", focusWorkspace: "3" ),
+		( key: "alt + 4", focusWorkspace: "4" ),
+		( key: "alt + 5", focusWorkspace: "5" ),
 
-		"alt + shift + 1": ( sendWindowToWorkspace: "1" ),
-		"alt + shift + 2": ( sendWindowToWorkspace: "2" ),
-		"alt + shift + 3": ( sendWindowToWorkspace: "3" ),
-		"alt + shift + 4": ( sendWindowToWorkspace: "4" ),
-		"alt + shift + 5": ( sendWindowToWorkspace: "5" ),
+		( key: "alt + shift + 1", sendWindowToWorkspace: "1" ),
+		( key: "alt + shift + 2", sendWindowToWorkspace: "2" ),
+		( key: "alt + shift + 3", sendWindowToWorkspace: "3" ),
+		( key: "alt + shift + 4", sendWindowToWorkspace: "4" ),
+		( key: "alt + shift + 5", sendWindowToWorkspace: "5" ),
 
-	},
+	],
 )
