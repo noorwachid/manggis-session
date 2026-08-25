@@ -26,9 +26,9 @@ public:
 
 	virtual void hide() = 0;
 
-	virtual void activate() = 0;
+	virtual void focus() = 0;
 
-	virtual void deactivate() = 0;
+	virtual void blur() = 0;
 
 	virtual ~IWindowBackend() {
 	}

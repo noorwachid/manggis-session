@@ -62,12 +62,12 @@ public:
 		_backend->hide();
 	}
 
-	void activate() {
-		_backend->activate();
+	void focus() {
+		_backend->focus();
 	}
 
-	void deactivate() {
-		_backend->deactivate();
+	void blur() {
+		_backend->blur();
 	}
 
 private:

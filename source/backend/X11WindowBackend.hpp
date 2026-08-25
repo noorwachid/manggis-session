@@ -88,12 +88,12 @@ public:
 		_conn->flush();
 	}
 
-	virtual void activate() override {
+	virtual void focus() override {
 		_prop = WindowPropVariant::active;
 		draw();
 	}
 
-	virtual void deactivate() override {
+	virtual void blur() override {
 		_prop = WindowPropVariant::inactive;
 		draw();
 	}
