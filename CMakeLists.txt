@@ -9,6 +9,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(SOURCES
 	source/EntryPoint.cpp
 	source/backend/X11Context.cpp
+	source/backend/X11MonitorManager.cpp
 	source/backend/X11Hint.cpp
 	source/system/Exec.cpp
 )

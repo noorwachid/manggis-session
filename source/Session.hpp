@@ -5,6 +5,7 @@
 #include "IObserver.hpp"
 #include "MonitorInfo.hpp"
 #include "backend/IWindowBackend.hpp"
+#include "config/Config.hpp"
 #include "input/MouseButton.hpp"
 #include "input/Key.hpp"
 #include "system/Exec.hpp"
@@ -27,6 +28,10 @@ struct DragState {
 };
 
 class Monitor;
+
+#ifdef USE_XEPHYR
+extern int xephyrMonitorConfiguration;
+#endif
 
 class Workspace {
 public:
@@ -176,6 +181,10 @@ public:
 		}
 	}
 
+	void clearWorkspaceList() {
+		_workspaces.clear();
+	}
+
 	wx::List<Workspace*> const& getWorkspaceList() const {
 		return _workspaces;
 	}
@@ -262,7 +271,27 @@ public:
 		_context->bindKey(ModKey::Alt, Key::Num4);
 		_context->bindKey(ModKey::Alt, Key::A);
 
-		_layoutMonitors();
+		_context->bindKey(ModKey::Alt, Key::M);
+
+		ConfigWorkspace ws1;
+		ws1.id = "1";
+		_config.workspaces.append(ws1);
+
+		ConfigWorkspace ws2;
+		ws2.id = "2";
+		_config.workspaces.append(ws2);
+
+		ConfigWorkspace ws3;
+		ws3.id = "3";
+		ws3.ports.append("VHDMI-2");
+		_config.workspaces.append(ws3);
+
+		ConfigWorkspace ws4;
+		ws4.id = "4";
+		ws4.ports.append("VHDMI-2");
+		_config.workspaces.append(ws4);
+
+		_relayoutMonitors();
 
 		_context->listen(this);
 	}
@@ -420,6 +449,21 @@ public:
 			_logLayout();
 			return;
 		}
+		if (e.modKey == ModKey::Alt && e.key == Key::M) {
+			#ifdef USE_XEPHYR
+			if (xephyrMonitorConfiguration == 0) {
+				xephyrMonitorConfiguration = 1;
+				_relayoutMonitors();
+			} else if (xephyrMonitorConfiguration == 1) {
+				xephyrMonitorConfiguration = 2;
+				_relayoutMonitors();
+			} else if (xephyrMonitorConfiguration == 2) {
+				xephyrMonitorConfiguration = 0;
+				_relayoutMonitors();
+			}
+			#endif
+			return;
+		}
 	}
 
 	virtual void onKeyRelease(KeyEvent const& e) override {
@@ -523,58 +567,78 @@ private:
 		return nullptr;
 	}
 
-	void _layoutMonitors() {
+	void _relayoutMonitors() {
 		wx::List<MonitorInfo> monitorInfos = _context->getConnectedMonitorInfos();
 
 		MonitorInfo fallbackInfo;
 		fallbackInfo.port = "<fallback>";
-		_fallbackMonitor = new Monitor(fallbackInfo);
+		_fallbackMonitor = _getOrCreateMonitor(fallbackInfo);
+		_fallbackMonitor->clearWorkspaceList();
+
+		// TODO: reuse the monitor instance
+		_monitors.clear();
 
 		if (monitorInfos.isEmpty()) {
 			_activeMonitor = _fallbackMonitor;
+			_monitors.append(_activeMonitor);
 		} else {
+			Monitor* activeMonitor = nullptr;
 			for (int i = 0; i < monitorInfos.count(); i++) {
 				MonitorInfo const& info = monitorInfos[i];
-				printf("monitor %s (%d, %d, %d, %d)\n", 
-					info.port.cptr(), 
-					info.rect.x, 
-					info.rect.y, 
-					info.rect.width, 
-					info.rect.height
-				);
-				Monitor* monitor = new Monitor(info);
-				if (_activeMonitor == nullptr) {
-					_activeMonitor = monitor;
+				Monitor* monitor = _getOrCreateMonitor(info);
+				monitor->clearWorkspaceList();
+				if (_activeMonitor == monitor) {
+					activeMonitor = monitor;
 				}
 				_monitors.append(monitor);
 			}
+			if (activeMonitor == nullptr) {
+				_activeMonitor = _monitors.getFirst();
+			}
 		}
 
-		Monitor* mon1 = _queryMonitorByPort("VHDMI-1");
-		if (mon1) {
-			mon1->addWorkspace(new Workspace("1"));
-			mon1->addWorkspace(new Workspace("2"));
+		for (int i = 0; i < _config.workspaces.count(); i++) {
+			ConfigWorkspace const& wsConfig = _config.workspaces[i];
+			Workspace* ws = _getOrCreateWorkspace(wsConfig.id);
+			if (wsConfig.ports.isEmpty()) {
+				_activeMonitor->addWorkspace(ws);
+			} else {
+				Monitor* monitor = nullptr;
+				for (int j = 0; j < wsConfig.ports.count(); j++) {
+					monitor = _queryMonitorByPort(wsConfig.ports[j]);
+					if (monitor) {
+						monitor->addWorkspace(ws);
+						break;
+					}
+				}
+				if (monitor == nullptr) {
+					_activeMonitor->addWorkspace(ws);
+				}
+			}
 		}
 
-		Monitor* mon2 = _queryMonitorByPort("VHDMI-2");
-		if (mon2) {
-			mon2->addWorkspace(new Workspace("3"));
-			mon2->addWorkspace(new Workspace("4"));
+		for (int i = 0; i < _monitors.count(); i++) {
+			Monitor* monitor = _monitors[i];
+			if (monitor->getActiveWorkspace() == nullptr) {
+				monitor->addWorkspace(new Workspace(monitor->getPort()));
+			}
 		}
+
+		_logLayout();
 	}
 
 	void _logLayout() {
-		printf("\033[2J\033[H");
+		printf("layout:\n");
 		for (int i = 0; i < _monitors.count(); i++) {
 			Monitor* mon = _monitors[i];
-			printf("mon %s:", mon->getPort().cptr());
+			printf("  mon %s:", mon->getPort().cptr());
 			if (mon == _activeMonitor) {
 				printf(" # active");
 			}
 			printf("\n");
 			for (int j = 0; j < mon->getWorkspaceList().count(); j++) {
 				Workspace* ws = mon->getWorkspaceList()[j];
-				printf("  ws %s:", ws->getID().cptr());
+				printf("    ws %s:", ws->getID().cptr());
 				if (ws == mon->getActiveWorkspace()) {
 					printf(" # active");
 				}
@@ -582,7 +646,7 @@ private:
 
 				for (int k = 0; k < ws->getWindowList().count(); k++) {
 					Window* win = ws->getWindowList()[k];
-					printf("    win %p:", win);
+					printf("      win %p:", win);
 					if (win == ws->getActiveWindow()) {
 						printf(" # active");
 					}
@@ -592,7 +656,28 @@ private:
 		}
 	}
 
-	void _relayoutMonitors() {
+	Monitor* _getOrCreateMonitor(MonitorInfo const& info) {
+		for (int i = 0; i < _monitorDB.count(); i++) {
+			Monitor* monitor = _monitorDB[i];
+			if (monitor->getPort() == info.port) {
+				return monitor;
+			}
+		}
+		Monitor* monitor = new Monitor(info);
+		_monitorDB.append(monitor);
+		return monitor;
+	}
+
+	Workspace* _getOrCreateWorkspace(wx::String const& id) {
+		for (int i = 0; i < _workspaceDB.count(); i++) {
+			Workspace* workspace = _workspaceDB[i];
+			if (workspace->getID() == id) {
+				return workspace;
+			}
+		}
+		Workspace* workspace = new Workspace(id);
+		_workspaceDB.append(workspace);
+		return workspace;
 	}
 
 private:
@@ -601,4 +686,8 @@ private:
 	Monitor* _fallbackMonitor = nullptr; // incase of all monitor disconnected all workspace/windows are here
 	wx::List<Monitor*> _monitors;
 	DragState _dragState;
+
+	Config _config;
+	wx::List<Monitor*> _monitorDB;
+	wx::List<Workspace*> _workspaceDB;
 };
