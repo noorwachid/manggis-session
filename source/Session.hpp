@@ -81,9 +81,6 @@ public:
 
 	void activate() {
 		if (_activeWindow) _activeWindow->activate();
-		for (int i = 0; i < _windows.count(); i++) {
-			_windows[i]->show();
-		}
 	}
 
 	void deactivate() {
@@ -227,12 +224,24 @@ public:
 
 	virtual void onWindowCreate(WindowEvent const& e) override {
 		Point mousePos = _context->getMousePos();
-		Monitor* mon = queryMonitorByPos(mousePos);
-		if (mon == nullptr) {
-			WX_ASSERT(mon == nullptr, "invalid monitor state\n");
+		Monitor* monitor = queryMonitorByPos(mousePos);
+		if (monitor == nullptr) {
+			WX_ASSERT(monitor == nullptr, "invalid monitor state\n");
 			return;
 		}
-		mon->getActiveWorkspace()->addWindow(e.window);
+		Rect monitorRect = monitor->getRect();
+		Rect windowRect = e.window->getRect();
+
+		// TODO: add variant placement
+		//
+		// centered placement
+		e.window->move(
+			monitorRect.x + (monitorRect.width / 2) - (windowRect.width / 2),
+			monitorRect.y + (monitorRect.height / 2) - (windowRect.height / 2)
+		);
+		e.window->show();
+
+		monitor->getActiveWorkspace()->addWindow(e.window);
 	}
 
 	virtual void onWindowDestroy(WindowEvent const& e) override {

@@ -155,7 +155,6 @@ public:
 
 						observer->onWindowCreate(event);
 					}
-					window->show();
 					break;
 				}
 
