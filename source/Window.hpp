@@ -15,77 +15,41 @@ class Workspace;
 
 class Window {
 public:
-	Window(IWindowBackend* backend, WindowFlags flags): 
-		_backend{backend}, _flags{flags} {
-	}
+	Window(IWindowBackend* backend, WindowFlags flags);
 
-	~Window() {
-		delete _backend;
-	}
+	~Window();
 
-	IWindowBackend* getBackend() {
-		return _backend;
-	}
+	IWindowBackend* getBackend();
 
-	WindowProp getProp() {
-		return _backend->getProp();
-	}
+	WindowProp getProp();
 
-	WindowType getType() {
-		return _backend->getType();
-	}
+	WindowType getType();
 
-	void setWorkspace(Workspace* workspace) {
-		_workspace = workspace;
-	}
+	void setWorkspace(Workspace* workspace);
 
-	Workspace* getWorkspace() {
-		return _workspace;
-	}
+	Workspace* getWorkspace();
 
-	void setMonitor(Monitor* monitor) {
-		_monitor = monitor;
-	}
+	void setMonitor(Monitor* monitor);
 
-	Monitor* getMonitor() {
-		return _monitor;
-	}
+	Monitor* getMonitor();
 
-	Rect getRect() {
-		return _backend->getRect();
-	}
+	Rect getRect();
 
-	void raise() {
-		_backend->raise();
-	}
+	void raise();
 
-	void move(int x, int y) {
-		_backend->move(x, y);
-	}
+	void move(int x, int y);
 
-	void resize(int width, int height) {
-		_backend->resize(width, height);
-	}
+	void resize(int width, int height);
 
-	void show() {
-		_backend->show();
-	}
+	void show();
 
-	void hide() {
-		_backend->hide();
-	}
+	void hide();
 
-	void focus() {
-		_backend->focus();
-	}
+	void focus();
 
-	void blur() {
-		_backend->blur();
-	}
+	void blur();
 
-	void close() {
-		_backend->close();
-	}
+	void close();
 
 private:
 	IWindowBackend* _backend;
