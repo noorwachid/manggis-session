@@ -275,18 +275,52 @@ public:
 
 	virtual void onMouseRelease(MouseButtonEvent const& e) override {
 		if (_dragState.mode != DragMode::None) {
+			Window* window = _dragState.window;
+
 			_dragState.mode = DragMode::None;
+			_dragState.window = nullptr;
 			_context->unbindMouseMovement();
 
-			Rect windowRect = _dragState.window->getRect();
-			Rect clipRect;
-			clipRect.x = 0;
-			clipRect.y = 0;
-			clipRect.width = windowRect.width / 2;
-			clipRect.height = windowRect.height;
+			Rect windowRect = window->getRect();
+			Monitor* bestMonitor = nullptr;
+			int bestArea = 0;
 
-			_context->clipWindow(_dragState.window, clipRect);
-			_dragState.window = nullptr;
+			for (int i = 0; i < _monitors.count(); i++) {
+				Monitor* monitor = _monitors[i];
+				Rect monitorRect = monitor->getRect();
+				Rect intersectRect = intersectRectRect(monitorRect, windowRect);
+				int area = intersectRect.width * intersectRect.height;
+				if (bestArea < area) {
+					bestArea = area;
+					bestMonitor = monitor;
+				}
+			}
+
+			if (bestMonitor == nullptr) {
+				printf("invalid drag\n");
+				return;
+			}
+
+			if (_activeMonitor != bestMonitor) {
+				activateMonitor(bestMonitor);
+				sendWindowToWorkspace(window, _activeMonitor->getActiveWorkspace());
+			}
+
+			Rect workingRect = _activeMonitor->getWorkingRect();
+			Rect intersectRect = intersectRectRect(workingRect, windowRect);
+
+			if (intersectRect.width == 0 || intersectRect.height == 0) {
+				printf("invalid intersection\n");
+				return;
+			}
+
+			Rect clipRect;
+			clipRect.x = intersectRect.x - windowRect.x;
+			clipRect.y = intersectRect.y - windowRect.y;
+			clipRect.width = intersectRect.width;
+			clipRect.height = intersectRect.height;
+
+			_context->clipWindow(window, clipRect);
 		}
 	}
 
@@ -389,6 +423,11 @@ public:
 		activateMonitor(mon);
 		mon->activateWorkspace(workspace);
 		printf("activate workspace %s\n", workspace->getID().cptr());
+	}
+
+	void sendWindowToWorkspace(Window* window, Workspace* workspace) {
+		window->getWorkspace()->removeWindow(window);
+		workspace->addWindow(window);
 	}
 
 	void activateWindow(Window* window) {
