@@ -584,7 +584,6 @@ public:
 		if (window == nullptr) {
 			return;
 		}
-		Monitor* previousMonitor = _activeMonitor;
 		for (int i = 0; i < _monitors.count(); i++) {
 			Monitor* mon = _monitors[i];
 			Workspace* ws = mon->queryWorkspace(id);
