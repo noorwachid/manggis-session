@@ -56,8 +56,6 @@ void X11Hint::initialize() {
 		_ewmh._NET_WM_WINDOW_TYPE_DND,
 		_ewmh._NET_WM_WINDOW_TYPE_NORMAL,
 
-		_ewmh._NET_WM_STRUT_PARTIAL,
-
 		_ewmh._NET_WM_STATE,
 		_ewmh._NET_WM_STATE_MODAL,
 		_ewmh._NET_WM_STATE_STICKY,
@@ -170,21 +168,6 @@ WindowType X11Hint::getWindowType(xcb_window_t id) {
 	return WindowType::Normal;
 }
 
-WindowStrut X11Hint::getWindowStrut(xcb_window_t id) {
-	xcb_get_property_cookie_t cookie = xcb_ewmh_get_wm_strut_partial_unchecked(&_ewmh, id);
-	xcb_ewmh_wm_strut_partial_t reply;
-
-	if (xcb_ewmh_get_wm_strut_partial_reply(&_ewmh, cookie, &reply, nullptr)) {
-		WindowStrut strut = {};
-		strut.left   = reply.left;
-		strut.right  = reply.right;
-		strut.top    = reply.top;
-		strut.bottom = reply.bottom;
-		return strut;
-	}
-	return {};
-}
-
 void X11Hint::setWindowState(xcb_window_t id, std::vector<WindowState> const& states) {
 	int count = 0;
 	xcb_atom_t atoms[12];
@@ -244,6 +227,25 @@ xcb_atom_t X11Hint::windowStateToAtom(WindowState state) {
 #define MWM_HINTS_DECORATIONS (1L << 1)
 
 bool X11Hint::isWindowDecorated(xcb_window_t id) {
+	WindowType type = getWindowType(id);
+
+	switch (type) {
+		case WindowType::Desktop:
+		case WindowType::Dock:
+		case WindowType::Toolbar:
+		case WindowType::Menu:
+		case WindowType::Utility:
+		case WindowType::Splash:
+		case WindowType::DropdownMenu:
+		case WindowType::PopupMenu:
+		case WindowType::Tooltip:
+		case WindowType::Notification:
+		case WindowType::Combo:
+		case WindowType::DragAndDrop:
+			return false;
+		default: break;
+	}
+
 	typedef struct {
 		uint32_t flags;
 		uint32_t functions;

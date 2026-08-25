@@ -211,12 +211,12 @@ public:
 		_context->bindMouseButton(ModKey::Alt|ModKey::Shift, MouseButton::Left);
 
 		_context->bindKey(ModKey::Alt, Key::Return);
+		_context->bindKey(ModKey::Alt, Key::Backspace);
 		_context->bindKey(ModKey::Alt, Key::Num1);
 		_context->bindKey(ModKey::Alt, Key::Num2);
 		_context->bindKey(ModKey::Alt, Key::Num3);
 		_context->bindKey(ModKey::Alt, Key::Num4);
 		_context->bindKey(ModKey::Alt, Key::A);
-		_context->bindKey(ModKey::Alt, Key::Backspace);
 
 		_layoutMonitors();
 
@@ -359,23 +359,23 @@ public:
 			return;
 		}
 		if (e.modKey == ModKey::Alt && e.key == Key::Backspace) {
-			closeActiveWindow();
+			closeWindow();
 			return;
 		}
 		if (e.modKey == ModKey::Alt && e.key == Key::Num1) {
-			focusWorkspaceByID("1");
+			focusWorkspaceID("1");
 			return;
 		}
 		if (e.modKey == ModKey::Alt && e.key == Key::Num2) {
-			focusWorkspaceByID("2");
+			focusWorkspaceID("2");
 			return;
 		}
 		if (e.modKey == ModKey::Alt && e.key == Key::Num3) {
-			focusWorkspaceByID("3");
+			focusWorkspaceID("3");
 			return;
 		}
 		if (e.modKey == ModKey::Alt && e.key == Key::Num4) {
-			focusWorkspaceByID("4");
+			focusWorkspaceID("4");
 			return;
 		}
 		if (e.modKey == ModKey::Alt && e.key == Key::A) {
@@ -411,7 +411,7 @@ public:
 		_activeMonitor->focus();
 	}
 
-	void focusWorkspaceByID(wx::String const& id) {
+	void focusWorkspaceID(wx::String const& id) {
 		Monitor* previousMonitor = _activeMonitor;
 		for (int i = 0; i < _monitors.count(); i++) {
 			Monitor* mon = _monitors[i];
@@ -425,6 +425,7 @@ public:
 			}
 			focusMonitor(mon);
 			mon->activateWorkspace(ws);
+			mon->getActiveWorkspace()->show();
 			return;
 		}
 		printf("no workspace with id %s\n", id.cptr());
@@ -457,10 +458,12 @@ public:
 		ws->focusWindow(window);
 	}
 
-	void closeActiveWindow() {
+	void closeWindow() {
 		Workspace* ws = _activeMonitor->getActiveWorkspace();
 		Window* window = ws->getActiveWindow();
-		window->close();
+		if (window) {
+			window->close();
+		}
 	}
 
 private:

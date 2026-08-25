@@ -42,6 +42,10 @@ public:
 		return _prop;
 	}
 
+	virtual WindowType getType() override {
+		return _hint->getWindowType(_client);
+	}
+
 	virtual void raise() override {
 		uint32_t value = XCB_STACK_MODE_ABOVE;
 		xcb_configure_window(_conn->get(), _frame, XCB_CONFIG_WINDOW_STACK_MODE, &value);

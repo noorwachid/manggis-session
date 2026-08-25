@@ -10,11 +10,46 @@ struct WindowProp {
 	uint32_t titlebarHeight = 20; 
 };
 
+enum struct WindowType {
+	Desktop,
+	Dock,
+	Toolbar,
+	Menu,
+	Utility,
+	Splash,
+	Dialog,
+	DropdownMenu,
+	PopupMenu,
+	Tooltip,
+	Notification,
+	Combo,
+	DragAndDrop,
+	Normal,
+};
+
+enum struct WindowState {
+	Unknown,
+	Modal,
+	Sticky,
+	MaximizedVertical,
+	MaximizedHorizontal,
+	Shaded,
+	SkipTaskbar,
+	SkipPager,
+	Hidden,
+	Fullscreen,
+	Above,
+	Below,
+	DemandsAttention,
+};
+
 class IWindowBackend {
 public:
 	virtual Rect getRect() = 0;
 
 	virtual WindowProp getProp() = 0;
+
+	virtual WindowType getType() = 0;
 
 	virtual void raise() = 0;
 

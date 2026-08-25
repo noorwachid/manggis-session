@@ -1,50 +1,11 @@
 #pragma once
 
+#include "backend/IWindowBackend.hpp"
 #include "backend/X11Connection.hpp"
 #include <string>
 #include <vector>
 #include <xcb/xcb.h>
 #include <xcb/xcb_ewmh.h>
-
-enum struct WindowType {
-	Desktop,
-	Dock,
-	Toolbar,
-	Menu,
-	Utility,
-	Splash,
-	Dialog,
-	DropdownMenu,
-	PopupMenu,
-	Tooltip,
-	Notification,
-	Combo,
-	DragAndDrop,
-	Normal,
-};
-
-enum struct WindowState {
-	Unknown,
-	Modal,
-	Sticky,
-	MaximizedVertical,
-	MaximizedHorizontal,
-	Shaded,
-	SkipTaskbar,
-	SkipPager,
-	Hidden,
-	Fullscreen,
-	Above,
-	Below,
-	DemandsAttention,
-};
-
-struct WindowStrut {
-	int left;
-	int top;
-	int right;
-	int bottom;
-};
 
 class X11Hint {
 public:
@@ -55,8 +16,6 @@ public:
 	void terminate();
 
 	WindowType getWindowType(xcb_window_t id);
-
-	WindowStrut getWindowStrut(xcb_window_t id);
 
 	bool isWindowState(xcb_atom_t atom);
 
