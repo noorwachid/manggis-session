@@ -7,8 +7,10 @@
 #include "backend/IContext.hpp"
 #include "backend/X11Clipper.hpp"
 #include "backend/X11Connection.hpp"
+#include "backend/X11Hint.hpp"
 #include "backend/X11KeyboardManager.hpp"
 #include "backend/X11MonitorManager.hpp"
+#include "backend/X11MouseManager.hpp"
 #include "backend/X11WindowBackend.hpp"
 #include "input/Key.hpp"
 #include "input/MouseButton.hpp"
@@ -43,11 +45,17 @@ public:
 		_keyboardManager = new X11KeyboardManager(_conn);
 		_keyboardManager->initialize();
 
+		_mouseManager = new X11MouseManager(_conn);
+		_mouseManager->initialize();
+
 		_monitorManager = new X11MonitorManager(_conn);
 		_monitorManager->initialize();
 
 		_clipper = new X11Clipper(_conn);
 		_clipper->initialize();
+
+		_hint = new X11Hint(_conn);
+		_hint->initialize();
 
 		// NOTE: click to focus
 		xcb_grab_button(
@@ -145,7 +153,7 @@ public:
 
 					Window* window = _getWindowByClient(e->window);
 					if (window == nullptr) {
-						X11WindowBackend* backend = new X11WindowBackend(_conn, e->window);
+						X11WindowBackend* backend = new X11WindowBackend(_conn, _hint, e->window);
 						window = new Window(backend, WindowFlags::None);
 						WindowEvent event;
 						event.window = window;
@@ -551,9 +559,12 @@ private:
 	wx::String _activeKeyboardLayout;
 	wx::HashTable<xcb_keycode_t, Key> _keyCodeMap;
 
+	X11MouseManager* _mouseManager;
+
 	X11MonitorManager* _monitorManager;
 	wx::List<MonitorInfo> _monitorInfos;
 
 	X11Clipper* _clipper;
+	X11Hint* _hint;
 
 };

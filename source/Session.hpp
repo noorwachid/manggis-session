@@ -216,6 +216,7 @@ public:
 		_context->bindKey(ModKey::Alt, Key::Num3);
 		_context->bindKey(ModKey::Alt, Key::Num4);
 		_context->bindKey(ModKey::Alt, Key::A);
+		_context->bindKey(ModKey::Alt, Key::Backspace);
 
 		_layoutMonitors();
 
@@ -241,11 +242,15 @@ public:
 		);
 		e.window->show();
 
+		if (_activeMonitor != monitor) {
+			focusMonitor(monitor);
+		}
 		monitor->getActiveWorkspace()->addWindow(e.window);
 	}
 
 	virtual void onWindowDestroy(WindowEvent const& e) override {
-		_activeMonitor->getActiveWorkspace()->removeWindow(e.window);
+		Workspace* ws = e.window->getWorkspace();
+		ws->removeWindow(e.window);
 	}
 
 	virtual void onMousePress(MouseButtonEvent const& e) override {
@@ -353,6 +358,10 @@ public:
 			exec(args);
 			return;
 		}
+		if (e.modKey == ModKey::Alt && e.key == Key::Backspace) {
+			closeActiveWindow();
+			return;
+		}
 		if (e.modKey == ModKey::Alt && e.key == Key::Num1) {
 			focusWorkspaceByID("1");
 			return;
@@ -446,6 +455,12 @@ public:
 		Workspace* ws = window->getWorkspace();
 		focusWorkspace(ws);
 		ws->focusWindow(window);
+	}
+
+	void closeActiveWindow() {
+		Workspace* ws = _activeMonitor->getActiveWorkspace();
+		Window* window = ws->getActiveWindow();
+		window->close();
 	}
 
 private:

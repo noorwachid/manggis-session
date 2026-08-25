@@ -70,6 +70,10 @@ public:
 		_backend->blur();
 	}
 
+	void close() {
+		_backend->close();
+	}
+
 private:
 	IWindowBackend* _backend;
 	WindowFlags _flags = WindowFlags::None;

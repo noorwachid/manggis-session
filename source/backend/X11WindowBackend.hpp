@@ -3,27 +3,27 @@
 #include "Common.hpp"
 #include "backend/IWindowBackend.hpp"
 #include "backend/X11Connection.hpp"
+#include "backend/X11Hint.hpp"
 #include <cstdlib>
 
-namespace WindowPropVariant {
-	constexpr WindowProp active {
-		.borderColor = 0xDF1238,
-		.borderWidth = 1,
-		.titlebarColor = 0xFF3258,
-		.titlebarHeight = 20,
-	};
+namespace windowstyle {
+	constexpr int borderWidth = 1;
+	constexpr int titlebarHeight = 20;
 
-	constexpr WindowProp inactive {
-		.borderColor = 0x888888,
-		.borderWidth = 1,
-		.titlebarColor = 0x888888,
-		.titlebarHeight = 20,
-	};
+	namespace active {
+		constexpr uint32_t borderColor = 0xDF1238;
+		constexpr uint32_t titlebarColor = 0xFF3258;
+	}
+
+	namespace inactive {
+		constexpr uint32_t borderColor = 0x888888;
+		constexpr uint32_t titlebarColor = 0x888888;
+	}
 }
 
 class X11WindowBackend: public IWindowBackend {
 public:
-	X11WindowBackend(X11Connection* conn, xcb_window_t handle): _conn{conn}, _client{handle} {
+	X11WindowBackend(X11Connection* conn, X11Hint* hint, xcb_window_t handle): _conn{conn}, _hint{hint}, _client{handle} {
 		_reframe();
 	}
 
@@ -89,13 +89,20 @@ public:
 	}
 
 	virtual void focus() override {
-		_prop = WindowPropVariant::active;
+		_prop.borderColor = windowstyle::active::borderColor;
+		_prop.titlebarColor = windowstyle::active::titlebarColor;
 		draw();
 	}
 
 	virtual void blur() override {
-		_prop = WindowPropVariant::inactive;
+		_prop.borderColor = windowstyle::inactive::borderColor;
+		_prop.titlebarColor = windowstyle::inactive::titlebarColor;
 		draw();
+	}
+
+	virtual void close() override {
+		_hint->closeWindow(_client);
+		_conn->flush();
 	}
 
 	xcb_window_t getFrameHandle() {
@@ -148,7 +155,19 @@ public:
 private:
 	void _reframe() {
 		_frame = xcb_generate_id(_conn->get());
+		
+		if (_hint->isWindowDecorated(_client)) {
+			printf("decorated\n");
+			_prop.borderWidth = windowstyle::borderWidth;
+			_prop.titlebarHeight = windowstyle::titlebarHeight;
+		} else {
+			printf("non-decorated\n");
+			_prop.borderWidth = 0;
+			_prop.titlebarHeight = 0;
+		}
 
+		_prop.borderColor = windowstyle::active::borderColor;
+		_prop.titlebarColor = windowstyle::active::titlebarColor;
 
 		uint32_t mask = XCB_CW_BORDER_PIXEL | XCB_CW_EVENT_MASK;
 		uint32_t values[] = {
@@ -191,11 +210,12 @@ private:
 
 private:
 	X11Connection* _conn;
+	X11Hint* _hint;
 	xcb_window_t _client;
 	xcb_window_t _frame;
 	xcb_gcontext_t _gc;
 
-	WindowProp _prop = WindowPropVariant::active;
+	WindowProp _prop;
 };
 
 

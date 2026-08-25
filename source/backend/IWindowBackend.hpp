@@ -30,6 +30,8 @@ public:
 
 	virtual void blur() = 0;
 
+	virtual void close() = 0;
+
 	virtual ~IWindowBackend() {
 	}
 };

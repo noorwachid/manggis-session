@@ -9,6 +9,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(SOURCES
 	source/EntryPoint.cpp
 	source/backend/X11Context.cpp
+	source/backend/X11Hint.cpp
 	source/system/Exec.cpp
 )
 
@@ -32,9 +33,12 @@ target_link_libraries(manggis-session
 	xkbcommon
 	xkbcommon-x11
 
-	xcb-randr
+	xcb-cursor
 
+	xcb-randr
 	xcb-shape
+	xcb-ewmh
+	xcb-icccm
 )
 
 
