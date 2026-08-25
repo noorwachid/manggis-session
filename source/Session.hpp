@@ -123,6 +123,10 @@ public:
 		_workingRect = info.rect;
 	}
 
+	void setInfo(MonitorInfo info) {
+		_info = info;
+	}
+
 	wx::String const& getPort() const {
 		return _info.port;
 	}
@@ -269,6 +273,12 @@ public:
 		_context->bindKey(ModKey::Alt, Key::Num2);
 		_context->bindKey(ModKey::Alt, Key::Num3);
 		_context->bindKey(ModKey::Alt, Key::Num4);
+
+		_context->bindKey(ModKey::Alt|ModKey::Shift, Key::Num1);
+		_context->bindKey(ModKey::Alt|ModKey::Shift, Key::Num2);
+		_context->bindKey(ModKey::Alt|ModKey::Shift, Key::Num3);
+		_context->bindKey(ModKey::Alt|ModKey::Shift, Key::Num4);
+
 		_context->bindKey(ModKey::Alt, Key::A);
 
 		_context->bindKey(ModKey::Alt, Key::M);
@@ -384,24 +394,11 @@ public:
 
 			if (_activeMonitor != bestMonitor) {
 				focusMonitor(bestMonitor);
-				sendWindowToWorkspace(window, _activeMonitor->getActiveWorkspace());
+				window->getWorkspace()->removeWindow(window);
+				bestMonitor->getActiveWorkspace()->addWindow(window);
 			}
 
-			Rect workingRect = _activeMonitor->getWorkingRect();
-			Rect intersectRect = intersectRectRect(workingRect, windowRect);
-
-			if (intersectRect.width == 0 || intersectRect.height == 0) {
-				printf("invalid intersection\n");
-				return;
-			}
-
-			Rect clipRect;
-			clipRect.x = intersectRect.x - windowRect.x;
-			clipRect.y = intersectRect.y - windowRect.y;
-			clipRect.width = intersectRect.width;
-			clipRect.height = intersectRect.height;
-
-			_context->clipWindow(window, clipRect);
+			_clipWindow(window);
 		}
 	}
 
@@ -443,6 +440,22 @@ public:
 		}
 		if (e.modKey == ModKey::Alt && e.key == Key::Num4) {
 			focusWorkspaceID("4");
+			return;
+		}
+		if (e.modKey == (ModKey::Alt|ModKey::Shift) && e.key == Key::Num1) {
+			sendWindowToWorkspaceID("1");
+			return;
+		}
+		if (e.modKey == (ModKey::Alt|ModKey::Shift) && e.key == Key::Num2) {
+			sendWindowToWorkspaceID("2");
+			return;
+		}
+		if (e.modKey == (ModKey::Alt|ModKey::Shift) && e.key == Key::Num3) {
+			sendWindowToWorkspaceID("3");
+			return;
+		}
+		if (e.modKey == (ModKey::Alt|ModKey::Shift) && e.key == Key::Num4) {
+			sendWindowToWorkspaceID("4");
 			return;
 		}
 		if (e.modKey == ModKey::Alt && e.key == Key::A) {
@@ -526,9 +539,62 @@ public:
 		printf("activate workspace %s\n", workspace->getID().cptr());
 	}
 
+	void sendWorkspaceToMonitor(Workspace* workspace, Monitor* monitor) {
+		Monitor* oldMonitor = workspace->getMonitor();
+		monitor->addWorkspace(workspace);
+		if (oldMonitor != nullptr) {
+			if (oldMonitor != monitor) {
+				for (int i = 0; i < workspace->getWindowList().count(); i++) {
+					Window* window = workspace->getWindowList()[i];
+					sendWindowToWorkspace(window, workspace);
+				}
+			}
+		}
+	}
+
 	void sendWindowToWorkspace(Window* window, Workspace* workspace) {
+		Workspace* previousWorkspace = window->getWorkspace();
+		Monitor* previousMonitor = window->getMonitor();
+		Monitor* monitor = workspace->getMonitor();
+
+		if (previousMonitor == monitor && previousWorkspace == workspace) {
+			return;
+		}
+
+		if (previousMonitor == monitor) {
+			window->hide();
+		} else {
+			Rect windowRect = window->getRect();
+			Rect previousRect = previousMonitor->getRect();
+			Rect nextRect = monitor->getRect();
+			window->move(
+				nextRect.x + (windowRect.x - previousRect.x),
+				nextRect.y + (windowRect.y - previousRect.y)
+			);
+
+			_clipWindow(window);
+		}
+
 		window->getWorkspace()->removeWindow(window);
 		workspace->addWindow(window);
+	}
+
+	void sendWindowToWorkspaceID(wx::String const& id) {
+		Window* window = _activeMonitor->getActiveWorkspace()->getActiveWindow();
+		if (window == nullptr) {
+			return;
+		}
+		Monitor* previousMonitor = _activeMonitor;
+		for (int i = 0; i < _monitors.count(); i++) {
+			Monitor* mon = _monitors[i];
+			Workspace* ws = mon->queryWorkspace(id);
+			if (ws == nullptr) {
+				continue;
+			}
+			sendWindowToWorkspace(window, ws);
+			return;
+		}
+		printf("no workspace with id %s\n", id.cptr());
 	}
 
 	void focusWindow(Window* window) {
@@ -601,18 +667,18 @@ private:
 			ConfigWorkspace const& wsConfig = _config.workspaces[i];
 			Workspace* ws = _getOrCreateWorkspace(wsConfig.id);
 			if (wsConfig.ports.isEmpty()) {
-				_activeMonitor->addWorkspace(ws);
+				sendWorkspaceToMonitor(ws, _activeMonitor);
 			} else {
 				Monitor* monitor = nullptr;
 				for (int j = 0; j < wsConfig.ports.count(); j++) {
 					monitor = _queryMonitorByPort(wsConfig.ports[j]);
 					if (monitor) {
-						monitor->addWorkspace(ws);
+						sendWorkspaceToMonitor(ws, monitor);
 						break;
 					}
 				}
 				if (monitor == nullptr) {
-					_activeMonitor->addWorkspace(ws);
+					sendWorkspaceToMonitor(ws, _activeMonitor);
 				}
 			}
 		}
@@ -621,6 +687,18 @@ private:
 			Monitor* monitor = _monitors[i];
 			if (monitor->getActiveWorkspace() == nullptr) {
 				monitor->addWorkspace(new Workspace(monitor->getPort()));
+			}
+		}
+
+		// reclip window
+		for (int i = 0; i < _monitors.count(); i++) {
+			Monitor* monitor = _monitors[i];
+			for (int j = 0; j < monitor->getWorkspaceList().count(); j++) {
+				Workspace* workspace = monitor->getWorkspaceList()[j];
+				for (int k = 0; k < workspace->getWindowList().count(); k++) {
+					Window* window = workspace->getWindowList()[k];
+					_clipWindow(window);
+				}
 			}
 		}
 
@@ -638,7 +716,7 @@ private:
 			printf("\n");
 			for (int j = 0; j < mon->getWorkspaceList().count(); j++) {
 				Workspace* ws = mon->getWorkspaceList()[j];
-				printf("    ws %s:", ws->getID().cptr());
+				printf("    ws %s: (mon: %s)", ws->getID().cptr(), ws->getMonitor()->getPort().cptr());
 				if (ws == mon->getActiveWorkspace()) {
 					printf(" # active");
 				}
@@ -646,7 +724,7 @@ private:
 
 				for (int k = 0; k < ws->getWindowList().count(); k++) {
 					Window* win = ws->getWindowList()[k];
-					printf("      win %p:", win);
+					printf("      win %p: (ws: %s, mon: %s)", win, win->getWorkspace()->getID().cptr(), win->getMonitor()->getPort().cptr());
 					if (win == ws->getActiveWindow()) {
 						printf(" # active");
 					}
@@ -660,6 +738,7 @@ private:
 		for (int i = 0; i < _monitorDB.count(); i++) {
 			Monitor* monitor = _monitorDB[i];
 			if (monitor->getPort() == info.port) {
+				monitor->setInfo(info);
 				return monitor;
 			}
 		}
@@ -680,6 +759,25 @@ private:
 		return workspace;
 	}
 
+	void _clipWindow(Window* window) {
+		Monitor* monitor = window->getMonitor();
+		Rect windowRect = window->getRect();
+		Rect workingRect = monitor->getWorkingRect();
+		Rect intersectRect = intersectRectRect(workingRect, windowRect);
+
+		if (intersectRect.width == 0 || intersectRect.height == 0) {
+			printf("invalid intersection\n");
+			return;
+		}
+
+		Rect clipRect;
+		clipRect.x = intersectRect.x - windowRect.x;
+		clipRect.y = intersectRect.y - windowRect.y;
+		clipRect.width = intersectRect.width;
+		clipRect.height = intersectRect.height;
+
+		_context->clipWindow(window, clipRect);
+	}
 private:
 	IContext* _context;
 	Monitor* _activeMonitor = nullptr;
