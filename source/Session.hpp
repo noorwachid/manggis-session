@@ -4,6 +4,7 @@
 #include "Event.hpp"
 #include "IObserver.hpp"
 #include "MonitorInfo.hpp"
+#include "backend/IWindowBackend.hpp"
 #include "input/MouseButton.hpp"
 #include "input/Key.hpp"
 #include "system/Exec.hpp"
@@ -59,6 +60,7 @@ public:
 
 	void addWindow(Window* window) {
 		// TODO: check if workspace already exists
+		window->setMonitor(_monitor);
 		window->setWorkspace(this);
 
 		_windows.append(window);
@@ -189,15 +191,61 @@ public:
 		_activeWorkspace->blur();
 	}
 
+	void addWindow(Window* window) {
+		WindowType type = window->getType();
+		if (type == WindowType::Normal) {
+
+			Rect monitorRect = getRect();
+			Rect windowRect = window->getRect();
+
+			// TODO: add variant placement
+			//
+			// centered placement
+			window->move(
+				monitorRect.x + (monitorRect.width / 2) - (windowRect.width / 2),
+				monitorRect.y + (monitorRect.height / 2) - (windowRect.height / 2)
+			);
+			_activeWorkspace->addWindow(window);
+
+		} else if (type == WindowType::Dock) {
+			_dockWindows.append(window);
+		} else {
+			_unmanagedWindows.append(window);
+		}
+
+		window->show();
+	}
+
+	void removeWindow(Window* window) {
+		Workspace* ws = window->getWorkspace();
+		if (ws != nullptr) {
+			ws->removeWindow(window);
+			return;
+		}
+		for (int i = 0; i < _dockWindows.count(); i++) {
+			if (_dockWindows[i] == window) {
+				_dockWindows.remove(i);
+				return;
+			}
+		}
+		for (int i = 0; i < _unmanagedWindows.count(); i++) {
+			if (_unmanagedWindows[i] == window) {
+				_unmanagedWindows.remove(i);
+				return;
+			}
+		}
+	}
+
 private:
 	MonitorInfo _info;
 	Workspace* _activeWorkspace = nullptr;
 	wx::List<Workspace*> _workspaces;
-	wx::List<Window*> _reservedWindows;
-	int _reservedTop = 0;
-	int _reservedBottom = 0;
-	int _reservedRight = 0;
-	int _reservedLeft = 0;
+	wx::List<Window*> _unmanagedWindows;
+	wx::List<Window*> _dockWindows;
+	int _dockTop = 0;
+	int _dockBottom = 0;
+	int _dockRight = 0;
+	int _dockLeft = 0;
 	Rect _workingRect;
 };
 
@@ -230,27 +278,16 @@ public:
 			WX_ASSERT(monitor == nullptr, "invalid monitor state\n");
 			return;
 		}
-		Rect monitorRect = monitor->getRect();
-		Rect windowRect = e.window->getRect();
-
-		// TODO: add variant placement
-		//
-		// centered placement
-		e.window->move(
-			monitorRect.x + (monitorRect.width / 2) - (windowRect.width / 2),
-			monitorRect.y + (monitorRect.height / 2) - (windowRect.height / 2)
-		);
-		e.window->show();
 
 		if (_activeMonitor != monitor) {
 			focusMonitor(monitor);
 		}
-		monitor->getActiveWorkspace()->addWindow(e.window);
+		_activeMonitor->addWindow(e.window);
 	}
 
 	virtual void onWindowDestroy(WindowEvent const& e) override {
-		Workspace* ws = e.window->getWorkspace();
-		ws->removeWindow(e.window);
+		Monitor* monitor = e.window->getMonitor();
+		monitor->removeWindow(e.window);
 	}
 
 	virtual void onMousePress(MouseButtonEvent const& e) override {
