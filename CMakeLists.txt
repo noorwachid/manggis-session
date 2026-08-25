@@ -33,6 +33,8 @@ target_link_libraries(manggis-session
 	xkbcommon-x11
 
 	xcb-randr
+
+	xcb-shape
 )
 
 

@@ -27,6 +27,10 @@ public:
 
 	virtual wx::List<MonitorInfo> getConnectedMonitorInfos() = 0;
 
+	virtual void clipWindow(Window* window, Rect rect) = 0;
+
+	virtual void unclipWindow(Window* window) = 0;
+
 	virtual void listen(IObserver* observer) = 0;
 
 	virtual ~IContext() {

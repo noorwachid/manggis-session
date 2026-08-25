@@ -5,6 +5,7 @@
 #include "IObserver.hpp"
 #include "MonitorInfo.hpp"
 #include "Window.hpp"
+#include "backend/X11Clipper.hpp"
 #include "backend/X11Connection.hpp"
 #include "backend/X11KeyboardManager.hpp"
 #include "backend/X11MonitorManager.hpp"
@@ -44,6 +45,9 @@ public:
 
 		_monitorManager = new X11MonitorManager(_conn);
 		_monitorManager->initialize();
+
+		_clipper = new X11Clipper(_conn);
+		_clipper->initialize();
 
 		// NOTE: click to focus
 		xcb_grab_button(
@@ -114,6 +118,14 @@ public:
 
 	virtual wx::List<MonitorInfo> getConnectedMonitorInfos() override {
 		return _monitorManager->getConnectedMonitorInfos();
+	}
+
+	virtual void clipWindow(Window* window, Rect rect) override {
+		_clipper->clip((X11WindowBackend*)window->getBackend(), rect);
+	}
+
+	virtual void unclipWindow(Window* window) override {
+		_clipper->unclip((X11WindowBackend*)window->getBackend());
 	}
 
 	virtual void listen(IObserver* observer) override {
@@ -542,4 +554,7 @@ private:
 
 	X11MonitorManager* _monitorManager;
 	wx::List<MonitorInfo> _monitorInfos;
+
+	X11Clipper* _clipper;
+
 };

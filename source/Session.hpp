@@ -265,6 +265,8 @@ public:
 
 				_dragState.initialWindowRect = _dragState.window->getRect();
 				_dragState.initialMousePos = _context->getMousePos();
+
+				_context->unclipWindow(_dragState.window);
 			}
 		}
 
@@ -272,9 +274,20 @@ public:
 	}
 
 	virtual void onMouseRelease(MouseButtonEvent const& e) override {
-		_dragState.mode = DragMode::None;
-		_dragState.window = nullptr;
-		_context->unbindMouseMovement();
+		if (_dragState.mode != DragMode::None) {
+			_dragState.mode = DragMode::None;
+			_context->unbindMouseMovement();
+
+			Rect windowRect = _dragState.window->getRect();
+			Rect clipRect;
+			clipRect.x = 0;
+			clipRect.y = 0;
+			clipRect.width = windowRect.width / 2;
+			clipRect.height = windowRect.height;
+
+			_context->clipWindow(_dragState.window, clipRect);
+			_dragState.window = nullptr;
+		}
 	}
 
 	virtual void onMouseMove(MouseMovementEvent const& e) override {
