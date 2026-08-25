@@ -5,20 +5,20 @@
 #include "backend/X11Connection.hpp"
 #include <cstdlib>
 
-namespace Config {
-	namespace Active {
-		constexpr uint32_t borderColor = 0xDF1238;
-		constexpr uint32_t borderWidth = 1;
-		constexpr uint32_t titlebarColor = 0xFF3258; 
-		constexpr uint32_t titlebarHeight = 20; 
-	}
+namespace WindowPropVariant {
+	constexpr WindowProp active {
+		.borderColor = 0xDF1238,
+		.borderWidth = 1,
+		.titlebarColor = 0xFF3258,
+		.titlebarHeight = 20,
+	};
 
-	namespace Inactive {
-		constexpr uint32_t borderColor = 0x888888;
-		constexpr uint32_t borderWidth = 1;
-		constexpr uint32_t titlebarColor = 0x888888; 
-		constexpr uint32_t titlebarHeight = 20; 
-	}
+	constexpr WindowProp inactive {
+		.borderColor = 0x888888,
+		.borderWidth = 1,
+		.titlebarColor = 0x888888,
+		.titlebarHeight = 20,
+	};
 }
 
 class X11WindowBackend: public IWindowBackend {
@@ -36,6 +36,10 @@ public:
 		rect.height = geom->height;
 		free(geom);
 		return rect;
+	}
+
+	virtual WindowProp getProp() override {
+		return _prop;
 	}
 
 	virtual void raise() override {
@@ -60,9 +64,9 @@ public:
 
 		uint32_t clientValues[] = {
 			0,
-			_titlebarHeight,
+			_prop.titlebarHeight,
 			(uint32_t)width,
-			(uint32_t)height - _titlebarHeight,
+			(uint32_t)height - _prop.titlebarHeight,
 		};
 		xcb_configure_window(_conn->get(), _client,
 			XCB_CONFIG_WINDOW_X | 
@@ -85,18 +89,12 @@ public:
 	}
 
 	virtual void activate() override {
-		_borderColor = Config::Active::borderColor;
-		_borderWidth = Config::Active::borderWidth;
-		_titlebarColor = Config::Active::titlebarColor; 
-		_titlebarHeight = Config::Active::titlebarHeight; 
+		_prop = WindowPropVariant::active;
 		draw();
 	}
 
 	virtual void deactivate() override {
-		_borderColor = Config::Inactive::borderColor;
-		_borderWidth = Config::Inactive::borderWidth;
-		_titlebarColor = Config::Inactive::titlebarColor; 
-		_titlebarHeight = Config::Inactive::titlebarHeight; 
+		_prop = WindowPropVariant::inactive;
 		draw();
 	}
 
@@ -105,19 +103,19 @@ public:
 	}
 
 	uint32_t getBorderColor() {
-		return _borderColor;
+		return _prop.borderColor;
 	}
 
 	uint32_t getBorderWidth() {
-		return _borderWidth;
+		return _prop.borderWidth;
 	}
 
 	uint32_t getTitlebarColor() {
-		return _titlebarColor;
+		return _prop.titlebarColor;
 	}
 
 	uint32_t getTitlebarHeight() {
-		return _titlebarHeight;
+		return _prop.titlebarHeight;
 	}
 
 	void draw() {
@@ -125,14 +123,14 @@ public:
 			_conn->get(),
 			_frame,
 			XCB_CW_BORDER_PIXEL,
-			&_borderColor
+			&_prop.borderColor
 		);
 
 		xcb_configure_window(
 			_conn->get(), 
 			_frame, 
 			XCB_CONFIG_WINDOW_BORDER_WIDTH, 
-			&_borderWidth
+			&_prop.borderWidth
 		);
 
 		Rect geom = getRect();
@@ -140,9 +138,9 @@ public:
 		rect.x = 0;
 		rect.y = 0;
 		rect.width = geom.width;
-		rect.height = _titlebarHeight;
+		rect.height = _prop.titlebarHeight;
 
-		xcb_change_gc(_conn->get(), _gc, XCB_GC_FOREGROUND, &_titlebarColor);
+		xcb_change_gc(_conn->get(), _gc, XCB_GC_FOREGROUND, &_prop.titlebarColor);
 		xcb_poly_fill_rectangle(_conn->get(), _frame, _gc, 1, &rect);
 		_conn->flush();
 	}
@@ -154,7 +152,7 @@ private:
 
 		uint32_t mask = XCB_CW_BORDER_PIXEL | XCB_CW_EVENT_MASK;
 		uint32_t values[] = {
-			_borderColor,
+			_prop.borderColor,
 			(
 				XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT | 
 				XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY |
@@ -167,7 +165,7 @@ private:
 		int x = geom->x;
 		int y = geom->y;
 		int width = geom->width;
-		int height = geom->height + _titlebarHeight;
+		int height = geom->height + _prop.titlebarHeight;
 
 		free(geom);
 
@@ -176,7 +174,7 @@ private:
 			y,
 			width,
 			height,
-			_borderWidth, XCB_WINDOW_CLASS_INPUT_OUTPUT,
+			_prop.borderWidth, XCB_WINDOW_CLASS_INPUT_OUTPUT,
 			_conn->getScreen()->root_visual, mask, values
 		);
 
@@ -186,7 +184,7 @@ private:
 
 		int clientBorderWidth = 0;
 		xcb_configure_window(_conn->get(), _client, XCB_CONFIG_WINDOW_BORDER_WIDTH, &clientBorderWidth);
-		xcb_reparent_window(_conn->get(), _client, _frame, 0, _titlebarHeight);
+		xcb_reparent_window(_conn->get(), _client, _frame, 0, _prop.titlebarHeight);
 		xcb_map_window(_conn->get(), _client);
 		_conn->flush();
 	}
@@ -197,10 +195,7 @@ private:
 	xcb_window_t _frame;
 	xcb_gcontext_t _gc;
 
-	uint32_t _borderColor = Config::Active::borderColor;
-	uint32_t _borderWidth = Config::Active::borderWidth;
-	uint32_t _titlebarColor = Config::Active::titlebarColor; 
-	uint32_t _titlebarHeight = Config::Active::titlebarHeight; 
+	WindowProp _prop = WindowPropVariant::active;
 };
 
 

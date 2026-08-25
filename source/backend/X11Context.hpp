@@ -4,6 +4,7 @@
 #include "IContext.hpp"
 #include "IObserver.hpp"
 #include "MonitorInfo.hpp"
+#include "Window.hpp"
 #include "backend/X11Connection.hpp"
 #include "backend/X11KeyboardManager.hpp"
 #include "backend/X11MonitorManager.hpp"
@@ -133,7 +134,7 @@ public:
 					Window* window = _getWindowByClient(e->window);
 					if (window == nullptr) {
 						X11WindowBackend* backend = new X11WindowBackend(_conn, e->window);
-						window = new Window(backend);
+						window = new Window(backend, WindowFlags::None);
 						WindowEvent event;
 						event.window = window;
 

@@ -10,9 +10,11 @@ enum struct WindowFlags {
 	Reserved      = 1 << 3, // it consume the space they placed in (statusbar, dock)
 };
 
+class Workspace;
+
 class Window {
 public:
-	Window(IWindowBackend* backend, WindowFlags flags = WindowFlags::None): 
+	Window(IWindowBackend* backend, WindowFlags flags): 
 		_backend{backend}, _flags{flags} {
 	}
 
@@ -22,6 +24,18 @@ public:
 
 	IWindowBackend* getBackend() {
 		return _backend;
+	}
+
+	WindowProp getProp() {
+		return _backend->getProp();
+	}
+
+	void setWorkspace(Workspace* workspace) {
+		_workspace = workspace;
+	}
+
+	Workspace* getWorkspace() {
+		return _workspace;
 	}
 
 	Rect getRect() {
@@ -59,4 +73,5 @@ public:
 private:
 	IWindowBackend* _backend;
 	WindowFlags _flags = WindowFlags::None;
+	Workspace* _workspace;
 };

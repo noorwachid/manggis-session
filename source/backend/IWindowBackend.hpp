@@ -1,10 +1,20 @@
 #pragma once
 
 #include "Common.hpp"
+#include <cstdint>
+
+struct WindowProp {
+	uint32_t borderColor = 0xDF1238;
+	uint32_t borderWidth = 1;
+	uint32_t titlebarColor = 0xFF3258; 
+	uint32_t titlebarHeight = 20; 
+};
 
 class IWindowBackend {
 public:
 	virtual Rect getRect() = 0;
+
+	virtual WindowProp getProp() = 0;
 
 	virtual void raise() = 0;
 

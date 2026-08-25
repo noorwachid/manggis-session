@@ -33,6 +33,31 @@ public:
 	}
 
 	wx::List<MonitorInfo> getConnectedMonitorInfos() {
+		#ifdef USE_XEPHYR
+		wx::List<MonitorInfo> infos;
+
+		if (_xephyrPrimaryMonitor) {
+			MonitorInfo left;
+			left.port = "VHDMI-1";
+			left.rect.x = 0;
+			left.rect.y = 0;
+			left.rect.width = 500;
+			left.rect.height = 600;
+			infos.append(left);
+		}
+
+		if (_xephyrSecondaryMonitor) {
+			MonitorInfo right;
+			right.port = "VHDMI-2";
+			right.rect.x = 500;
+			right.rect.y = 0;
+			right.rect.width = 500;
+			right.rect.height = 600;
+			infos.append(right);
+		}
+
+		return infos;
+		#else
 		xcb_randr_get_screen_resources_current_cookie_t resCookie = xcb_randr_get_screen_resources_current(_conn->get(), _conn->getScreen()->root);
 		xcb_randr_get_screen_resources_current_reply_t* res = xcb_randr_get_screen_resources_current_reply(_conn->get(), resCookie, NULL);
 		if (!res) {
@@ -81,10 +106,16 @@ public:
 		}
 		free(res);
 		return infos;
+		#endif
 	}
 
 
 private:
 	X11Connection* _conn;
 	uint8_t _eventOffset;
+
+	#ifdef USE_XEPHYR
+	bool _xephyrPrimaryMonitor = true;
+	bool _xephyrSecondaryMonitor = true;
+	#endif
 };

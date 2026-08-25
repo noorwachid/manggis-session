@@ -12,9 +12,11 @@ set(SOURCES
 	source/system/Exec.cpp
 )
 
+add_definitions(-DUSE_XEPHYR)
 add_executable(manggis-session ${SOURCES})
 
 add_subdirectory(vendor/wxcore)
+add_subdirectory(vendor/wxserializer)
 
 target_include_directories(manggis-session
 	PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/source
@@ -22,6 +24,7 @@ target_include_directories(manggis-session
 
 target_link_libraries(manggis-session
 	wxcore
+	wxserializer
 	xcb
 
 	xcb-keysyms

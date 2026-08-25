@@ -1,2 +1,3 @@
 -I./source
 -I./vendor/wxcore/source
+-I./vendor/wxserializer/source

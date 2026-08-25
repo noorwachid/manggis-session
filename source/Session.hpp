@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Collider.hpp"
 #include "Event.hpp"
 #include "IObserver.hpp"
 #include "IContext.hpp"
@@ -7,10 +8,9 @@
 #include "input/MouseButton.hpp"
 #include "input/Key.hpp"
 #include "system/Exec.hpp"
+#include "wx/core/Assert.hpp"
 #include "wx/core/List.hpp"
 #include <cstdio>
-
-#define USE_XEPHYR
 
 enum struct DragMode {
 	None,
@@ -25,6 +25,8 @@ struct DragState {
 	Rect initialWindowRect;
 };
 
+class Monitor;
+
 class Workspace {
 public:
 	Workspace(wx::String const& id): _id{id} {
@@ -34,11 +36,20 @@ public:
 		return _id;
 	}
 
+	void setMonitor(Monitor* monitor) {
+		_monitor = monitor;
+	}
+
+	Monitor* getMonitor() {
+		return _monitor;
+	}
+
 	Window* getActiveWindow() {
 		return _activeWindow;
 	}
 
 	void activateWindow(Window* window) {
+		if (_activeWindow == window) return;
 		if (_activeWindow != nullptr) {
 			_activeWindow->deactivate();
 		}
@@ -47,6 +58,9 @@ public:
 	}
 
 	void addWindow(Window* window) {
+		// TODO: check if workspace already exists
+		window->setWorkspace(this);
+
 		_windows.append(window);
 		activateWindow(window);
 	}
@@ -66,18 +80,34 @@ public:
 	}
 
 	void activate() {
+		if (_activeWindow) _activeWindow->activate();
 		for (int i = 0; i < _windows.count(); i++) {
 			_windows[i]->show();
 		}
 	}
 
 	void deactivate() {
+		if (_activeWindow) _activeWindow->deactivate();
+	}
+
+	void show() {
+		for (int i = 0; i < _windows.count(); i++) {
+			_windows[i]->show();
+		}
+	}
+
+	void hide() {
 		for (int i = 0; i < _windows.count(); i++) {
 			_windows[i]->hide();
 		}
 	}
 
+	wx::List<Window*> const& getWindowList() const {
+		return _windows;
+	}
+
 private:
+	Monitor* _monitor;
 	Window* _activeWindow = nullptr;
 	wx::String _id;
 	wx::List<Window*> _windows;
@@ -91,6 +121,10 @@ public:
 
 	wx::String const& getPort() const {
 		return _info.port;
+	}
+
+	Rect getRect() const {
+		return _info.rect;
 	}
 
 	Rect getWorkingRect() const {
@@ -111,6 +145,7 @@ public:
 	}
 
 	void activateWorkspace(Workspace* workspace) {
+		if (_activeWorkspace == workspace) return;
 		if (_activeWorkspace != nullptr) {
 			_activeWorkspace->deactivate();
 		}
@@ -119,6 +154,9 @@ public:
 	}
 
 	void addWorkspace(Workspace* workspace) {
+		// TODO: check if monitor already exists
+		workspace->setMonitor(this);
+
 		_workspaces.append(workspace);
 		if (_activeWorkspace == nullptr) {
 			_activeWorkspace = workspace;
@@ -139,7 +177,19 @@ public:
 		}
 	}
 
+	wx::List<Workspace*> const& getWorkspaceList() const {
+		return _workspaces;
+	}
+
 	void calculateWorkingRect() {
+	}
+
+	void activate() {
+		_activeWorkspace->activate();
+	}
+
+	void deactivate() {
+		_activeWorkspace->deactivate();
 	}
 
 private:
@@ -168,76 +218,21 @@ public:
 		_context->bindKey(ModKey::Alt, Key::Num2);
 		_context->bindKey(ModKey::Alt, Key::Num3);
 		_context->bindKey(ModKey::Alt, Key::Num4);
+		_context->bindKey(ModKey::Alt, Key::A);
 
-		wx::List<MonitorInfo> monitorInfos = getConnectedMonitorInfos();
-
-		MonitorInfo fallbackInfo;
-		fallbackInfo.port = "<fallback>";
-		_fallbackMonitor = new Monitor(fallbackInfo);
-
-		if (monitorInfos.isEmpty()) {
-			_activeMonitor = _fallbackMonitor;
-		} else {
-			for (int i = 0; i < monitorInfos.count(); i++) {
-				MonitorInfo const& info = monitorInfos[i];
-				printf("monitor %s (%d, %d, %d, %d)\n", 
-					info.port.cptr(), 
-					info.rect.x, 
-					info.rect.y, 
-					info.rect.width, 
-					info.rect.height
-				);
-				Monitor* monitor = new Monitor(info);
-				if (_activeMonitor == nullptr) {
-					_activeMonitor = monitor;
-				}
-				_monitors.append(monitor);
-			}
-		}
-
-		Monitor* mon1 = queryMonitor("VHDMI-1");
-		if (mon1) {
-			mon1->addWorkspace(new Workspace("1"));
-			mon1->addWorkspace(new Workspace("2"));
-		}
-
-		Monitor* mon2 = queryMonitor("VHDMI-2");
-		if (mon2) {
-			mon2->addWorkspace(new Workspace("3"));
-			mon2->addWorkspace(new Workspace("4"));
-		}
+		_layoutMonitors();
 
 		_context->listen(this);
 	}
 
-	wx::List<MonitorInfo> getConnectedMonitorInfos() {
-		#ifdef USE_XEPHYR
-		wx::List<MonitorInfo> infos;
-
-		MonitorInfo left;
-		left.port = "VHDMI-1";
-		left.rect.x = 0;
-		left.rect.y = 0;
-		left.rect.width = 500;
-		left.rect.height = 600;
-		infos.append(left);
-
-		MonitorInfo right;
-		right.port = "VHDMI-2";
-		right.rect.x = 500;
-		right.rect.y = 0;
-		right.rect.width = 500;
-		right.rect.height = 600;
-		infos.append(right);
-
-		return infos;
-		#endif
-
-		return _context->getConnectedMonitorInfos();
-	}
-
 	virtual void onWindowCreate(WindowEvent const& e) override {
-		_activeMonitor->getActiveWorkspace()->addWindow(e.window);
+		Point mousePos = _context->getMousePos();
+		Monitor* mon = queryMonitorByPos(mousePos);
+		if (mon == nullptr) {
+			WX_ASSERT(mon == nullptr, "invalid monitor state\n");
+			return;
+		}
+		mon->getActiveWorkspace()->addWindow(e.window);
 	}
 
 	virtual void onWindowDestroy(WindowEvent const& e) override {
@@ -249,21 +244,27 @@ public:
 			return;
 		}
 
-		_dragState.window = e.window;
-
-		 // raise to top (if background wallpaper or desktop orginizer you dont have to move it forward)
-		_dragState.window->raise();
-		_activeMonitor->getActiveWorkspace()->activateWindow(e.window);
-
-		_dragState.initialWindowRect = _dragState.window->getRect();
-		_dragState.initialMousePos = _context->getMousePos();
+		activateWindow(e.window);
 
 		if (e.button == MouseButton::Left) {
 			if (e.modKey == (ModKey::Alt)) {
 				_dragState.mode = DragMode::Move;
-			}
-			if (e.modKey == (ModKey::Alt|ModKey::Shift)) {
+			} else if (e.modKey == (ModKey::Alt|ModKey::Shift)) {
 				_dragState.mode = DragMode::Resize;
+			} else {
+				// titlebar grabbing
+				Rect rect = e.window->getRect();
+				WindowProp prop = e.window->getProp();
+				if (e.pos.y < rect.y + prop.titlebarHeight) {
+					_dragState.mode = DragMode::Move;
+				}
+			}
+
+			if (_dragState.mode != DragMode::None) {
+				_dragState.window = e.window;
+
+				_dragState.initialWindowRect = _dragState.window->getRect();
+				_dragState.initialMousePos = _context->getMousePos();
 			}
 		}
 
@@ -297,19 +298,23 @@ public:
 			return;
 		}
 		if (e.modKey == ModKey::Alt && e.key == Key::Num1) {
-			activateWorkspace("1");
+			activateWorkspaceByID("1");
 			return;
 		}
 		if (e.modKey == ModKey::Alt && e.key == Key::Num2) {
-			activateWorkspace("2");
+			activateWorkspaceByID("2");
 			return;
 		}
 		if (e.modKey == ModKey::Alt && e.key == Key::Num3) {
-			activateWorkspace("3");
+			activateWorkspaceByID("3");
 			return;
 		}
 		if (e.modKey == ModKey::Alt && e.key == Key::Num4) {
-			activateWorkspace("4");
+			activateWorkspaceByID("4");
+			return;
+		}
+		if (e.modKey == ModKey::Alt && e.key == Key::A) {
+			_logLayout();
 			return;
 		}
 	}
@@ -319,27 +324,70 @@ public:
 
 	virtual void onMonitorConnect(MonitorEvent const& e) override {
 		printf("monitor connected %s\n", e.port.cptr());
+		_relayoutMonitors();
 	}
 
 	virtual void onMonitorDisconnect(MonitorEvent const& e) override {
 		printf("monitor disconnected %s\n", e.port.cptr());
+		_relayoutMonitors();
 	}
 
 	virtual void onMonitorPropertyChange(MonitorEvent const& e) override {
 		printf("monitor property changed %s\n", e.port.cptr());
+		_relayoutMonitors();
 	}
 
-	void activateWorkspace(wx::String const& id) {
-		Workspace* workspace = _activeMonitor->queryWorkspace(id);
-		if (workspace == nullptr) {
-			printf("no workspace with id %s\n", id.cptr());
+	void activateMonitor(Monitor* monitor) {
+		if (_activeMonitor == monitor) return;
+		if (_activeMonitor != nullptr) {
+			_activeMonitor->deactivate();
+		}
+		_activeMonitor = monitor;
+		_activeMonitor->activate();
+	}
+
+	void activateWorkspaceByID(wx::String const& id) {
+		Monitor* previousMonitor = _activeMonitor;
+		for (int i = 0; i < _monitors.count(); i++) {
+			Monitor* mon = _monitors[i];
+			Workspace* ws = mon->queryWorkspace(id);
+			if (ws == nullptr) {
+				continue;
+			}
+			printf("activate workspace %s\n", id.cptr());
+			if (previousMonitor == mon) {
+				mon->getActiveWorkspace()->hide();
+			}
+			activateMonitor(mon);
+			mon->activateWorkspace(ws);
 			return;
 		}
-		printf("activate workspace %s\n", id.cptr());
-		_activeMonitor->activateWorkspace(workspace);
+		printf("no workspace with id %s\n", id.cptr());
 	}
 
-	Monitor* queryMonitor(wx::String const& port) {
+	void activateWorkspace(Workspace* workspace) {
+		Monitor* previousMonitor = _activeMonitor;
+		Monitor* mon = workspace->getMonitor();
+		if (previousMonitor == mon) {
+			if (previousMonitor->getActiveWorkspace() != workspace) {
+				mon->getActiveWorkspace()->hide();
+			}
+		}
+		activateMonitor(mon);
+		mon->activateWorkspace(workspace);
+		printf("activate workspace %s\n", workspace->getID().cptr());
+	}
+
+	void activateWindow(Window* window) {
+		// raise to top (if background wallpaper or desktop orginizer you dont have to move it forward)
+		window->raise();
+		
+		Workspace* ws = window->getWorkspace();
+		activateWorkspace(ws);
+		ws->activateWindow(window);
+	}
+
+	Monitor* queryMonitorByPort(wx::String const& port) {
 		for (int i = 0; i < _monitors.count(); i++) {
 			if (_monitors[i]->getPort() == port) {
 				return _monitors[i];
@@ -347,6 +395,89 @@ public:
 		}
 		return nullptr;
 	}
+
+	Monitor* queryMonitorByPos(Point pos) {
+		for (int i = 0; i < _monitors.count(); i++) {
+			if (isPointIntersectRect(pos, _monitors[i]->getRect())) {
+				return _monitors[i];
+			}
+		}
+		return nullptr;
+	}
+
+private:
+	void _layoutMonitors() {
+		wx::List<MonitorInfo> monitorInfos = _context->getConnectedMonitorInfos();
+
+		MonitorInfo fallbackInfo;
+		fallbackInfo.port = "<fallback>";
+		_fallbackMonitor = new Monitor(fallbackInfo);
+
+		if (monitorInfos.isEmpty()) {
+			_activeMonitor = _fallbackMonitor;
+		} else {
+			for (int i = 0; i < monitorInfos.count(); i++) {
+				MonitorInfo const& info = monitorInfos[i];
+				printf("monitor %s (%d, %d, %d, %d)\n", 
+					info.port.cptr(), 
+					info.rect.x, 
+					info.rect.y, 
+					info.rect.width, 
+					info.rect.height
+				);
+				Monitor* monitor = new Monitor(info);
+				if (_activeMonitor == nullptr) {
+					_activeMonitor = monitor;
+				}
+				_monitors.append(monitor);
+			}
+		}
+
+		Monitor* mon1 = queryMonitorByPort("VHDMI-1");
+		if (mon1) {
+			mon1->addWorkspace(new Workspace("1"));
+			mon1->addWorkspace(new Workspace("2"));
+		}
+
+		Monitor* mon2 = queryMonitorByPort("VHDMI-2");
+		if (mon2) {
+			mon2->addWorkspace(new Workspace("3"));
+			mon2->addWorkspace(new Workspace("4"));
+		}
+	}
+
+	void _logLayout() {
+		printf("\033[2J\033[H");
+		for (int i = 0; i < _monitors.count(); i++) {
+			Monitor* mon = _monitors[i];
+			printf("mon %s:", mon->getPort().cptr());
+			if (mon == _activeMonitor) {
+				printf(" # active");
+			}
+			printf("\n");
+			for (int j = 0; j < mon->getWorkspaceList().count(); j++) {
+				Workspace* ws = mon->getWorkspaceList()[j];
+				printf("  ws %s:", ws->getID().cptr());
+				if (ws == mon->getActiveWorkspace()) {
+					printf(" # active");
+				}
+				printf("\n");
+
+				for (int k = 0; k < ws->getWindowList().count(); k++) {
+					Window* win = ws->getWindowList()[k];
+					printf("    win %p:", win);
+					if (win == ws->getActiveWindow()) {
+						printf(" # active");
+					}
+					printf("\n");
+				}
+			}
+		}
+	}
+
+	void _relayoutMonitors() {
+	}
+
 private:
 	IContext* _context;
 	Monitor* _activeMonitor = nullptr;
