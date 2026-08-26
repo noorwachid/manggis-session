@@ -176,6 +176,32 @@ Config parseConfig(wx::WkValue const& value) {
 			}
 
 			{
+				wx::WkValue* tileWindow = tup.getOrNull("tileWindow");
+				if (tileWindow) {
+					if (!tileWindow->isList()) {
+						LOG("[config] invalid tileWindow command argument, expect list");
+						return;
+					}
+					if (tileWindow->asList().count() != 4) {
+						LOG("[config] invalid tileWindow command argument, expect list with 4 items");
+						return;
+					}
+					for (int i = 0; i < tileWindow->asList().count(); i++) {
+						if (!tileWindow->asList()[i].isFloat64()) {
+							LOG("[ManggisSession.Config] invalid tileWindow command argument, expect list of float\n");
+							return;
+						}
+					}
+					ConfigCommand command;
+					command.func = ConfigCommandFunc::TileWindow;
+					command.arguments = *tileWindow;
+
+					binding.commands.append(command);
+					return;
+				}
+			}
+
+			{
 				wx::WkValue* focusWorkspace = tup.getOrNull("focusWorkspace");
 				if (focusWorkspace) {
 					if (!focusWorkspace->isString()) {

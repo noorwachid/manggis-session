@@ -8,7 +8,7 @@ vmon:
 	Xephyr -screen 1200x600 -reset -terminate -ac :1
 
 configure:
-	mkdir /tmp/manggis-build && cmake -B /tmp/manggis-build -DCMAKE_BUILD_TYPE=Release 
+	mkdir -p /tmp/manggis-build && cmake -B /tmp/manggis-build -DCMAKE_BUILD_TYPE=Release 
 
 build: configure
 	cmake --build /tmp/manggis-build

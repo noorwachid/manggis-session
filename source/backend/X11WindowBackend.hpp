@@ -212,6 +212,9 @@ private:
 		xcb_configure_window(_conn->get(), _client, XCB_CONFIG_WINDOW_BORDER_WIDTH, &clientBorderWidth);
 		xcb_reparent_window(_conn->get(), _client, _frame, 0, _prop.titlebarHeight);
 		xcb_map_window(_conn->get(), _client);
+
+		_hint->setWindowFrame(_client, _prop.borderWidth, _prop.borderWidth + _prop.titlebarHeight, _prop.borderWidth, _prop.borderWidth);
+
 		_conn->flush();
 	}
 

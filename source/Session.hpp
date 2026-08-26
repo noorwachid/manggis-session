@@ -327,6 +327,10 @@ public:
 		if (previousMonitor == monitor) {
 			window->hide();
 		} else {
+			if (workspace->getMonitor()->getActiveWorkspace() != workspace) {
+				window->hide();
+			}
+
 			Rect windowRect = window->getRect();
 			Rect previousRect = previousMonitor->getRect();
 			Rect nextRect = monitor->getRect();
@@ -402,6 +406,21 @@ private:
 		}
 		if (command.func == ConfigCommandFunc::CloseWindow) {
 			closeWindow();
+			return;
+		}
+		if (command.func == ConfigCommandFunc::TileWindow) {
+			Window* window = _activeMonitor->getActiveWorkspace()->getActiveWindow();
+			if (window == nullptr) return;
+			Rect rect = _activeMonitor->getWorkingRect();
+			wx::List<wx::WkValue> const& args = command.arguments.asList();
+			window->move(
+				rect.x + (rect.width * args[0].asFloat64()), 
+				rect.y + (rect.width * args[1].asFloat64())
+			);
+			window->resize(
+				(rect.width * args[2].asFloat64()), 
+				(rect.width * args[3].asFloat64())
+			);
 			return;
 		}
 		if (command.func == ConfigCommandFunc::FocusWorkspace) {
