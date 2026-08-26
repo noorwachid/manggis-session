@@ -1,8 +1,8 @@
 #pragma once
 
+#include "Logger.hpp"
 #include "backend/X11Connection.hpp"
 #include "backend/X11WindowBackend.hpp"
-#include <cstdio>
 #include <xcb/shape.h>
 #include <xcb/xproto.h>
 
@@ -14,7 +14,7 @@ public:
 	void initialize() {
 		const xcb_query_extension_reply_t *ext = xcb_get_extension_data(_conn->get(), &xcb_shape_id);
 		if (!ext || !ext->present) {
-			printf("[X11Clipper] shape extension not available\n");
+			LOG("[X11Clipper] shape extension not available\n");
 			return;
 		}
 	}

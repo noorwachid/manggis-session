@@ -25,6 +25,7 @@ void Workspace::focusWindow(Window* window) {
 	if (_activeWindow != nullptr) {
 		_activeWindow->blur();
 	}
+	window->raise();
 	window->focus();
 	_activeWindow = window;
 }

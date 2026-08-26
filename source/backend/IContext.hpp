@@ -36,7 +36,9 @@ public:
 
 	virtual Margin getDockExtend(Window* window) = 0;
 
-	virtual void listen(IObserver* observer) = 0;
+	virtual void run(IObserver* observer) = 0;
+
+	virtual void stop() = 0;
 
 	virtual ~IContext() {
 	}

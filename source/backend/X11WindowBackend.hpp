@@ -24,7 +24,7 @@ namespace windowstyle {
 class X11WindowBackend: public IWindowBackend {
 public:
 	X11WindowBackend(X11Connection* conn, X11Hint* hint, xcb_window_t handle): _conn{conn}, _hint{hint}, _client{handle} {
-		_reframe();
+		_reparent();
 	}
 
 	virtual Rect getRect() override {
@@ -84,6 +84,7 @@ public:
 
 	virtual void show() override {
 		xcb_map_window(_conn->get(), _frame);
+		xcb_map_window(_conn->get(), _client);
 		_conn->flush();
 	}
 
@@ -161,7 +162,7 @@ public:
 	}
 
 private:
-	void _reframe() {
+	void _reparent() {
 		_frame = xcb_generate_id(_conn->get());
 		
 		if (_hint->isWindowDecorated(_client)) {

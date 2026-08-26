@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Logger.hpp"
 #include "backend/X11Connection.hpp"
 #include "input/Key.hpp"
 #include "wx/core/String.hpp"
@@ -34,23 +35,23 @@ public:
 				XKB_X11_MIN_MINOR_XKB_VERSION,
 				XKB_X11_SETUP_XKB_EXTENSION_NO_FLAGS,
 				NULL, NULL, &_keyboardEventOffset, NULL)) {
-			printf("ERROR: XKB extension not available\n");
+			LOG("ERROR: XKB extension not available\n");
 		}
 
 		_keyboard = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
 		if (!_keyboard) {
-			printf("ERROR: failed to create xkb context\n");
+			LOG("ERROR: failed to create xkb context\n");
 		}
 
 		_keyboardDeviceId = xkb_x11_get_core_keyboard_device_id(_conn->get());
 		if (_keyboardDeviceId == -1) {
-			printf("ERROR: failed to get core keyboard device\n");
+			LOG("ERROR: failed to get core keyboard device\n");
 		}
 
 		_keymap = xkb_x11_keymap_new_from_device(_keyboard, _conn->get(), _keyboardDeviceId, XKB_KEYMAP_COMPILE_NO_FLAGS);
 
 		const char *layout = xkb_keymap_layout_get_name(_keymap, 0);
-		printf("initial keyboard layout is %s\n", layout);
+		LOG("initial keyboard layout is %s\n", layout);
 
 		enum {
 			required_events =
@@ -90,7 +91,7 @@ public:
 
 		xcb_generic_error_t* error = xcb_request_check(_conn->get(), cookie);
 		if (error) {
-			printf("ERROR: listening keyboard notification\n");
+			LOG("ERROR: listening keyboard notification\n");
 			return;
 		}
 	}

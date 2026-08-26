@@ -1,9 +1,9 @@
-#include "config/ConfigParser.hpp"
 #include "Direction.hpp"
+#include "Logger.hpp"
 #include "config/Config.hpp"
+#include "config/ConfigParser.hpp"
 #include "input/Key.hpp"
 #include "wx/serializer/WkValue.hpp"
-#include <cstdio>
 
 Config parseConfig(wx::WkValue const& value) {
 	struct Parser {
@@ -72,21 +72,21 @@ Config parseConfig(wx::WkValue const& value) {
 			if (key && key->isString()) {
 				wx::List<wx::Span<wx::Byte>> spans = splitKey(key->asString(), '+');
 				if (spans.count() == 1 || spans.count() == 0) {
-					printf("[ManggisSession.Config] invalid key combination: %s\n", key->asString().cptr());
+					LOG("[ManggisSession.Config] invalid key combination: %s\n", key->asString().cptr());
 					return;
 				}
 				ModKey modKey = ModKey::None;
 				for (int i = 0; i < spans.count() - 1; i++) {
 					ModKey mk = stringToModKey(wx::String(spans[i].count(), spans[i].ptr()));
 					if (mk == ModKey::None) {
-						printf("[ManggisSession.Config] invalid mod-key: %s\n", key->asString().cptr());
+						LOG("[ManggisSession.Config] invalid mod-key: %s\n", key->asString().cptr());
 						return;
 					}
 					modKey |= mk;
 				}
 				Key k = stringToKey(wx::String(spans.getLast().count(), spans.getLast().ptr()));
 				if (k == Key::None) {
-					printf("[ManggisSession.Config] invalid key: %s\n", key->asString().cptr());
+					LOG("[ManggisSession.Config] invalid key: %s\n", key->asString().cptr());
 					return;
 				}
 
@@ -108,12 +108,12 @@ Config parseConfig(wx::WkValue const& value) {
 				wx::WkValue* exec = tup.getOrNull("exec");
 				if (exec) {
 					if (!exec->isList()) {
-						printf("[ManggisSession.Config] invalid exec command argument, expect list\n");
+						LOG("[ManggisSession.Config] invalid exec command argument, expect list\n");
 						return;
 					}
 					for (int i = 0; i < exec->asList().count(); i++) {
 						if (!exec->asList()[i].isString()) {
-							printf("[ManggisSession.Config] invalid exec command argument, expect list of string\n");
+							LOG("[ManggisSession.Config] invalid exec command argument, expect list of string\n");
 							return;
 						}
 					}
@@ -131,7 +131,7 @@ Config parseConfig(wx::WkValue const& value) {
 				wx::WkValue* closeWindow = tup.getOrNull("closeWindow");
 				if (closeWindow) {
 					if (!closeWindow->isNull()) {
-						printf("[ManggisSession.Config] invalid closeWindow command argument, expect null\n");
+						LOG("[ManggisSession.Config] invalid closeWindow command argument, expect null\n");
 						return;
 					}
 
@@ -147,7 +147,7 @@ Config parseConfig(wx::WkValue const& value) {
 				wx::WkValue* focusWindow = tup.getOrNull("focusWindow");
 				if (focusWindow) {
 					if (!focusWindow->isString()) {
-						printf("[ManggisSession.Config] invalid focusWindow command argument, expect string\n");
+						LOG("[ManggisSession.Config] invalid focusWindow command argument, expect string\n");
 						return;
 					}
 
@@ -162,7 +162,7 @@ Config parseConfig(wx::WkValue const& value) {
 					} else if (focusWindow->asString() == "south") {
 						direction = wx::WkValue::createInt64((int) Direction::South);
 					} else {
-						printf("[ManggisSession.Config] invalid focusWindow command argument, expect 'west', 'east', 'north', 'south' \n");
+						LOG("[ManggisSession.Config] invalid focusWindow command argument, expect 'west', 'east', 'north', 'south' \n");
 						return;
 					}
 
@@ -179,7 +179,7 @@ Config parseConfig(wx::WkValue const& value) {
 				wx::WkValue* focusWorkspace = tup.getOrNull("focusWorkspace");
 				if (focusWorkspace) {
 					if (!focusWorkspace->isString()) {
-						printf("[ManggisSession.Config] invalid focusWorkspace command argument, expect string\n");
+						LOG("[ManggisSession.Config] invalid focusWorkspace command argument, expect string\n");
 						return;
 					}
 
@@ -196,13 +196,29 @@ Config parseConfig(wx::WkValue const& value) {
 				wx::WkValue* sendWindowToWorkspace = tup.getOrNull("sendWindowToWorkspace");
 				if (sendWindowToWorkspace) {
 					if (!sendWindowToWorkspace->isString()) {
-						printf("[ManggisSession.Config] invalid sendWindowToWorkspace command argument, expect string\n");
+						LOG("[config] invalid sendWindowToWorkspace command argument, expect string\n");
 						return;
 					}
 
 					ConfigCommand command;
 					command.func = ConfigCommandFunc::SendWindowToWorkspace;
 					command.arguments = *sendWindowToWorkspace;
+
+					binding.commands.append(command);
+					return;
+				}
+			}
+
+			{
+				wx::WkValue* quit = tup.getOrNull("quit");
+				if (quit) {
+					if (!quit->isNull()) {
+						LOG("[config] invalid quit command argument, expect null\n");
+						return;
+					}
+
+					ConfigCommand command;
+					command.func = ConfigCommandFunc::Quit;
 
 					binding.commands.append(command);
 					return;

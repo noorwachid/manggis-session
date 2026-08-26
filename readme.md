@@ -7,7 +7,7 @@
     - [ ] drag across monitor
   - [ ] size constrain
   - [ ] no decoration
-  - [ ] no interaction (splash screen, notification, statusbar, dock, etc.)
+  - [ ] unmanaged (splash screen, notification, etc.)
   - [ ] padding calculation, (statusbar, dock, etc.)
 - [ ] workspace management
   - [ ] clip window per monitor, detect the most window area to drop

@@ -4,6 +4,7 @@
 #include "IObserver.hpp"
 #include "MonitorInfo.hpp"
 #include "Window.hpp"
+#include "Logger.hpp"
 #include "backend/IContext.hpp"
 #include "backend/X11Clipper.hpp"
 #include "backend/X11Connection.hpp"
@@ -18,7 +19,6 @@
 #include "wx/core/List.hpp"
 #include "wx/core/HashTable.hpp"
 #include "wx/core/String.hpp"
-#include <cstdio>
 #include <cstdlib>
 #include <xcb/randr.h>
 #include <xcb/xproto.h>
@@ -147,11 +147,11 @@ public:
 		return _hint->getWindowDockExtend(((X11WindowBackend*)window->getBackend())->getClientHandle());
 	}
 
-	virtual void listen(IObserver* observer) override {
+	virtual void run(IObserver* observer) override {
 		_attachKeyBindings();
 		_updateMonitors(observer);
 
-		while (true) {
+		while (_running) {
 			xcb_generic_event_t* ev = xcb_wait_for_event(_conn->get());
 			int type = ev->response_type & ~0x80;
 			switch (type) {
@@ -161,6 +161,7 @@ public:
 
 				case XCB_MAP_REQUEST: {
 					xcb_map_request_event_t* e = (xcb_map_request_event_t*) ev;
+					LOG("map request %08X\n", e->window);
 
 					Window* window = _getWindowByClient(e->window);
 					if (window == nullptr) {
@@ -173,7 +174,11 @@ public:
 						_frameWindowMap.set(backend->getFrameHandle(), window);
 
 						observer->onWindowCreate(event);
+					} else {
+						window->show();
 					}
+					window->raise();
+					window->focus();
 					break;
 				}
 
@@ -279,7 +284,7 @@ public:
 				}
 
 				case XCB_BUTTON_PRESS: {
-					printf("mouse press\n");
+					LOG("mouse press\n");
 
 					xcb_button_press_event_t* e = (xcb_button_press_event_t *) ev;
 					MouseButtonEvent event;
@@ -297,7 +302,7 @@ public:
 				}
 
 				case XCB_BUTTON_RELEASE: {
-					printf("mouse release\n");
+					LOG("mouse release\n");
 
 					xcb_button_release_event_t* e = (xcb_button_release_event_t *) ev;
 					MouseButtonEvent event;
@@ -389,6 +394,10 @@ public:
 		}
 	}
 
+	virtual void stop() override {
+		_running = false;
+	}
+
 private:
 	Window* _getWindowByFrame(xcb_window_t handle) {
 		if (handle == XCB_NONE) return nullptr;
@@ -455,7 +464,7 @@ private:
 			binding.keyCode = _keyboardManager->queryKeyCode(binding.key);
 			binding.modKeyCode = _fromModKey(binding.modKey);
 			if (binding.keyCode == 0) {
-				printf("ERROR: key %d is invalid\n", (int)binding.key);
+				LOG("ERROR: key %d is invalid\n", (int)binding.key);
 				continue;
 			}
 
@@ -497,7 +506,7 @@ private:
 		_detachKeyBindings();
 		_attachKeyBindings();
 
-		printf("changing keyboard layout to %s\n", layout.cptr());
+		LOG("changing keyboard layout to %s\n", layout.cptr());
 		_activeKeyboardLayout = layout;
 	}
 
@@ -580,4 +589,5 @@ private:
 
 	X11SessionObserver* _sessionObserver;
 
+	bool _running = true;
 };

@@ -11,12 +11,21 @@ set(SOURCES
 	source/Monitor.cpp
 	source/Workspace.cpp
 	source/Window.cpp
+	source/Logger.cpp
 	source/backend/X11Context.cpp
 	source/backend/X11MonitorManager.cpp
 	source/backend/X11Hint.cpp
 	source/system/Exec.cpp
 	source/config/ConfigParser.cpp
 )
+
+option(USE_XEPHYR "Enable Xephyr sanboxing" OFF)
+
+if(USE_XEPHYR)
+	add_definitions(-DUSE_XEPHYR)
+	add_definitions(-DXEPHYR_WIDTH=1200)
+	add_definitions(-DXEPHYR_HEIGHT=600)
+endif()
 
 add_executable(manggis-session ${SOURCES})
 

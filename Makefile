@@ -1,14 +1,14 @@
 test:
-	make vmon & sleep 1 && make run
+	make vmon & sleep 1 && make run & tail -f /tmp/manggis-session.log
 
 run:
 	env DISPLAY=:1 ./build/manggis-session
 
 vmon:
-	Xephyr -screen 1000x600 -reset -terminate -ac :1
+	Xephyr -screen 1200x600 -reset -terminate -ac :1
 
 configure:
-	mkdir /tmp/manggis-build && cmake -B /tmp/manggis-build -DCMAKE_BUILD_TYPE=Release
+	mkdir /tmp/manggis-build && cmake -B /tmp/manggis-build -DCMAKE_BUILD_TYPE=Release 
 
 build: configure
 	cmake --build /tmp/manggis-build

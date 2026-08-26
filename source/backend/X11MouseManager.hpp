@@ -1,9 +1,9 @@
 #pragma once
 
+#include "Logger.hpp"
 #include "backend/X11Connection.hpp"
 #include "input/MouseCursor.hpp"
 #include <xcb/xcb_cursor.h>
-#include <cstdio>
 
 class X11MouseManager {
 public:
@@ -12,7 +12,7 @@ public:
 
 	void initialize() {
 		if (xcb_cursor_context_new(_conn->get(), _conn->getScreen(), &_cursor) < 0) {
-			printf("ERROR: failed to create cursor context\n");
+			LOG("ERROR: failed to create cursor context\n");
 			return;
 		}
 		setCursor(MouseCursor::Arrow);

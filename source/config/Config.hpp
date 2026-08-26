@@ -22,6 +22,8 @@ enum struct ConfigCommandFunc {
 
 	FocusWorkspace,
 	SendWindowToWorkspace,
+
+	Quit,
 };
 
 struct ConfigCommand {

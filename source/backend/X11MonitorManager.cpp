@@ -48,21 +48,21 @@ wx::List<MonitorInfo> X11MonitorManager::getConnectedMonitorInfos() {
 
 	if (left) {
 		MonitorInfo left;
-		left.port = "VHDMI-1";
+		left.port = "HDMI-1";
 		left.rect.x = 0;
 		left.rect.y = 0;
-		left.rect.width = 1000;
-		left.rect.height = 600;
+		left.rect.width = XEPHYR_WIDTH / 2;
+		left.rect.height = XEPHYR_HEIGHT;
 		infos.append(left);
 	}
 
 	if (right) {
 		MonitorInfo right;
-		right.port = "VHDMI-2";
-		right.rect.x = 500;
+		right.port = "HDMI-2";
+		right.rect.x = XEPHYR_WIDTH / 2;
 		right.rect.y = 0;
-		right.rect.width = 500;
-		right.rect.height = 600;
+		right.rect.width = XEPHYR_WIDTH / 2;
+		right.rect.height = XEPHYR_HEIGHT;
 		infos.append(right);
 	}
 

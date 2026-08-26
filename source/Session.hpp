@@ -8,6 +8,7 @@
 #include "Monitor.hpp"
 #include "Workspace.hpp"
 #include "Window.hpp"
+#include "Logger.hpp"
 #include "config/Config.hpp"
 #include "input/MouseButton.hpp"
 #include "input/Key.hpp"
@@ -18,7 +19,6 @@
 #include "wx/core/Hash.hpp"
 #include "wx/core/List.hpp"
 #include "wx/core/Func.hpp"
-#include <cstdio>
 
 enum struct DragMode {
 	None,
@@ -86,7 +86,7 @@ public:
 
 		_relayoutMonitors();
 
-		_context->listen(this);
+		_context->run(this);
 	}
 
 	ConfigBinding const* queryBinding(ModKey modKey, Key key) {
@@ -181,7 +181,7 @@ public:
 			}
 
 			if (bestMonitor == nullptr) {
-				printf("invalid drag\n");
+				LOG("invalid drag\n");
 				return;
 			}
 
@@ -213,7 +213,7 @@ public:
 		index.modKey = e.modKey;
 		index.key = e.key;
 		KeyCallback* callback = _keyBindings.getOrNull(index);
-		printf("GOT %p\n", callback);
+		LOG("GOT %p\n", callback);
 		if (callback != nullptr) {
 			(*callback)();
 			return;
@@ -244,17 +244,17 @@ public:
 	}
 
 	virtual void onMonitorConnect(MonitorEvent const& e) override {
-		printf("monitor connected %s\n", e.port.cptr());
+		LOG("monitor connected %s\n", e.port.cptr());
 		_relayoutMonitors();
 	}
 
 	virtual void onMonitorDisconnect(MonitorEvent const& e) override {
-		printf("monitor disconnected %s\n", e.port.cptr());
+		LOG("monitor disconnected %s\n", e.port.cptr());
 		_relayoutMonitors();
 	}
 
 	virtual void onMonitorPropertyChange(MonitorEvent const& e) override {
-		printf("monitor property changed %s\n", e.port.cptr());
+		LOG("monitor property changed %s\n", e.port.cptr());
 		_relayoutMonitors();
 	}
 
@@ -275,17 +275,17 @@ public:
 			if (ws == nullptr) {
 				continue;
 			}
-			printf("activate workspace %s\n", id.cptr());
+			LOG("activate workspace %s\n", id.cptr());
 			if (previousMonitor == mon) {
 				mon->getActiveWorkspace()->hide();
 			}
 			focusMonitor(mon);
 			mon->activateWorkspace(ws);
-			_observer->onWorkspaceActivate(ws);
+			_observer->onWorkspaceFocus(ws);
 			mon->getActiveWorkspace()->show();
 			return;
 		}
-		printf("no workspace with id %s\n", id.cptr());
+		LOG("no workspace with id %s\n", id.cptr());
 	}
 
 	void focusWorkspace(Workspace* workspace) {
@@ -298,8 +298,8 @@ public:
 		}
 		focusMonitor(mon);
 		mon->activateWorkspace(workspace);
-		_observer->onWorkspaceActivate(workspace);
-		printf("activate workspace %s\n", workspace->getID().cptr());
+		_observer->onWorkspaceFocus(workspace);
+		LOG("activate workspace %s\n", workspace->getID().cptr());
 	}
 
 	void sendWorkspaceToMonitor(Workspace* workspace, Monitor* monitor) {
@@ -356,7 +356,7 @@ public:
 			sendWindowToWorkspace(window, ws);
 			return;
 		}
-		printf("no workspace with id %s\n", id.cptr());
+		LOG("no workspace with id %s\n", id.cptr());
 	}
 
 	void focusWindow(Window* window) {
@@ -366,6 +366,7 @@ public:
 		Workspace* ws = window->getWorkspace();
 		focusWorkspace(ws);
 		ws->focusWindow(window);
+		_observer->onWindowFocus(window);
 	}
 
 	void focusNearestWindow(Direction direction) {
@@ -409,6 +410,10 @@ private:
 		}
 		if (command.func == ConfigCommandFunc::SendWindowToWorkspace) {
 			sendWindowToWorkspaceID(command.arguments.asString());
+			return;
+		}
+		if (command.func == ConfigCommandFunc::Quit) {
+			_context->stop();
 			return;
 		}
 	}
@@ -509,29 +514,29 @@ private:
 	}
 
 	void _logLayout() {
-		printf("layout:\n");
+		LOG("layout:\n");
 		for (int i = 0; i < _monitors.count(); i++) {
 			Monitor* mon = _monitors[i];
-			printf("  mon %s:", mon->getPort().cptr());
+			LOG("  mon %s:", mon->getPort().cptr());
 			if (mon == _activeMonitor) {
-				printf(" # active");
+				LOG(" # active");
 			}
-			printf("\n");
+			LOG("\n");
 			for (int j = 0; j < mon->getWorkspaceList().count(); j++) {
 				Workspace* ws = mon->getWorkspaceList()[j];
-				printf("    ws %s: (mon: %s)", ws->getID().cptr(), ws->getMonitor()->getPort().cptr());
+				LOG("    ws %s: (mon: %s)", ws->getID().cptr(), ws->getMonitor()->getPort().cptr());
 				if (ws == mon->getActiveWorkspace()) {
-					printf(" # active");
+					LOG(" # active");
 				}
-				printf("\n");
+				LOG("\n");
 
 				for (int k = 0; k < ws->getWindowList().count(); k++) {
 					Window* win = ws->getWindowList()[k];
-					printf("      win %p: (ws: %s, mon: %s)", win, win->getWorkspace()->getID().cptr(), win->getMonitor()->getPort().cptr());
+					LOG("      win %p: (ws: %s, mon: %s)", win, win->getWorkspace()->getID().cptr(), win->getMonitor()->getPort().cptr());
 					if (win == ws->getActiveWindow()) {
-						printf(" # active");
+						LOG(" # active");
 					}
-					printf("\n");
+					LOG("\n");
 				}
 			}
 		}
@@ -569,7 +574,7 @@ private:
 		Rect intersectRect = intersectRectRect(workingRect, windowRect);
 
 		if (intersectRect.width == 0 || intersectRect.height == 0) {
-			printf("invalid intersection\n");
+			LOG("invalid intersection\n");
 			return;
 		}
 

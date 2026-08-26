@@ -1,3 +1,4 @@
+#include "Logger.hpp"
 #include "Session.hpp"
 #include "config/Config.hpp"
 #include "config/ConfigParser.hpp"
@@ -28,6 +29,10 @@ wx::String readFile(wx::String const& path) {
 
 
 int main(int argc, char **argv) {
+	Logger::init();
+
+	LOG("hello world\n");
+
 	Config config;
 
 	char* home = getenv("HOME");
@@ -41,6 +46,8 @@ int main(int argc, char **argv) {
 
 	Session session;
 	session.run(config);
+
+	Logger::shutdown();
 
 	return 0;
 }
