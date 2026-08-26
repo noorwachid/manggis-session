@@ -1,8 +1,9 @@
 #include "Monitor.hpp"
 #include "Workspace.hpp"
 #include "Window.hpp"
+#include <cstdio>
 
-Monitor::Monitor(MonitorInfo info): _info{info} {
+Monitor::Monitor(IContext* context, MonitorInfo info): _context{context}, _info{info} {
 	_workingRect = info.rect;
 }
 
@@ -77,6 +78,37 @@ wx::List<Workspace*> const& Monitor::getWorkspaceList() const {
 }
 
 void Monitor::calculateWorkingRect() {
+	Margin margin;
+
+	Rect monitorRect = getRect();
+
+	for (int i = 0; i < _dockWindows.count(); i++) {
+		Window* window = _dockWindows[i];
+		Margin windowExtend = _context->getDockExtend(window);
+		if (margin.top < windowExtend.top) {
+			margin.top = windowExtend.top;
+		}
+		if (margin.bottom < windowExtend.bottom) {
+			margin.bottom = windowExtend.bottom;
+		}
+		if (margin.left < windowExtend.left) {
+			margin.left = windowExtend.left;
+		}
+		if (margin.right < windowExtend.right) {
+			margin.right = windowExtend.right;
+		}
+	}
+
+	_workingRect.x = monitorRect.x + margin.left;
+	_workingRect.y = monitorRect.y + margin.top;
+	_workingRect.width = monitorRect.width - (margin.left + margin.right);
+	_workingRect.height = monitorRect.height - (margin.top + margin.bottom);
+
+	printf("monitor: (%d,%d,%d,%d) working: (%d,%d,%d,%d)\n",
+		monitorRect.x, monitorRect.y, monitorRect.width, monitorRect.height,
+		_workingRect.x, _workingRect.y, _workingRect.width, _workingRect.height
+	);
+
 }
 
 void Monitor::focus() {
@@ -105,6 +137,7 @@ void Monitor::addWindow(Window* window) {
 
 	} else if (type == WindowType::Dock) {
 		_dockWindows.append(window);
+		calculateWorkingRect();
 	} else {
 		_unmanagedWindows.append(window);
 	}

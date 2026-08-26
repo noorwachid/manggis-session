@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Collider.hpp"
+#include "Direction.hpp"
 #include "Event.hpp"
 #include "IObserver.hpp"
 #include "MonitorInfo.hpp"
@@ -12,8 +13,11 @@
 #include "input/Key.hpp"
 #include "system/Exec.hpp"
 #include "backend/IContext.hpp"
+#include "backend/ISessionObserver.hpp"
 #include "wx/core/Assert.hpp"
+#include "wx/core/Hash.hpp"
 #include "wx/core/List.hpp"
+#include "wx/core/Func.hpp"
 #include <cstdio>
 
 enum struct DragMode {
@@ -29,6 +33,21 @@ struct DragState {
 	Rect initialWindowRect;
 };
 
+struct KeyIndex {
+	ModKey modKey;
+	Key key;
+};
+
+using KeyCallback = wx::Func<void()>;
+
+bool operator==(KeyIndex a, KeyIndex b) {
+	return a.modKey == b.modKey && a.key == b.key;
+}
+
+wx::Uint32 getHash(KeyIndex index) {
+	return wx::combineHash(wx::getHash((int)index.modKey), wx::getHash((int)index.key));
+}
+
 class Monitor;
 
 #ifdef USE_XEPHYR
@@ -38,49 +57,46 @@ extern int xephyrMonitorConfiguration;
 
 class Session: public IObserver {
 public:
-	void run() {
+	void run(Config const& config) {
+		_config = config;
+
 		_context = createContext();
+		_observer = _context->getSessionObserver();
 
 		_context->bindMouseButton(ModKey::Alt, MouseButton::Left);
 		_context->bindMouseButton(ModKey::Alt|ModKey::Shift, MouseButton::Left);
 
-		_context->bindKey(ModKey::Alt, Key::Return);
-		_context->bindKey(ModKey::Alt, Key::Backspace);
-		_context->bindKey(ModKey::Alt, Key::Num1);
-		_context->bindKey(ModKey::Alt, Key::Num2);
-		_context->bindKey(ModKey::Alt, Key::Num3);
-		_context->bindKey(ModKey::Alt, Key::Num4);
-
-		_context->bindKey(ModKey::Alt|ModKey::Shift, Key::Num1);
-		_context->bindKey(ModKey::Alt|ModKey::Shift, Key::Num2);
-		_context->bindKey(ModKey::Alt|ModKey::Shift, Key::Num3);
-		_context->bindKey(ModKey::Alt|ModKey::Shift, Key::Num4);
-
 		_context->bindKey(ModKey::Alt, Key::A);
-
 		_context->bindKey(ModKey::Alt, Key::M);
 
-		ConfigWorkspace ws1;
-		ws1.id = "1";
-		_config.workspaces.append(ws1);
+		for (int i = 0; i < _config.bindings.count(); i++) {
+			ConfigBinding const& binding = _config.bindings[i];
 
-		ConfigWorkspace ws2;
-		ws2.id = "2";
-		_config.workspaces.append(ws2);
+			KeyIndex index;
+			index.modKey = binding.modKey;
+			index.key = binding.key;
 
-		ConfigWorkspace ws3;
-		ws3.id = "3";
-		ws3.ports.append("VHDMI-2");
-		_config.workspaces.append(ws3);
-
-		ConfigWorkspace ws4;
-		ws4.id = "4";
-		ws4.ports.append("VHDMI-2");
-		_config.workspaces.append(ws4);
+			_context->bindKey(binding.modKey, binding.key);
+			_keyBindings.set(index, [this, binding]() {
+				for (int k = 0; k < binding.commands.count(); k++) {
+					_doCommand(binding.commands[k]);
+				}
+			});
+		}
 
 		_relayoutMonitors();
 
 		_context->listen(this);
+	}
+
+	ConfigBinding const* queryBinding(ModKey modKey, Key key) {
+		for (int i = 0; i < _config.bindings.count(); i++) {
+			ConfigBinding const& binding = _config.bindings[i];
+			if (binding.modKey == modKey && binding.key == key) {
+				return &binding;
+			}
+		}
+		return nullptr;
 	}
 
 	virtual void onWindowCreate(WindowEvent const& e) override {
@@ -193,48 +209,16 @@ public:
 	}
 
 	virtual void onKeyPress(KeyEvent const& e) override {
-		if (e.modKey == ModKey::Alt && e.key == Key::Return) {
-			wx::List<wx::String> args;
-			args.append("xterm");
-			exec(args);
+		KeyIndex index;
+		index.modKey = e.modKey;
+		index.key = e.key;
+		KeyCallback* callback = _keyBindings.getOrNull(index);
+		printf("GOT %p\n", callback);
+		if (callback != nullptr) {
+			(*callback)();
 			return;
 		}
-		if (e.modKey == ModKey::Alt && e.key == Key::Backspace) {
-			closeWindow();
-			return;
-		}
-		if (e.modKey == ModKey::Alt && e.key == Key::Num1) {
-			focusWorkspaceID("1");
-			return;
-		}
-		if (e.modKey == ModKey::Alt && e.key == Key::Num2) {
-			focusWorkspaceID("2");
-			return;
-		}
-		if (e.modKey == ModKey::Alt && e.key == Key::Num3) {
-			focusWorkspaceID("3");
-			return;
-		}
-		if (e.modKey == ModKey::Alt && e.key == Key::Num4) {
-			focusWorkspaceID("4");
-			return;
-		}
-		if (e.modKey == (ModKey::Alt|ModKey::Shift) && e.key == Key::Num1) {
-			sendWindowToWorkspaceID("1");
-			return;
-		}
-		if (e.modKey == (ModKey::Alt|ModKey::Shift) && e.key == Key::Num2) {
-			sendWindowToWorkspaceID("2");
-			return;
-		}
-		if (e.modKey == (ModKey::Alt|ModKey::Shift) && e.key == Key::Num3) {
-			sendWindowToWorkspaceID("3");
-			return;
-		}
-		if (e.modKey == (ModKey::Alt|ModKey::Shift) && e.key == Key::Num4) {
-			sendWindowToWorkspaceID("4");
-			return;
-		}
+
 		if (e.modKey == ModKey::Alt && e.key == Key::A) {
 			_logLayout();
 			return;
@@ -297,6 +281,7 @@ public:
 			}
 			focusMonitor(mon);
 			mon->activateWorkspace(ws);
+			_observer->onWorkspaceActivate(ws);
 			mon->getActiveWorkspace()->show();
 			return;
 		}
@@ -313,6 +298,7 @@ public:
 		}
 		focusMonitor(mon);
 		mon->activateWorkspace(workspace);
+		_observer->onWorkspaceActivate(workspace);
 		printf("activate workspace %s\n", workspace->getID().cptr());
 	}
 
@@ -382,6 +368,17 @@ public:
 		ws->focusWindow(window);
 	}
 
+	void focusNearestWindow(Direction direction) {
+	}
+
+	void cycleWindow() {
+		Workspace* workspace = _activeMonitor->getActiveWorkspace();
+		// TODO:
+		// on the first key-press create index where the cycle began
+		// pick the modifier like alt or super
+		// listen to that key-release to end and accept new active window
+	}
+
 	void closeWindow() {
 		Workspace* ws = _activeMonitor->getActiveWorkspace();
 		Window* window = ws->getActiveWindow();
@@ -391,6 +388,31 @@ public:
 	}
 
 private:
+
+	void _doCommand(ConfigCommand const& command) {
+		if (command.func == ConfigCommandFunc::Exec) {
+			wx::List<wx::String> argv;
+			for (int i = 0; i < command.arguments.asList().count(); i++) {
+				wx::WkValue const& arg = command.arguments.asList()[i];
+				argv.append(arg.asString());
+			}
+			exec(argv);
+			return;
+		}
+		if (command.func == ConfigCommandFunc::CloseWindow) {
+			closeWindow();
+			return;
+		}
+		if (command.func == ConfigCommandFunc::FocusWorkspace) {
+			focusWorkspaceID(command.arguments.asString());
+			return;
+		}
+		if (command.func == ConfigCommandFunc::SendWindowToWorkspace) {
+			sendWindowToWorkspaceID(command.arguments.asString());
+			return;
+		}
+	}
+
 	Monitor* _queryMonitorByPort(wx::String const& port) {
 		for (int i = 0; i < _monitors.count(); i++) {
 			if (_monitors[i]->getPort() == port) {
@@ -466,18 +488,23 @@ private:
 			}
 		}
 
-		// reclip window
+		// collect living workspace list
+		wx::List<Workspace*> workspaces;
+
 		for (int i = 0; i < _monitors.count(); i++) {
 			Monitor* monitor = _monitors[i];
 			for (int j = 0; j < monitor->getWorkspaceList().count(); j++) {
 				Workspace* workspace = monitor->getWorkspaceList()[j];
+				workspaces.append(workspace);
 				for (int k = 0; k < workspace->getWindowList().count(); k++) {
 					Window* window = workspace->getWindowList()[k];
+					// reclip window
 					_clipWindow(window);
 				}
 			}
 		}
 
+		_observer->onWorkspaceConfigure(workspaces);
 		_logLayout();
 	}
 
@@ -518,7 +545,7 @@ private:
 				return monitor;
 			}
 		}
-		Monitor* monitor = new Monitor(info);
+		Monitor* monitor = new Monitor(_context, info);
 		_monitorDB.append(monitor);
 		return monitor;
 	}
@@ -556,6 +583,8 @@ private:
 	}
 private:
 	IContext* _context;
+	ISessionObserver* _observer;
+
 	Monitor* _activeMonitor = nullptr;
 	Monitor* _fallbackMonitor = nullptr; // incase of all monitor disconnected all workspace/windows are here
 	wx::List<Monitor*> _monitors;
@@ -564,4 +593,7 @@ private:
 	Config _config;
 	wx::List<Monitor*> _monitorDB;
 	wx::List<Workspace*> _workspaceDB;
+
+	wx::HashTable<KeyIndex, KeyCallback> _keyBindings;
+
 };

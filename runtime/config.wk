@@ -5,7 +5,7 @@
 		( id: "2" ),
 		( id: "3" ),
 		( id: "4" ),
-		( id: "5", port: "HDMI" ),
+		( id: "5", port: "HDMI-2" ),
 
 	],
 
@@ -14,10 +14,10 @@
 		( key: "alt + return", exec: ["xterm"] ),
 		( key: "alt + space", exec: ["dmenu"] ),
 
-		( key: "alt + left", focusNearestWindow: "left" ),
-		( key: "alt + right", focusNearestWindow: "right" ),
-		( key: "alt + up", focusNearestWindow: "top" ),
-		( key: "alt + down", focusNearestWindow: "bottom" ),
+		( key: "alt + left", focusWindow: "west" ),
+		( key: "alt + right", focusWindow: "east" ),
+		( key: "alt + up", focusWindow: "north" ),
+		( key: "alt + down", focusWindow: "south" ),
 
 		( key: "alt + shift + left", tileWindow: [0.0, 0.0, 0.5, 1.0] ),
 		( key: "alt + shift + right", tileWindow: [0.5, 0.0, 0.5, 1.0] ),

@@ -15,9 +15,9 @@ set(SOURCES
 	source/backend/X11MonitorManager.cpp
 	source/backend/X11Hint.cpp
 	source/system/Exec.cpp
+	source/config/ConfigParser.cpp
 )
 
-add_definitions(-DUSE_XEPHYR)
 add_executable(manggis-session ${SOURCES})
 
 add_subdirectory(vendor/wxcore)

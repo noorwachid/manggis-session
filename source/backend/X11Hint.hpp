@@ -2,8 +2,8 @@
 
 #include "backend/IWindowBackend.hpp"
 #include "backend/X11Connection.hpp"
-#include <string>
-#include <vector>
+#include "wx/core/List.hpp"
+#include "wx/core/String.hpp"
 #include <xcb/xcb.h>
 #include <xcb/xcb_ewmh.h>
 
@@ -17,17 +17,19 @@ public:
 
 	WindowType getWindowType(xcb_window_t id);
 
+	Margin getWindowDockExtend(xcb_window_t id);
+
 	bool isWindowState(xcb_atom_t atom);
 
 	bool isActiveWindow(xcb_atom_t atom);
 
-	std::string atomToString(xcb_atom_t atom);
+	wx::String atomToString(xcb_atom_t atom);
 
 	WindowState atomToWindowState(xcb_atom_t atom);
 
 	xcb_atom_t windowStateToAtom(WindowState state);
 
-	void setWindowState(xcb_window_t id, std::vector<WindowState> const& states);
+	void setWindowState(xcb_window_t id, wx::List<WindowState> const& states);
 
 	bool isWindowDecorated(xcb_window_t id);
 
@@ -37,9 +39,9 @@ public:
 
 	void setWindowFrame(xcb_window_t id, int left, int top, int right, int bottom);
 
-	void setWorkspaces(std::vector<std::string> const& workspaces);
+	void setWorkspaces(wx::List<wx::String> const& workspaces);
 
-	void setActiveWorkspace(std::string const& workspace);
+	void setActiveWorkspace(wx::String const& workspace);
 
 	bool isMoveResizeProperty(xcb_atom_t atom);
 
@@ -54,7 +56,7 @@ private:
 	int _screenNumber = 0;
 
 	xcb_window_t _wmWindowId;
-	std::string _wmName = "ManggisWM";
-	std::vector<std::string> _workspaces;
+	wx::String _wmName = "ManggisWM";
+	wx::List<wx::String> _workspaces;
 };
 

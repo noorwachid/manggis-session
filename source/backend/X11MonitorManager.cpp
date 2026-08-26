@@ -51,7 +51,7 @@ wx::List<MonitorInfo> X11MonitorManager::getConnectedMonitorInfos() {
 		left.port = "VHDMI-1";
 		left.rect.x = 0;
 		left.rect.y = 0;
-		left.rect.width = 500;
+		left.rect.width = 1000;
 		left.rect.height = 600;
 		infos.append(left);
 	}
@@ -68,6 +68,7 @@ wx::List<MonitorInfo> X11MonitorManager::getConnectedMonitorInfos() {
 
 	return infos;
 	#else
+
 	xcb_randr_get_screen_resources_current_cookie_t resCookie = xcb_randr_get_screen_resources_current(_conn->get(), _conn->getScreen()->root);
 	xcb_randr_get_screen_resources_current_reply_t* res = xcb_randr_get_screen_resources_current_reply(_conn->get(), resCookie, NULL);
 	if (!res) {

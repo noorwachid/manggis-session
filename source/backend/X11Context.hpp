@@ -11,6 +11,7 @@
 #include "backend/X11KeyboardManager.hpp"
 #include "backend/X11MonitorManager.hpp"
 #include "backend/X11MouseManager.hpp"
+#include "backend/X11SessionObserver.hpp"
 #include "backend/X11WindowBackend.hpp"
 #include "input/Key.hpp"
 #include "input/MouseButton.hpp"
@@ -57,6 +58,8 @@ public:
 		_hint = new X11Hint(_conn);
 		_hint->initialize();
 
+		_sessionObserver = new X11SessionObserver(_conn, _hint);
+
 		// NOTE: click to focus
 		xcb_grab_button(
 			_conn->get(), 0, _conn->getScreen()->root, 
@@ -69,6 +72,10 @@ public:
 	virtual ~X11Context() override {
 		delete _keyboardManager;
 		delete _conn;
+	}
+
+	virtual ISessionObserver* getSessionObserver() override {
+		return _sessionObserver;
 	}
 
 	virtual void bindMouseButton(ModKey modKey, MouseButton button) override {
@@ -136,6 +143,10 @@ public:
 		_clipper->unclip((X11WindowBackend*)window->getBackend());
 	}
 
+	virtual Margin getDockExtend(Window* window) override {
+		return _hint->getWindowDockExtend(((X11WindowBackend*)window->getBackend())->getClientHandle());
+	}
+
 	virtual void listen(IObserver* observer) override {
 		_attachKeyBindings();
 		_updateMonitors(observer);
@@ -154,7 +165,7 @@ public:
 					Window* window = _getWindowByClient(e->window);
 					if (window == nullptr) {
 						X11WindowBackend* backend = new X11WindowBackend(_conn, _hint, e->window);
-						window = new Window(backend, WindowFlags::None);
+						window = new Window(backend);
 						WindowEvent event;
 						event.window = window;
 
@@ -566,5 +577,7 @@ private:
 
 	X11Clipper* _clipper;
 	X11Hint* _hint;
+
+	X11SessionObserver* _sessionObserver;
 
 };

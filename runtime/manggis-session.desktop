@@ -1,0 +1,5 @@
+[Desktop Entry]
+Name=Manggis Session
+Exec=/usr/local/bin/manggis-session
+Type=Application
+

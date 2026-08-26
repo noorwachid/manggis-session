@@ -1,6 +1,7 @@
 #pragma once
 
 #include "MonitorInfo.hpp"
+#include "backend/IContext.hpp"
 #include "wx/core/List.hpp"
 #include "wx/core/String.hpp"
 
@@ -10,7 +11,7 @@ class Workspace;
 
 class Monitor {
 public:
-	Monitor(MonitorInfo info);
+	Monitor(IContext* context, MonitorInfo info);
 
 	void setInfo(MonitorInfo info);
 
@@ -45,6 +46,7 @@ public:
 	void removeWindow(Window* window);
 
 private:
+	IContext* _context;
 	MonitorInfo _info;
 	Workspace* _activeWorkspace = nullptr;
 	wx::List<Workspace*> _workspaces;

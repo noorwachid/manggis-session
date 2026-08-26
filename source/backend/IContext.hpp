@@ -2,6 +2,7 @@
 
 #include "Common.hpp"
 #include "IObserver.hpp"
+#include "ISessionObserver.hpp"
 #include "MonitorInfo.hpp"
 #include "input/Key.hpp"
 #include "input/MouseButton.hpp"
@@ -9,6 +10,8 @@
 
 class IContext {
 public:
+	virtual ISessionObserver* getSessionObserver() = 0;
+
 	virtual void bindMouseButton(ModKey modKey, MouseButton button) = 0;
 
 	virtual void unbindMouseButton(ModKey modKey, MouseButton button) = 0;
@@ -30,6 +33,8 @@ public:
 	virtual void clipWindow(Window* window, Rect rect) = 0;
 
 	virtual void unclipWindow(Window* window) = 0;
+
+	virtual Margin getDockExtend(Window* window) = 0;
 
 	virtual void listen(IObserver* observer) = 0;
 

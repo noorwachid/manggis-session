@@ -1,7 +1,7 @@
 #include "Window.hpp"
 
-Window::Window(IWindowBackend* backend, WindowFlags flags): 
-	_backend{backend}, _flags{flags} {
+Window::Window(IWindowBackend* backend): 
+	_backend{backend} {
 }
 
 Window::~Window() {

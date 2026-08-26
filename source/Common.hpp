@@ -13,11 +13,18 @@ struct Point {
 };
 
 struct MinMax {
-	int min;
-	int max;
+	int min = 0;
+	int max = 0;
 };
 
 struct Constrain {
 	MinMax width;
 	MinMax height;
+};
+
+struct Margin {
+	int left = 0;
+	int right = 0;
+	int top = 0;
+	int bottom = 0;
 };

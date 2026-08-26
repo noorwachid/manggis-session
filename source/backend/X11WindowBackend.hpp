@@ -113,6 +113,10 @@ public:
 		return _frame;
 	}
 
+	xcb_window_t getClientHandle() {
+		return _client;
+	}
+
 	uint32_t getBorderColor() {
 		return _prop.borderColor;
 	}
@@ -161,11 +165,9 @@ private:
 		_frame = xcb_generate_id(_conn->get());
 		
 		if (_hint->isWindowDecorated(_client)) {
-			printf("decorated\n");
 			_prop.borderWidth = windowstyle::borderWidth;
 			_prop.titlebarHeight = windowstyle::titlebarHeight;
 		} else {
-			printf("non-decorated\n");
 			_prop.borderWidth = 0;
 			_prop.titlebarHeight = 0;
 		}

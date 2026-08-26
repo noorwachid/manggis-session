@@ -4,11 +4,11 @@
 // this is used to abstract the session observer
 // like to register the correct x11 hints foreach action without clutering the main logic
 
+#include "Workspace.hpp"
+
 class ISessionObserver {
 public:
-	virtual void onMonitorActive();
+	virtual void onWorkspaceConfigure(wx::List<Workspace*> const& workspaces) = 0;
 
-	virtual void onWorkspaceActive();
-
-	virtual void onWindowActive();
+	virtual void onWorkspaceActivate(Workspace* workspace) = 0;
 };
