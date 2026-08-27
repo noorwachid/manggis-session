@@ -8,6 +8,14 @@ public:
 
 	virtual void onWindowDestroy(WindowEvent const& e) = 0;
 
+	virtual void onWindowMoveRequest(WindowMovementEvent const& e) = 0;
+
+	virtual void onWindowResizeRequest(WindowResizingEvent const& e) = 0;
+
+	virtual void onWindowMaximizeRequest(WindowActionEvent const& e) = 0;
+
+	virtual void onWindowFullscreenRequest(WindowActionEvent const& e) = 0;
+
 	virtual void onMousePress(MouseButtonEvent const& e) = 0;
 
 	virtual void onMouseRelease(MouseButtonEvent const& e) = 0;
@@ -23,5 +31,6 @@ public:
 	virtual void onMonitorDisconnect(MonitorEvent const& e) = 0;
 
 	virtual void onMonitorPropertyChange(MonitorEvent const& e) = 0;
+
 };
 

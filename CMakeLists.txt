@@ -19,12 +19,17 @@ set(SOURCES
 	source/config/ConfigParser.cpp
 )
 
-option(USE_XEPHYR "Enable Xephyr sanboxing" OFF)
+option(XEPHYR_ENABLE "Enable Xephyr sanboxing" OFF)
+option(XEPHYR_EMULATE_TWO_MONITOR "Emulate Xephyr two monitor" OFF)
 
-if(USE_XEPHYR)
-	add_definitions(-DUSE_XEPHYR)
+if(XEPHYR_ENABLE)
+	add_definitions(-DXEPHYR_ENABLE)
 	add_definitions(-DXEPHYR_WIDTH=1200)
 	add_definitions(-DXEPHYR_HEIGHT=600)
+endif()
+
+if (XEPHYR_EMULATE_TWO_MONITOR)
+	add_definitions(-DXEPHYR_EMULATE_TWO_MONITOR)
 endif()
 
 add_executable(manggis-session ${SOURCES})

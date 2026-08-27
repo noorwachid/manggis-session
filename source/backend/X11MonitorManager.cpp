@@ -2,7 +2,7 @@
 #include <cstdio>
 #include <cstdlib>
 
-#ifdef USE_XEPHYR
+#ifdef XEPHYR_ENABLE
 int xephyrMonitorConfiguration = 0;
 #endif
 
@@ -31,42 +31,55 @@ int X11MonitorManager::getEventOffset() {
 }
 
 wx::List<MonitorInfo> X11MonitorManager::getConnectedMonitorInfos() {
-	#ifdef USE_XEPHYR
-	wx::List<MonitorInfo> infos;
-	bool left = false;
-	bool right = false;
-	if (xephyrMonitorConfiguration == 0) {
-		left = true;
-		right = false;
-	} else if (xephyrMonitorConfiguration == 1) {
-		left = true;
-		right = true;
-	} else if (xephyrMonitorConfiguration == 2) {
-		left = false;
-		right = false;
-	}
+	#ifdef XEPHYR_ENABLE
+		wx::List<MonitorInfo> infos;
 
-	if (left) {
-		MonitorInfo left;
-		left.port = "HDMI-1";
-		left.rect.x = 0;
-		left.rect.y = 0;
-		left.rect.width = XEPHYR_WIDTH / 2;
-		left.rect.height = XEPHYR_HEIGHT;
-		infos.append(left);
-	}
+		#ifdef XEPHYR_EMULATE_TWO_MONITOR
+		bool left = false;
+		bool right = false;
+		if (xephyrMonitorConfiguration % 3 == 0) {
+			left = true;
+			right = false;
+		} else if (xephyrMonitorConfiguration % 3 == 1) {
+			left = true;
+			right = true;
+		} else if (xephyrMonitorConfiguration % 3 == 2) {
+			left = false;
+			right = false;
+		}
 
-	if (right) {
+		if (left) {
+			MonitorInfo left;
+			left.port = "HDMI-1";
+			left.rect.x = 0;
+			left.rect.y = 0;
+			left.rect.width = XEPHYR_WIDTH / 2;
+			left.rect.height = XEPHYR_HEIGHT;
+			infos.append(left);
+		}
+
+		if (right) {
+			MonitorInfo right;
+			right.port = "HDMI-2";
+			right.rect.x = XEPHYR_WIDTH / 2;
+			right.rect.y = 0;
+			right.rect.width = XEPHYR_WIDTH / 2;
+			right.rect.height = XEPHYR_HEIGHT;
+			infos.append(right);
+		}
+
+		return infos;
+		#else
 		MonitorInfo right;
-		right.port = "HDMI-2";
-		right.rect.x = XEPHYR_WIDTH / 2;
+		right.port = "HDMI-1";
+		right.rect.x = 0;
 		right.rect.y = 0;
-		right.rect.width = XEPHYR_WIDTH / 2;
+		right.rect.width = XEPHYR_WIDTH;
 		right.rect.height = XEPHYR_HEIGHT;
 		infos.append(right);
-	}
 
-	return infos;
+		return infos;
+		#endif
 	#else
 
 	xcb_randr_get_screen_resources_current_cookie_t resCookie = xcb_randr_get_screen_resources_current(_conn->get(), _conn->getScreen()->root);

@@ -29,6 +29,7 @@ enum struct DragMode {
 struct DragState {
 	DragMode mode = DragMode::None;
 	Window* window;
+	WindowResizingArea area;
 	Point initialMousePos;
 	Rect initialWindowRect;
 };
@@ -50,7 +51,7 @@ wx::Uint32 getHash(KeyIndex index) {
 
 class Monitor;
 
-#ifdef USE_XEPHYR
+#ifdef XEPHYR_ENABLE
 extern int xephyrMonitorConfiguration;
 #endif
 
@@ -118,6 +119,20 @@ public:
 		monitor->removeWindow(e.window);
 	}
 
+	virtual void onWindowMoveRequest(WindowMovementEvent const& e) override {
+		_beginDrag(DragMode::Move, e.window);
+	}
+
+	virtual void onWindowResizeRequest(WindowResizingEvent const& e) override {
+		_beginDrag(DragMode::Resize, e.window, e.area);
+	}
+
+	virtual void onWindowMaximizeRequest(WindowActionEvent const& e) override {
+	}
+
+	virtual void onWindowFullscreenRequest(WindowActionEvent const& e) override {
+	}
+
 	virtual void onMousePress(MouseButtonEvent const& e) override {
 		if (e.window == nullptr) {
 			return;
@@ -132,29 +147,19 @@ public:
 
 		if (e.button == MouseButton::Left) {
 			if (e.modKey == (ModKey::Alt)) {
-				_dragState.mode = DragMode::Move;
+				_beginDrag(DragMode::Move, e.window);
 			} else if (e.modKey == (ModKey::Alt|ModKey::Shift)) {
-				_dragState.mode = DragMode::Resize;
+				_beginDrag(DragMode::Resize, e.window);
 			} else {
 				// titlebar grabbing
 				Rect rect = e.window->getRect();
 				WindowProp prop = e.window->getProp();
 				if (e.pos.y < rect.y + prop.titlebarHeight) {
-					_dragState.mode = DragMode::Move;
+					_beginDrag(DragMode::Move, e.window);
 				}
-			}
-
-			if (_dragState.mode != DragMode::None) {
-				_dragState.window = e.window;
-
-				_dragState.initialWindowRect = _dragState.window->getRect();
-				_dragState.initialMousePos = _context->getMousePos();
-
-				_context->unclipWindow(_dragState.window);
 			}
 		}
 
-		_context->bindMouseMovement();
 	}
 
 	virtual void onMouseRelease(MouseButtonEvent const& e) override {
@@ -202,9 +207,65 @@ public:
 			_dragState.window->move(x, y);
 		}
 		if (_dragState.mode == DragMode::Resize) {
-			int width = _dragState.initialWindowRect.width + (e.pos.x - _dragState.initialMousePos.x);
-			int height = _dragState.initialWindowRect.height + (e.pos.y - _dragState.initialMousePos.y);
-			_dragState.window->resize(width, height);
+			if (_dragState.area == WindowResizingArea::NorthWest) {
+				int x = _dragState.initialWindowRect.x + (e.pos.x - _dragState.initialMousePos.x);
+				int y = _dragState.initialWindowRect.y + (e.pos.y - _dragState.initialMousePos.y);
+				int width = _dragState.initialWindowRect.width - (e.pos.x - _dragState.initialMousePos.x);
+				int height = _dragState.initialWindowRect.height - (e.pos.y - _dragState.initialMousePos.y);
+				_dragState.window->move(x, y);
+				_dragState.window->resize(width, height);
+			}
+			if (_dragState.area == WindowResizingArea::North) {
+				int x = _dragState.initialWindowRect.x;
+				int y = _dragState.initialWindowRect.y + (e.pos.y - _dragState.initialMousePos.y);
+				int width = _dragState.initialWindowRect.width;
+				int height = _dragState.initialWindowRect.height - (e.pos.y - _dragState.initialMousePos.y);
+				_dragState.window->move(x, y);
+				_dragState.window->resize(width, height);
+			}
+			if (_dragState.area == WindowResizingArea::West) {
+				int x = _dragState.initialWindowRect.x + (e.pos.x - _dragState.initialMousePos.x);
+				int y = _dragState.initialWindowRect.y;
+				int width = _dragState.initialWindowRect.width - (e.pos.x - _dragState.initialMousePos.x);
+				int height = _dragState.initialWindowRect.height;
+				_dragState.window->move(x, y);
+				_dragState.window->resize(width, height);
+			}
+
+
+			if (_dragState.area == WindowResizingArea::NorthEast) {
+				int x = _dragState.initialWindowRect.x;
+				int y = _dragState.initialWindowRect.y + (e.pos.y - _dragState.initialMousePos.y);
+				int width = _dragState.initialWindowRect.width + (e.pos.x - _dragState.initialMousePos.x);
+				int height = _dragState.initialWindowRect.height - (e.pos.y - _dragState.initialMousePos.y);
+				_dragState.window->move(x, y);
+				_dragState.window->resize(width, height);
+			}
+			if (_dragState.area == WindowResizingArea::SouthWest) {
+				int x = _dragState.initialWindowRect.x + (e.pos.x - _dragState.initialMousePos.x);
+				int y = _dragState.initialWindowRect.y;
+				int width = _dragState.initialWindowRect.width - (e.pos.x - _dragState.initialMousePos.x);
+				int height = _dragState.initialWindowRect.height + (e.pos.y - _dragState.initialMousePos.y);
+				_dragState.window->move(x, y);
+				_dragState.window->resize(width, height);
+			}
+
+
+			if (_dragState.area == WindowResizingArea::East) {
+				int width = _dragState.initialWindowRect.width + (e.pos.x - _dragState.initialMousePos.x);
+				int height = _dragState.initialWindowRect.height;
+				_dragState.window->resize(width, height);
+			}
+			if (_dragState.area == WindowResizingArea::South) {
+				int width = _dragState.initialWindowRect.width;
+				int height = _dragState.initialWindowRect.height + (e.pos.y - _dragState.initialMousePos.y);
+				_dragState.window->resize(width, height);
+			}
+			if (_dragState.area == WindowResizingArea::SouthEast) {
+				int width = _dragState.initialWindowRect.width + (e.pos.x - _dragState.initialMousePos.x);
+				int height = _dragState.initialWindowRect.height + (e.pos.y - _dragState.initialMousePos.y);
+				_dragState.window->resize(width, height);
+			}
 		}
 	}
 
@@ -224,17 +285,9 @@ public:
 			return;
 		}
 		if (e.modKey == ModKey::Alt && e.key == Key::M) {
-			#ifdef USE_XEPHYR
-			if (xephyrMonitorConfiguration == 0) {
-				xephyrMonitorConfiguration = 1;
-				_relayoutMonitors();
-			} else if (xephyrMonitorConfiguration == 1) {
-				xephyrMonitorConfiguration = 2;
-				_relayoutMonitors();
-			} else if (xephyrMonitorConfiguration == 2) {
-				xephyrMonitorConfiguration = 0;
-				_relayoutMonitors();
-			}
+			#ifdef XEPHYR_ENABLE
+			xephyrMonitorConfiguration++;
+			_relayoutMonitors();
 			#endif
 			return;
 		}
@@ -393,6 +446,51 @@ public:
 	}
 
 private:
+	void _beginDrag(DragMode mode, Window* window, WindowResizingArea area = WindowResizingArea::None) {
+		_dragState.mode = mode;
+		_dragState.window = window;
+
+
+		Rect windowRect = _dragState.window->getRect();
+		Point mousePos = _context->getMousePos();
+
+		if (area == WindowResizingArea::None) {
+			int xSlice = (float(mousePos.x - windowRect.x) / float(windowRect.width)) * 3;
+			int ySlice = (float(mousePos.y - windowRect.y) / float(windowRect.height)) * 3;
+
+			if (xSlice == 0) {
+				if (ySlice == 0) {
+					area = WindowResizingArea::NorthWest;
+				} else if (ySlice == 1) {
+					area = WindowResizingArea::West;
+				} else if (ySlice == 2) {
+					area = WindowResizingArea::SouthWest;
+				}
+			} else if (xSlice == 1) {
+				if (ySlice == 0) {
+					area = WindowResizingArea::North;
+				} else if (ySlice == 2) {
+					area = WindowResizingArea::South;
+				}
+			} else if (xSlice == 2) {
+				if (ySlice == 0) {
+					area = WindowResizingArea::NorthEast;
+				} else if (ySlice == 1) {
+					area = WindowResizingArea::East;
+				} else if (ySlice == 2) {
+					area = WindowResizingArea::SouthEast;
+				}
+			}
+		}
+
+		_dragState.initialWindowRect = windowRect;
+		_dragState.initialMousePos = mousePos;
+
+		_dragState.area = area;
+
+		_context->unclipWindow(_dragState.window);
+		_context->bindMouseMovement();
+	}
 
 	void _doCommand(ConfigCommand const& command) {
 		if (command.func == ConfigCommandFunc::Exec) {

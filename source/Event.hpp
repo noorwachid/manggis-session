@@ -10,6 +10,39 @@ struct WindowEvent {
 	Window* window;
 };
 
+struct WindowMovementEvent {
+	Window* window;
+	Point offset;
+};
+
+enum struct WindowAction {
+	Disable,
+	Enable,
+	Toggle,
+};
+
+struct WindowActionEvent {
+	Window* window;
+	WindowAction action;
+};
+
+enum struct WindowResizingArea {
+	None,
+	North,
+	South,
+	West,
+	East,
+	NorthWest,
+	NorthEast,
+	SouthWest,
+	SouthEast,
+};
+
+struct WindowResizingEvent {
+	Window* window;
+	WindowResizingArea area;
+};
+
 struct MouseButtonEvent {
 	Point pos;
 	MouseButton button;
