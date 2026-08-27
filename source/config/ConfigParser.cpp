@@ -23,6 +23,11 @@ Config parseConfig(wx::WkValue const& value) {
 			if (bindings) {
 				parseBindingList(*bindings);
 			}
+
+			wx::WkValue* autostarts = tup.getOrNull("autostarts");
+			if (autostarts) {
+				parseAutostartList(*autostarts);
+			}
 		}
 
 		void parseWorkspaceList(wx::WkValue const& value) {
@@ -94,7 +99,10 @@ Config parseConfig(wx::WkValue const& value) {
 				binding.key = k;
 			}
 
-			parseCommand(binding, tup);
+			ConfigCommand command = parseCommand(tup);
+			if (command.func != ConfigCommandFunc::None) {
+				binding.commands.append(command);
+			}
 
 			if (binding.commands.isEmpty()) {
 				return;
@@ -103,18 +111,18 @@ Config parseConfig(wx::WkValue const& value) {
 			config.bindings.append(binding);
 		}
 
-		void parseCommand(ConfigBinding& binding, wx::HashTable<wx::String, wx::WkValue> const& tup) {
+		ConfigCommand parseCommand(wx::HashTable<wx::String, wx::WkValue> const& tup) {
 			{
 				wx::WkValue* exec = tup.getOrNull("exec");
 				if (exec) {
 					if (!exec->isList()) {
-						LOG("[ManggisSession.Config] invalid exec command argument, expect list\n");
-						return;
+						LOG("[config] invalid exec command argument, expect list\n");
+						return {};
 					}
 					for (int i = 0; i < exec->asList().count(); i++) {
 						if (!exec->asList()[i].isString()) {
-							LOG("[ManggisSession.Config] invalid exec command argument, expect list of string\n");
-							return;
+							LOG("[config] invalid exec command argument, expect list of string\n");
+							return {};
 						}
 					}
 
@@ -122,8 +130,7 @@ Config parseConfig(wx::WkValue const& value) {
 					command.func = ConfigCommandFunc::Exec;
 					command.arguments = *exec;
 
-					binding.commands.append(command);
-					return;
+					return command;
 				}
 			}
 
@@ -131,15 +138,13 @@ Config parseConfig(wx::WkValue const& value) {
 				wx::WkValue* closeWindow = tup.getOrNull("closeWindow");
 				if (closeWindow) {
 					if (!closeWindow->isNull()) {
-						LOG("[ManggisSession.Config] invalid closeWindow command argument, expect null\n");
-						return;
+						LOG("[config] invalid closeWindow command argument, expect null\n");
+						return {};
 					}
 
 					ConfigCommand command;
 					command.func = ConfigCommandFunc::CloseWindow;
-
-					binding.commands.append(command);
-					return;
+					return command;
 				}
 			}
 
@@ -147,8 +152,8 @@ Config parseConfig(wx::WkValue const& value) {
 				wx::WkValue* focusWindow = tup.getOrNull("focusWindow");
 				if (focusWindow) {
 					if (!focusWindow->isString()) {
-						LOG("[ManggisSession.Config] invalid focusWindow command argument, expect string\n");
-						return;
+						LOG("[config] invalid focusWindow command argument, expect string\n");
+						return {};
 					}
 
 					wx::WkValue direction;
@@ -162,16 +167,14 @@ Config parseConfig(wx::WkValue const& value) {
 					} else if (focusWindow->asString() == "south") {
 						direction = wx::WkValue::createInt64((int) Direction::South);
 					} else {
-						LOG("[ManggisSession.Config] invalid focusWindow command argument, expect 'west', 'east', 'north', 'south' \n");
-						return;
+						LOG("[config] invalid focusWindow command argument, expect 'west', 'east', 'north', 'south' \n");
+						return {};
 					}
 
 					ConfigCommand command;
 					command.func = ConfigCommandFunc::FocusWindow;
 					command.arguments = direction;
-
-					binding.commands.append(command);
-					return;
+					return command;
 				}
 			}
 
@@ -180,24 +183,23 @@ Config parseConfig(wx::WkValue const& value) {
 				if (tileWindow) {
 					if (!tileWindow->isList()) {
 						LOG("[config] invalid tileWindow command argument, expect list");
-						return;
+						return {};
 					}
 					if (tileWindow->asList().count() != 4) {
 						LOG("[config] invalid tileWindow command argument, expect list with 4 items");
-						return;
+						return {};
 					}
 					for (int i = 0; i < tileWindow->asList().count(); i++) {
 						if (!tileWindow->asList()[i].isFloat64()) {
-							LOG("[ManggisSession.Config] invalid tileWindow command argument, expect list of float\n");
-							return;
+							LOG("[config] invalid tileWindow command argument, expect list of float\n");
+							return {};
 						}
 					}
 					ConfigCommand command;
 					command.func = ConfigCommandFunc::TileWindow;
 					command.arguments = *tileWindow;
 
-					binding.commands.append(command);
-					return;
+					return command;
 				}
 			}
 
@@ -206,15 +208,14 @@ Config parseConfig(wx::WkValue const& value) {
 				if (focusWorkspace) {
 					if (!focusWorkspace->isString()) {
 						LOG("[ManggisSession.Config] invalid focusWorkspace command argument, expect string\n");
-						return;
+						return {};
 					}
 
 					ConfigCommand command;
 					command.func = ConfigCommandFunc::FocusWorkspace;
 					command.arguments = *focusWorkspace;
 
-					binding.commands.append(command);
-					return;
+					return command;
 				}
 			}
 
@@ -223,15 +224,14 @@ Config parseConfig(wx::WkValue const& value) {
 				if (sendWindowToWorkspace) {
 					if (!sendWindowToWorkspace->isString()) {
 						LOG("[config] invalid sendWindowToWorkspace command argument, expect string\n");
-						return;
+						return {};
 					}
 
 					ConfigCommand command;
 					command.func = ConfigCommandFunc::SendWindowToWorkspace;
 					command.arguments = *sendWindowToWorkspace;
 
-					binding.commands.append(command);
-					return;
+					return command;
 				}
 			}
 
@@ -240,16 +240,17 @@ Config parseConfig(wx::WkValue const& value) {
 				if (quit) {
 					if (!quit->isNull()) {
 						LOG("[config] invalid quit command argument, expect null\n");
-						return;
+						return {};
 					}
 
 					ConfigCommand command;
 					command.func = ConfigCommandFunc::Quit;
 
-					binding.commands.append(command);
-					return;
+					return command;
 				}
 			}
+
+			return {};
 		}
 
 		void parseKey(ConfigBinding& binding, wx::WkValue const& value) {
@@ -290,7 +291,6 @@ Config parseConfig(wx::WkValue const& value) {
 			}
 			return list;
 		}
-
 
 		Key stringToKey(wx::String const& key) {
 			if (key == "backspace") return Key::Backspace;
@@ -1235,6 +1235,21 @@ Config parseConfig(wx::WkValue const& value) {
 			return ModKey::None;
 		}
 
+		void parseAutostartList(wx::WkValue const& value) {
+			if (!value.isList()) return;
+
+			wx::List<wx::WkValue> const& list = value.asList();
+			for (int i = 0; i < list.count(); i++) {
+				if (!list[i].isTuple()) {
+					continue;
+				}
+				ConfigCommand command = parseCommand(list[i].asTuple());
+				if (command.func == ConfigCommandFunc::None) {
+					continue;
+				}
+				config.autostarts.append(command);
+			}
+		}
 	};
 
 	Parser parser;

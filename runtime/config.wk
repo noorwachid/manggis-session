@@ -37,4 +37,9 @@
 		( key: "alt + shift + 5", sendWindowToWorkspace: "5" ),
 
 	],
+
+	autostarts: [
+		( exec: ["polybar"] ),
+	],
+
 )

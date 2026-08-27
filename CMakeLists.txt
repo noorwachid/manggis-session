@@ -11,6 +11,7 @@ set(SOURCES
 	source/Monitor.cpp
 	source/Workspace.cpp
 	source/Window.cpp
+	source/Session.cpp
 	source/Logger.cpp
 	source/backend/X11Context.cpp
 	source/backend/X11MonitorManager.cpp

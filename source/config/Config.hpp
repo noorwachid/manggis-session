@@ -41,4 +41,6 @@ struct ConfigBinding {
 struct Config {
 	wx::List<ConfigWorkspace> workspaces;
 	wx::List<ConfigBinding> bindings;
+
+	wx::List<ConfigCommand> autostarts;
 };

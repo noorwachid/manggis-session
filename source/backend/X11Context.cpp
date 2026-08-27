@@ -1,5 +1,6 @@
 #include "Event.hpp"
 #include "backend/IContext.hpp"
+#include "backend/X11WindowBackend.hpp"
 #include <xcb/xproto.h>
 #include "backend/X11Context.hpp"
 
@@ -41,6 +42,10 @@ X11Context::X11Context() {
 }
 
 X11Context::~X11Context() {
+	delete _sessionObserver;
+	delete _hint;
+	delete _clipper;
+	delete _mouseManager;
 	delete _keyboardManager;
 	delete _conn;
 }
@@ -170,17 +175,50 @@ void X11Context::run(IObserver* observer) {
 
 				Window* window = _getWindowByClient(e->window);
 				if (window != nullptr) {
+					Rect rect = window->getRect();
+					WindowProp prop = window->getProp();
 					bool moved = false;
+					bool resized = false;
+
 					if (e->value_mask & XCB_CONFIG_WINDOW_X) {
 						moved = true;
+						rect.x = rect.x + e->x;
 					}
 					if (e->value_mask & XCB_CONFIG_WINDOW_Y) {
 						moved = true;
+						rect.y = rect.y + e->y - prop.titlebarHeight;
 					}
-					if (moved) {
-						window->move(e->x, e->y);
+					if (e->value_mask & XCB_CONFIG_WINDOW_WIDTH) {
+						resized = true;
+						rect.width = e->width;
 					}
-					_conn->flush();
+					if (e->value_mask & XCB_CONFIG_WINDOW_HEIGHT) {
+						resized = true;
+						rect.height = e->height;
+					}
+
+					if (moved) window->move(rect.x, rect.y);
+					if (resized) window->resize(rect.width, rect.height);
+
+					// if (e->value_mask & XCB_CONFIG_WINDOW_BORDER_WIDTH) {
+					// 	mask |= XCB_CONFIG_WINDOW_BORDER_WIDTH;
+					// 	values[i++] = e->border_width;
+					// }
+
+					if (e->value_mask & XCB_CONFIG_WINDOW_SIBLING) {
+						mask |= XCB_CONFIG_WINDOW_SIBLING;
+						values[i++] = e->sibling;
+					}
+					if (e->value_mask & XCB_CONFIG_WINDOW_STACK_MODE) {
+						mask |= XCB_CONFIG_WINDOW_STACK_MODE;
+						values[i++] = e->stack_mode;
+					}
+					if (mask != 0) {
+						LOG("[x11.config.request]\n");
+						xcb_configure_window(_conn->get(), ((X11WindowBackend*)window->getBackend())->getFrameHandle(), mask, values);
+						_conn->flush();
+					}
+
 					break;
 				}
 
@@ -341,7 +379,7 @@ void X11Context::run(IObserver* observer) {
 
 				Window* window = _getWindowByClient(e->window);
 				if (window == nullptr) {
-					LOG("[x11] unmanaged window id message request %d\n", e->window);
+					LOG("[x11] unmanaged window id message request %d (%s)\n", e->window, _hint->atomToString(e->type).cptr());
 					break;
 				}
 

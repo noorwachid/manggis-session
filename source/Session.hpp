@@ -41,13 +41,9 @@ struct KeyIndex {
 
 using KeyCallback = wx::Func<void()>;
 
-bool operator==(KeyIndex a, KeyIndex b) {
-	return a.modKey == b.modKey && a.key == b.key;
-}
+bool operator==(KeyIndex a, KeyIndex b);
 
-wx::Uint32 getHash(KeyIndex index) {
-	return wx::combineHash(wx::getHash((int)index.modKey), wx::getHash((int)index.key));
-}
+wx::Uint32 getHash(KeyIndex index);
 
 class Monitor;
 
@@ -58,651 +54,77 @@ extern int xephyrMonitorConfiguration;
 
 class Session: public IObserver {
 public:
-	void run(Config const& config) {
-		_config = config;
+	void run(Config const& config);
 
-		_context = createContext();
-		_observer = _context->getSessionObserver();
+	ConfigBinding const* queryBinding(ModKey modKey, Key key);
 
-		_context->bindMouseButton(ModKey::Alt, MouseButton::Left);
-		_context->bindMouseButton(ModKey::Alt|ModKey::Shift, MouseButton::Left);
+	virtual void onWindowCreate(WindowEvent const& e) override;
 
-		_context->bindKey(ModKey::Alt, Key::A);
-		_context->bindKey(ModKey::Alt, Key::M);
+	virtual void onWindowDestroy(WindowEvent const& e) override;
 
-		for (int i = 0; i < _config.bindings.count(); i++) {
-			ConfigBinding const& binding = _config.bindings[i];
+	virtual void onWindowMoveRequest(WindowMovementEvent const& e) override;
 
-			KeyIndex index;
-			index.modKey = binding.modKey;
-			index.key = binding.key;
+	virtual void onWindowResizeRequest(WindowResizingEvent const& e) override;
 
-			_context->bindKey(binding.modKey, binding.key);
-			_keyBindings.set(index, [this, binding]() {
-				for (int k = 0; k < binding.commands.count(); k++) {
-					_doCommand(binding.commands[k]);
-				}
-			});
-		}
+	virtual void onWindowMaximizeRequest(WindowActionEvent const& e) override;
 
-		_relayoutMonitors();
+	virtual void onWindowFullscreenRequest(WindowActionEvent const& e) override;
 
-		_context->run(this);
-	}
+	virtual void onMousePress(MouseButtonEvent const& e) override;
 
-	ConfigBinding const* queryBinding(ModKey modKey, Key key) {
-		for (int i = 0; i < _config.bindings.count(); i++) {
-			ConfigBinding const& binding = _config.bindings[i];
-			if (binding.modKey == modKey && binding.key == key) {
-				return &binding;
-			}
-		}
-		return nullptr;
-	}
+	virtual void onMouseRelease(MouseButtonEvent const& e) override;
 
-	virtual void onWindowCreate(WindowEvent const& e) override {
-		Point mousePos = _context->getMousePos();
-		Monitor* monitor = _queryMonitorByPos(mousePos);
-		if (monitor == nullptr) {
-			WX_ASSERT(monitor == nullptr, "invalid monitor state\n");
-			return;
-		}
+	virtual void onMouseMove(MouseMovementEvent const& e) override;
 
-		if (_activeMonitor != monitor) {
-			focusMonitor(monitor);
-		}
-		_activeMonitor->addWindow(e.window);
-	}
+	virtual void onKeyPress(KeyEvent const& e) override;
 
-	virtual void onWindowDestroy(WindowEvent const& e) override {
-		Monitor* monitor = e.window->getMonitor();
-		monitor->removeWindow(e.window);
-	}
+	virtual void onKeyRelease(KeyEvent const& e) override;
 
-	virtual void onWindowMoveRequest(WindowMovementEvent const& e) override {
-		_beginDrag(DragMode::Move, e.window);
-	}
+	virtual void onMonitorConnect(MonitorEvent const& e) override;
 
-	virtual void onWindowResizeRequest(WindowResizingEvent const& e) override {
-		_beginDrag(DragMode::Resize, e.window, e.area);
-	}
+	virtual void onMonitorDisconnect(MonitorEvent const& e) override;
 
-	virtual void onWindowMaximizeRequest(WindowActionEvent const& e) override {
-	}
+	virtual void onMonitorPropertyChange(MonitorEvent const& e) override;
 
-	virtual void onWindowFullscreenRequest(WindowActionEvent const& e) override {
-	}
+	void focusMonitor(Monitor* monitor);
 
-	virtual void onMousePress(MouseButtonEvent const& e) override {
-		if (e.window == nullptr) {
-			return;
-		}
+	void focusWorkspaceID(wx::String const& id);
 
-		WindowType type = e.window->getType();
-		if (type != WindowType::Normal) {
-			return;
-		}
+	void focusWorkspace(Workspace* workspace);
 
-		focusWindow(e.window);
+	void sendWorkspaceToMonitor(Workspace* workspace, Monitor* monitor);
 
-		if (e.button == MouseButton::Left) {
-			if (e.modKey == (ModKey::Alt)) {
-				_beginDrag(DragMode::Move, e.window);
-			} else if (e.modKey == (ModKey::Alt|ModKey::Shift)) {
-				_beginDrag(DragMode::Resize, e.window);
-			} else {
-				// titlebar grabbing
-				Rect rect = e.window->getRect();
-				WindowProp prop = e.window->getProp();
-				if (e.pos.y < rect.y + prop.titlebarHeight) {
-					_beginDrag(DragMode::Move, e.window);
-				}
-			}
-		}
+	void sendWindowToWorkspace(Window* window, Workspace* workspace);
 
-	}
+	void sendWindowToWorkspaceID(wx::String const& id);
 
-	virtual void onMouseRelease(MouseButtonEvent const& e) override {
-		if (_dragState.mode != DragMode::None) {
-			Window* window = _dragState.window;
+	void focusWindow(Window* window);
 
-			_dragState.mode = DragMode::None;
-			_dragState.window = nullptr;
-			_context->unbindMouseMovement();
+	void focusNearestWindow(Direction direction);
 
-			Rect windowRect = window->getRect();
-			Monitor* bestMonitor = nullptr;
-			int bestArea = 0;
+	void cycleWindow();
 
-			for (int i = 0; i < _monitors.count(); i++) {
-				Monitor* monitor = _monitors[i];
-				Rect monitorRect = monitor->getRect();
-				Rect intersectRect = intersectRectRect(monitorRect, windowRect);
-				int area = intersectRect.width * intersectRect.height;
-				if (bestArea < area) {
-					bestArea = area;
-					bestMonitor = monitor;
-				}
-			}
-
-			if (bestMonitor == nullptr) {
-				LOG("invalid drag\n");
-				return;
-			}
-
-			if (_activeMonitor != bestMonitor) {
-				focusMonitor(bestMonitor);
-				window->getWorkspace()->removeWindow(window);
-				bestMonitor->getActiveWorkspace()->addWindow(window);
-			}
-
-			_clipWindow(window);
-		}
-	}
-
-	virtual void onMouseMove(MouseMovementEvent const& e) override {
-		if (_dragState.mode == DragMode::Move) {
-			int x = _dragState.initialWindowRect.x + (e.pos.x - _dragState.initialMousePos.x);
-			int y = _dragState.initialWindowRect.y + (e.pos.y - _dragState.initialMousePos.y);
-			_dragState.window->move(x, y);
-		}
-		if (_dragState.mode == DragMode::Resize) {
-			if (_dragState.area == WindowResizingArea::NorthWest) {
-				int x = _dragState.initialWindowRect.x + (e.pos.x - _dragState.initialMousePos.x);
-				int y = _dragState.initialWindowRect.y + (e.pos.y - _dragState.initialMousePos.y);
-				int width = _dragState.initialWindowRect.width - (e.pos.x - _dragState.initialMousePos.x);
-				int height = _dragState.initialWindowRect.height - (e.pos.y - _dragState.initialMousePos.y);
-				_dragState.window->move(x, y);
-				_dragState.window->resize(width, height);
-			}
-			if (_dragState.area == WindowResizingArea::North) {
-				int x = _dragState.initialWindowRect.x;
-				int y = _dragState.initialWindowRect.y + (e.pos.y - _dragState.initialMousePos.y);
-				int width = _dragState.initialWindowRect.width;
-				int height = _dragState.initialWindowRect.height - (e.pos.y - _dragState.initialMousePos.y);
-				_dragState.window->move(x, y);
-				_dragState.window->resize(width, height);
-			}
-			if (_dragState.area == WindowResizingArea::West) {
-				int x = _dragState.initialWindowRect.x + (e.pos.x - _dragState.initialMousePos.x);
-				int y = _dragState.initialWindowRect.y;
-				int width = _dragState.initialWindowRect.width - (e.pos.x - _dragState.initialMousePos.x);
-				int height = _dragState.initialWindowRect.height;
-				_dragState.window->move(x, y);
-				_dragState.window->resize(width, height);
-			}
-
-
-			if (_dragState.area == WindowResizingArea::NorthEast) {
-				int x = _dragState.initialWindowRect.x;
-				int y = _dragState.initialWindowRect.y + (e.pos.y - _dragState.initialMousePos.y);
-				int width = _dragState.initialWindowRect.width + (e.pos.x - _dragState.initialMousePos.x);
-				int height = _dragState.initialWindowRect.height - (e.pos.y - _dragState.initialMousePos.y);
-				_dragState.window->move(x, y);
-				_dragState.window->resize(width, height);
-			}
-			if (_dragState.area == WindowResizingArea::SouthWest) {
-				int x = _dragState.initialWindowRect.x + (e.pos.x - _dragState.initialMousePos.x);
-				int y = _dragState.initialWindowRect.y;
-				int width = _dragState.initialWindowRect.width - (e.pos.x - _dragState.initialMousePos.x);
-				int height = _dragState.initialWindowRect.height + (e.pos.y - _dragState.initialMousePos.y);
-				_dragState.window->move(x, y);
-				_dragState.window->resize(width, height);
-			}
-
-
-			if (_dragState.area == WindowResizingArea::East) {
-				int width = _dragState.initialWindowRect.width + (e.pos.x - _dragState.initialMousePos.x);
-				int height = _dragState.initialWindowRect.height;
-				_dragState.window->resize(width, height);
-			}
-			if (_dragState.area == WindowResizingArea::South) {
-				int width = _dragState.initialWindowRect.width;
-				int height = _dragState.initialWindowRect.height + (e.pos.y - _dragState.initialMousePos.y);
-				_dragState.window->resize(width, height);
-			}
-			if (_dragState.area == WindowResizingArea::SouthEast) {
-				int width = _dragState.initialWindowRect.width + (e.pos.x - _dragState.initialMousePos.x);
-				int height = _dragState.initialWindowRect.height + (e.pos.y - _dragState.initialMousePos.y);
-				_dragState.window->resize(width, height);
-			}
-		}
-	}
-
-	virtual void onKeyPress(KeyEvent const& e) override {
-		KeyIndex index;
-		index.modKey = e.modKey;
-		index.key = e.key;
-		KeyCallback* callback = _keyBindings.getOrNull(index);
-		LOG("GOT %p\n", callback);
-		if (callback != nullptr) {
-			(*callback)();
-			return;
-		}
-
-		if (e.modKey == ModKey::Alt && e.key == Key::A) {
-			_logLayout();
-			return;
-		}
-		if (e.modKey == ModKey::Alt && e.key == Key::M) {
-			#ifdef XEPHYR_ENABLE
-			xephyrMonitorConfiguration++;
-			_relayoutMonitors();
-			#endif
-			return;
-		}
-	}
-
-	virtual void onKeyRelease(KeyEvent const& e) override {
-	}
-
-	virtual void onMonitorConnect(MonitorEvent const& e) override {
-		LOG("monitor connected %s\n", e.port.cptr());
-		_relayoutMonitors();
-	}
-
-	virtual void onMonitorDisconnect(MonitorEvent const& e) override {
-		LOG("monitor disconnected %s\n", e.port.cptr());
-		_relayoutMonitors();
-	}
-
-	virtual void onMonitorPropertyChange(MonitorEvent const& e) override {
-		LOG("monitor property changed %s\n", e.port.cptr());
-		_relayoutMonitors();
-	}
-
-	void focusMonitor(Monitor* monitor) {
-		if (_activeMonitor == monitor) return;
-		if (_activeMonitor != nullptr) {
-			_activeMonitor->blur();
-		}
-		_activeMonitor = monitor;
-		_activeMonitor->focus();
-	}
-
-	void focusWorkspaceID(wx::String const& id) {
-		Monitor* previousMonitor = _activeMonitor;
-		for (int i = 0; i < _monitors.count(); i++) {
-			Monitor* mon = _monitors[i];
-			Workspace* ws = mon->queryWorkspace(id);
-			if (ws == nullptr) {
-				continue;
-			}
-			LOG("activate workspace %s\n", id.cptr());
-			if (previousMonitor == mon) {
-				mon->getActiveWorkspace()->hide();
-			}
-			focusMonitor(mon);
-			mon->activateWorkspace(ws);
-			_observer->onWorkspaceFocus(ws);
-			mon->getActiveWorkspace()->show();
-			return;
-		}
-		LOG("no workspace with id %s\n", id.cptr());
-	}
-
-	void focusWorkspace(Workspace* workspace) {
-		Monitor* previousMonitor = _activeMonitor;
-		Monitor* mon = workspace->getMonitor();
-		if (previousMonitor == mon) {
-			if (previousMonitor->getActiveWorkspace() != workspace) {
-				mon->getActiveWorkspace()->hide();
-			}
-		}
-		focusMonitor(mon);
-		mon->activateWorkspace(workspace);
-		_observer->onWorkspaceFocus(workspace);
-		LOG("activate workspace %s\n", workspace->getID().cptr());
-	}
-
-	void sendWorkspaceToMonitor(Workspace* workspace, Monitor* monitor) {
-		Monitor* oldMonitor = workspace->getMonitor();
-		monitor->addWorkspace(workspace);
-		if (oldMonitor != nullptr) {
-			if (oldMonitor != monitor) {
-				for (int i = 0; i < workspace->getWindowList().count(); i++) {
-					Window* window = workspace->getWindowList()[i];
-					sendWindowToWorkspace(window, workspace);
-				}
-			}
-		}
-	}
-
-	void sendWindowToWorkspace(Window* window, Workspace* workspace) {
-		Workspace* previousWorkspace = window->getWorkspace();
-		Monitor* previousMonitor = window->getMonitor();
-		Monitor* monitor = workspace->getMonitor();
-
-		if (previousMonitor == monitor && previousWorkspace == workspace) {
-			return;
-		}
-
-		if (previousMonitor == monitor) {
-			window->hide();
-		} else {
-			if (workspace->getMonitor()->getActiveWorkspace() != workspace) {
-				window->hide();
-			}
-
-			Rect windowRect = window->getRect();
-			Rect previousRect = previousMonitor->getRect();
-			Rect nextRect = monitor->getRect();
-			window->move(
-				nextRect.x + (windowRect.x - previousRect.x),
-				nextRect.y + (windowRect.y - previousRect.y)
-			);
-
-			_clipWindow(window);
-		}
-
-		window->getWorkspace()->removeWindow(window);
-		workspace->addWindow(window);
-	}
-
-	void sendWindowToWorkspaceID(wx::String const& id) {
-		Window* window = _activeMonitor->getActiveWorkspace()->getActiveWindow();
-		if (window == nullptr) {
-			return;
-		}
-		for (int i = 0; i < _monitors.count(); i++) {
-			Monitor* mon = _monitors[i];
-			Workspace* ws = mon->queryWorkspace(id);
-			if (ws == nullptr) {
-				continue;
-			}
-			sendWindowToWorkspace(window, ws);
-			return;
-		}
-		LOG("no workspace with id %s\n", id.cptr());
-	}
-
-	void focusWindow(Window* window) {
-		// raise to top (if background wallpaper or desktop orginizer you dont have to move it forward)
-		window->raise();
-		
-		Workspace* ws = window->getWorkspace();
-		focusWorkspace(ws);
-		ws->focusWindow(window);
-		_observer->onWindowFocus(window);
-	}
-
-	void focusNearestWindow(Direction direction) {
-	}
-
-	void cycleWindow() {
-		Workspace* workspace = _activeMonitor->getActiveWorkspace();
-		// TODO:
-		// on the first key-press create index where the cycle began
-		// pick the modifier like alt or super
-		// listen to that key-release to end and accept new active window
-	}
-
-	void closeWindow() {
-		Workspace* ws = _activeMonitor->getActiveWorkspace();
-		Window* window = ws->getActiveWindow();
-		if (window) {
-			window->close();
-		}
-	}
+	void closeWindow();
 
 private:
-	void _beginDrag(DragMode mode, Window* window, WindowResizingArea area = WindowResizingArea::None) {
-		_dragState.mode = mode;
-		_dragState.window = window;
+	void _beginDrag(DragMode mode, Window* window, WindowResizingArea area = WindowResizingArea::None);
 
+	void _doCommand(ConfigCommand const& command);
 
-		Rect windowRect = _dragState.window->getRect();
-		Point mousePos = _context->getMousePos();
+	Monitor* _queryMonitorByPort(wx::String const& port);
 
-		if (area == WindowResizingArea::None) {
-			int xSlice = (float(mousePos.x - windowRect.x) / float(windowRect.width)) * 3;
-			int ySlice = (float(mousePos.y - windowRect.y) / float(windowRect.height)) * 3;
+	Monitor* _queryMonitorByPos(Point pos);
 
-			if (xSlice == 0) {
-				if (ySlice == 0) {
-					area = WindowResizingArea::NorthWest;
-				} else if (ySlice == 1) {
-					area = WindowResizingArea::West;
-				} else if (ySlice == 2) {
-					area = WindowResizingArea::SouthWest;
-				}
-			} else if (xSlice == 1) {
-				if (ySlice == 0) {
-					area = WindowResizingArea::North;
-				} else if (ySlice == 2) {
-					area = WindowResizingArea::South;
-				}
-			} else if (xSlice == 2) {
-				if (ySlice == 0) {
-					area = WindowResizingArea::NorthEast;
-				} else if (ySlice == 1) {
-					area = WindowResizingArea::East;
-				} else if (ySlice == 2) {
-					area = WindowResizingArea::SouthEast;
-				}
-			}
-		}
+	void _relayoutMonitors();
 
-		_dragState.initialWindowRect = windowRect;
-		_dragState.initialMousePos = mousePos;
+	void _logLayout();
 
-		_dragState.area = area;
+	Monitor* _getOrCreateMonitor(MonitorInfo const& info);
 
-		_context->unclipWindow(_dragState.window);
-		_context->bindMouseMovement();
-	}
+	Workspace* _getOrCreateWorkspace(wx::String const& id);
 
-	void _doCommand(ConfigCommand const& command) {
-		if (command.func == ConfigCommandFunc::Exec) {
-			wx::List<wx::String> argv;
-			for (int i = 0; i < command.arguments.asList().count(); i++) {
-				wx::WkValue const& arg = command.arguments.asList()[i];
-				argv.append(arg.asString());
-			}
-			exec(argv);
-			return;
-		}
-		if (command.func == ConfigCommandFunc::CloseWindow) {
-			closeWindow();
-			return;
-		}
-		if (command.func == ConfigCommandFunc::TileWindow) {
-			Window* window = _activeMonitor->getActiveWorkspace()->getActiveWindow();
-			if (window == nullptr) return;
-			Rect rect = _activeMonitor->getWorkingRect();
-			wx::List<wx::WkValue> const& args = command.arguments.asList();
-			window->move(
-				rect.x + (rect.width * args[0].asFloat64()), 
-				rect.y + (rect.width * args[1].asFloat64())
-			);
-			window->resize(
-				(rect.width * args[2].asFloat64()), 
-				(rect.width * args[3].asFloat64())
-			);
-			return;
-		}
-		if (command.func == ConfigCommandFunc::FocusWorkspace) {
-			focusWorkspaceID(command.arguments.asString());
-			return;
-		}
-		if (command.func == ConfigCommandFunc::SendWindowToWorkspace) {
-			sendWindowToWorkspaceID(command.arguments.asString());
-			return;
-		}
-		if (command.func == ConfigCommandFunc::Quit) {
-			_context->stop();
-			return;
-		}
-	}
+	void _clipWindow(Window* window);
 
-	Monitor* _queryMonitorByPort(wx::String const& port) {
-		for (int i = 0; i < _monitors.count(); i++) {
-			if (_monitors[i]->getPort() == port) {
-				return _monitors[i];
-			}
-		}
-		return nullptr;
-	}
-
-	Monitor* _queryMonitorByPos(Point pos) {
-		for (int i = 0; i < _monitors.count(); i++) {
-			if (isPointIntersectRect(pos, _monitors[i]->getRect())) {
-				return _monitors[i];
-			}
-		}
-		return nullptr;
-	}
-
-	void _relayoutMonitors() {
-		wx::List<MonitorInfo> monitorInfos = _context->getConnectedMonitorInfos();
-
-		MonitorInfo fallbackInfo;
-		fallbackInfo.port = "<fallback>";
-		_fallbackMonitor = _getOrCreateMonitor(fallbackInfo);
-		_fallbackMonitor->clearWorkspaceList();
-
-		// TODO: reuse the monitor instance
-		_monitors.clear();
-
-		if (monitorInfos.isEmpty()) {
-			_activeMonitor = _fallbackMonitor;
-			_monitors.append(_activeMonitor);
-		} else {
-			Monitor* activeMonitor = nullptr;
-			for (int i = 0; i < monitorInfos.count(); i++) {
-				MonitorInfo const& info = monitorInfos[i];
-				Monitor* monitor = _getOrCreateMonitor(info);
-				monitor->clearWorkspaceList();
-				if (_activeMonitor == monitor) {
-					activeMonitor = monitor;
-				}
-				_monitors.append(monitor);
-			}
-			if (activeMonitor == nullptr) {
-				_activeMonitor = _monitors.getFirst();
-			}
-		}
-
-		for (int i = 0; i < _config.workspaces.count(); i++) {
-			ConfigWorkspace const& wsConfig = _config.workspaces[i];
-			Workspace* ws = _getOrCreateWorkspace(wsConfig.id);
-			if (wsConfig.ports.isEmpty()) {
-				sendWorkspaceToMonitor(ws, _activeMonitor);
-			} else {
-				Monitor* monitor = nullptr;
-				for (int j = 0; j < wsConfig.ports.count(); j++) {
-					monitor = _queryMonitorByPort(wsConfig.ports[j]);
-					if (monitor) {
-						sendWorkspaceToMonitor(ws, monitor);
-						break;
-					}
-				}
-				if (monitor == nullptr) {
-					sendWorkspaceToMonitor(ws, _activeMonitor);
-				}
-			}
-		}
-
-		for (int i = 0; i < _monitors.count(); i++) {
-			Monitor* monitor = _monitors[i];
-			if (monitor->getActiveWorkspace() == nullptr) {
-				monitor->addWorkspace(new Workspace(monitor->getPort()));
-			}
-		}
-
-		// collect living workspace list
-		wx::List<Workspace*> workspaces;
-
-		for (int i = 0; i < _monitors.count(); i++) {
-			Monitor* monitor = _monitors[i];
-			for (int j = 0; j < monitor->getWorkspaceList().count(); j++) {
-				Workspace* workspace = monitor->getWorkspaceList()[j];
-				workspaces.append(workspace);
-				for (int k = 0; k < workspace->getWindowList().count(); k++) {
-					Window* window = workspace->getWindowList()[k];
-					// reclip window
-					_clipWindow(window);
-				}
-			}
-		}
-
-		_observer->onWorkspaceConfigure(workspaces);
-		_logLayout();
-	}
-
-	void _logLayout() {
-		LOG("layout:\n");
-		for (int i = 0; i < _monitors.count(); i++) {
-			Monitor* mon = _monitors[i];
-			LOG("  mon %s:", mon->getPort().cptr());
-			if (mon == _activeMonitor) {
-				LOG(" # active");
-			}
-			LOG("\n");
-			for (int j = 0; j < mon->getWorkspaceList().count(); j++) {
-				Workspace* ws = mon->getWorkspaceList()[j];
-				LOG("    ws %s: (mon: %s)", ws->getID().cptr(), ws->getMonitor()->getPort().cptr());
-				if (ws == mon->getActiveWorkspace()) {
-					LOG(" # active");
-				}
-				LOG("\n");
-
-				for (int k = 0; k < ws->getWindowList().count(); k++) {
-					Window* win = ws->getWindowList()[k];
-					LOG("      win %p: (ws: %s, mon: %s)", win, win->getWorkspace()->getID().cptr(), win->getMonitor()->getPort().cptr());
-					if (win == ws->getActiveWindow()) {
-						LOG(" # active");
-					}
-					LOG("\n");
-				}
-			}
-		}
-	}
-
-	Monitor* _getOrCreateMonitor(MonitorInfo const& info) {
-		for (int i = 0; i < _monitorDB.count(); i++) {
-			Monitor* monitor = _monitorDB[i];
-			if (monitor->getPort() == info.port) {
-				monitor->setInfo(info);
-				return monitor;
-			}
-		}
-		Monitor* monitor = new Monitor(_context, info);
-		_monitorDB.append(monitor);
-		return monitor;
-	}
-
-	Workspace* _getOrCreateWorkspace(wx::String const& id) {
-		for (int i = 0; i < _workspaceDB.count(); i++) {
-			Workspace* workspace = _workspaceDB[i];
-			if (workspace->getID() == id) {
-				return workspace;
-			}
-		}
-		Workspace* workspace = new Workspace(id);
-		_workspaceDB.append(workspace);
-		return workspace;
-	}
-
-	void _clipWindow(Window* window) {
-		Monitor* monitor = window->getMonitor();
-		Rect windowRect = window->getRect();
-		Rect workingRect = monitor->getWorkingRect();
-		Rect intersectRect = intersectRectRect(workingRect, windowRect);
-
-		if (intersectRect.width == 0 || intersectRect.height == 0) {
-			LOG("invalid intersection\n");
-			return;
-		}
-
-		Rect clipRect;
-		clipRect.x = intersectRect.x - windowRect.x;
-		clipRect.y = intersectRect.y - windowRect.y;
-		clipRect.width = intersectRect.width;
-		clipRect.height = intersectRect.height;
-
-		_context->clipWindow(window, clipRect);
-	}
 private:
 	IContext* _context;
 	ISessionObserver* _observer;
