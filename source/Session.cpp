@@ -73,6 +73,7 @@ void Session::onWindowCreate(WindowEvent const& e) {
 		focusMonitor(monitor);
 	}
 	_activeMonitor->addWindow(e.window);
+	focusWindow(e.window);
 }
 
 void Session::onWindowDestroy(WindowEvent const& e) {
@@ -478,11 +479,11 @@ void Session::_doCommand(ConfigCommand const& command) {
 		wx::List<wx::WkValue> const& args = command.arguments.asList();
 		window->move(
 			rect.x + (rect.width * args[0].asFloat64()), 
-			rect.y + (rect.width * args[1].asFloat64())
+			rect.y + (rect.height * args[1].asFloat64())
 		);
 		window->resize(
 			(rect.width * args[2].asFloat64()), 
-			(rect.width * args[3].asFloat64())
+			(rect.height * args[3].asFloat64())
 		);
 		return;
 	}
