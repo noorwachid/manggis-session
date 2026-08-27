@@ -168,6 +168,7 @@ void X11Context::run(IObserver* observer) {
 			case XCB_CONFIGURE_REQUEST: {
 				xcb_configure_request_event_t* e = (xcb_configure_request_event_t*) ev;
 				LOG("[x11] configure request %08X\n", e->window);
+				LOG("      x: %d, y: %d, w: %d, h: %d\n", e->x, e->y, e->width, e->height);
 
 				uint16_t mask = 0;
 				uint32_t values[7];
@@ -182,11 +183,11 @@ void X11Context::run(IObserver* observer) {
 
 					if (e->value_mask & XCB_CONFIG_WINDOW_X) {
 						moved = true;
-						rect.x = rect.x + e->x;
+						rect.x = e->x;
 					}
 					if (e->value_mask & XCB_CONFIG_WINDOW_Y) {
 						moved = true;
-						rect.y = rect.y + e->y - prop.titlebarHeight;
+						rect.y = e->y - prop.titlebarHeight;
 					}
 					if (e->value_mask & XCB_CONFIG_WINDOW_WIDTH) {
 						resized = true;
@@ -194,7 +195,7 @@ void X11Context::run(IObserver* observer) {
 					}
 					if (e->value_mask & XCB_CONFIG_WINDOW_HEIGHT) {
 						resized = true;
-						rect.height = e->height;
+						rect.height = e->height + prop.titlebarHeight;
 					}
 
 					if (moved) window->move(rect.x, rect.y);
@@ -208,13 +209,14 @@ void X11Context::run(IObserver* observer) {
 					if (e->value_mask & XCB_CONFIG_WINDOW_SIBLING) {
 						mask |= XCB_CONFIG_WINDOW_SIBLING;
 						values[i++] = e->sibling;
+						LOG("[x11] request sibling %d\n", e->sibling);
 					}
 					if (e->value_mask & XCB_CONFIG_WINDOW_STACK_MODE) {
 						mask |= XCB_CONFIG_WINDOW_STACK_MODE;
 						values[i++] = e->stack_mode;
+						LOG("[x11] request stack mode %d\n", e->stack_mode);
 					}
 					if (mask != 0) {
-						LOG("[x11.config.request]\n");
 						xcb_configure_window(_conn->get(), ((X11WindowBackend*)window->getBackend())->getFrameHandle(), mask, values);
 						_conn->flush();
 					}
