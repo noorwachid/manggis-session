@@ -186,6 +186,17 @@ Margin X11Hint::getWindowDockExtend(xcb_window_t id) {
 	}
 	return {};
 }
+wx::String X11Hint::getWindowTitle(xcb_window_t id) {
+	wx::String content;
+	xcb_ewmh_get_utf8_strings_reply_t title;
+
+	if (xcb_ewmh_get_wm_name_reply(&_ewmh, xcb_ewmh_get_wm_name(&_ewmh, id), &title, NULL)) {
+		content = title.strings;
+		xcb_ewmh_get_utf8_strings_reply_wipe(&title);
+	}
+
+	return content;
+}
 
 void X11Hint::setWindowState(xcb_window_t id, wx::List<WindowState> const& states) {
 	int count = 0;

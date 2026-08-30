@@ -414,8 +414,8 @@ Config parseConfig(wx::WkValue const& value) {
 
 			if (key == "shiftL") return Key::ShiftL;
 			if (key == "shiftR") return Key::ShiftR;
-			if (key == "controlL") return Key::ControlL;
-			if (key == "controlR") return Key::ControlR;
+			if (key == "ctrlL") return Key::CtrlL;
+			if (key == "ctrlR") return Key::CtrlR;
 			if (key == "capsLock") return Key::CapsLock;
 			if (key == "shiftLock") return Key::ShiftLock;
 

@@ -50,13 +50,23 @@ public:
 
 	virtual void unbindKey(ModKey modKey, Key key) override;
 
+	virtual void bindModKey(ModKey modKey) override;
+
+	virtual void unbindModKey(ModKey modKey) override;
+
 	virtual Point getMousePos() override;
+
+	virtual void setMousePos(Point point) override;
 
 	virtual wx::List<MonitorInfo> getConnectedMonitorInfos() override;
 
 	virtual void clipWindow(Window* window, Rect rect) override;
 
 	virtual void unclipWindow(Window* window) override;
+
+	virtual void highlightWindow(Window* window) override;
+
+	virtual void unhighlightWindow(Window* window) override;
 
 	virtual Margin getDockExtend(Window* window) override;
 
@@ -83,6 +93,10 @@ private:
 
 	void _updateKeyBindings();
 
+	void _grabWholeKeyboard();
+
+	void _ungrabWholeKeyboard();
+
 	MonitorInfo* _getMonitorInfoByPort(wx::String const& port, wx::List<MonitorInfo>& infos);
 
 	void _updateMonitors(IObserver* observer);
@@ -95,7 +109,7 @@ private:
 
 	wx::List<X11KeyBinding> _keyBindings;
 	wx::String _activeKeyboardLayout;
-	wx::HashTable<xcb_keycode_t, Key> _keyCodeMap;
+	wx::HashTable<xcb_keycode_t, Key> _codeToKey;
 
 	X11MouseManager* _mouseManager;
 
@@ -108,4 +122,7 @@ private:
 	X11SessionObserver* _sessionObserver;
 
 	bool _running = true;
+	bool _grabbingWholeKeyboard = false;
+	ModKey _grabbingModKeyOriginal = ModKey::None;
+	ModKey _grabbingModKey = ModKey::None;
 };

@@ -24,15 +24,23 @@ public:
 
 	virtual void unbindKey(ModKey modKey, Key key) = 0;
 
+	virtual void bindModKey(ModKey modKey) = 0;
+
+	virtual void unbindModKey(ModKey modKey) = 0;
+
 	virtual Point getMousePos() = 0;
 
-	// virtual void setMousePos(Point point) = 0;
+	virtual void setMousePos(Point point) = 0;
 
 	virtual wx::List<MonitorInfo> getConnectedMonitorInfos() = 0;
 
 	virtual void clipWindow(Window* window, Rect rect) = 0;
 
 	virtual void unclipWindow(Window* window) = 0;
+
+	virtual void highlightWindow(Window* window) = 0;
+
+	virtual void unhighlightWindow(Window* window) = 0;
 
 	virtual Margin getDockExtend(Window* window) = 0;
 

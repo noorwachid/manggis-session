@@ -140,4 +140,5 @@ private:
 
 	wx::HashTable<KeyIndex, KeyCallback> _keyBindings;
 
+	bool _cyclingWindow = false;
 };

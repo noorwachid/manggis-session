@@ -121,6 +121,7 @@ void Monitor::blur() {
 
 void Monitor::addWindow(Window* window) {
 	WindowType type = window->getType();
+	printf("WIN TYPE %d\n", (int) type);
 	if (type == WindowType::Normal) {
 
 		Rect monitorRect = getRect();
@@ -138,8 +139,10 @@ void Monitor::addWindow(Window* window) {
 	} else if (type == WindowType::Dock) {
 		_dockWindows.append(window);
 		calculateWorkingRect();
+		window->setMonitor(this);
 	} else {
 		_unmanagedWindows.append(window);
+		window->setMonitor(this);
 	}
 
 	window->show();

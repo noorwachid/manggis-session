@@ -1,10 +1,12 @@
 #pragma once
 
 #include "Common.hpp"
+#include "Logger.hpp"
 #include "backend/IWindowBackend.hpp"
 #include "backend/X11Connection.hpp"
 #include "backend/X11Hint.hpp"
 #include <cstdlib>
+#include <xcb/xproto.h>
 
 namespace windowstyle {
 	constexpr int borderWidth = 1;
@@ -46,6 +48,10 @@ public:
 		return _hint->getWindowType(_client);
 	}
 
+	virtual wx::String getTitle() override {
+		return _hint->getWindowTitle(_client);
+	}
+
 	virtual void raise() override {
 		uint32_t value = XCB_STACK_MODE_ABOVE;
 		xcb_configure_window(_conn->get(), _frame, XCB_CONFIG_WINDOW_STACK_MODE, &value);
@@ -58,13 +64,17 @@ public:
 		values[1] = y;
 		xcb_configure_window(_conn->get(), _frame, XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y, values);
 		_conn->flush();
+		_notifyClient();
 	}
 
 	virtual void resize(int width, int height) override {
 		uint32_t values[2];
-		values[0] = width > 0 ? width : 0;
-		values[1] = height > 0 ? height : 0;
+		int borders = _prop.borderWidth * 2;
+		values[0] = width > borders ? width - borders : 0;
+		values[1] = height > borders ? height - borders : 0;
 		xcb_configure_window(_conn->get(), _frame, XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT, values);
+
+		LOG("[x11.window] resize to %d, %d\n", values[0], values[1]);
 
 		uint32_t clientValues[] = {
 			0,
@@ -80,6 +90,7 @@ public:
 			clientValues
 		);
 		_conn->flush();
+		draw();
 	}
 
 	virtual void show() override {
@@ -176,9 +187,10 @@ private:
 		_prop.borderColor = windowstyle::active::borderColor;
 		_prop.titlebarColor = windowstyle::active::titlebarColor;
 
-		uint32_t mask = XCB_CW_BORDER_PIXEL | XCB_CW_EVENT_MASK;
+		uint32_t mask = XCB_CW_BORDER_PIXEL | XCB_CW_OVERRIDE_REDIRECT | XCB_CW_EVENT_MASK;
 		uint32_t values[] = {
 			_prop.borderColor,
+			1,
 			(
 				XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT | 
 				XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY |
@@ -215,6 +227,23 @@ private:
 
 		_hint->setWindowFrame(_client, _prop.borderWidth, _prop.borderWidth + _prop.titlebarHeight, _prop.borderWidth, _prop.borderWidth);
 
+		_conn->flush();
+	}
+
+	void _notifyClient() {
+		Rect rect = getRect();
+		xcb_configure_notify_event_t event {};
+		event.response_type = XCB_CONFIGURE_NOTIFY;
+		event.window = _client;
+		event.event = _client;
+		event.x = rect.x;
+		event.y = rect.y + _prop.titlebarHeight;
+		event.width = rect.width;
+		event.height = rect.height - _prop.titlebarHeight;
+		event.border_width = _prop.borderWidth;
+		event.above_sibling = XCB_NONE;
+		event.override_redirect = 0;
+		xcb_send_event(_conn->get(), 0, _client, XCB_EVENT_MASK_STRUCTURE_NOTIFY, (const char *)&event);
 		_conn->flush();
 	}
 

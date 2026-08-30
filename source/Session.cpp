@@ -1,4 +1,9 @@
 #include "Session.hpp"
+#include "Direction.hpp"
+#include "backend/IWindowBackend.hpp"
+#include "config/Config.hpp"
+#include "input/Key.hpp"
+#include <climits>
 
 bool operator==(KeyIndex a, KeyIndex b) {
 	return a.modKey == b.modKey && a.key == b.key;
@@ -26,6 +31,7 @@ void Session::run(Config const& config) {
 
 	_context->bindKey(ModKey::Alt, Key::A);
 	_context->bindKey(ModKey::Alt, Key::M);
+	_context->bindKey(ModKey::Alt, Key::Tab);
 
 	for (int i = 0; i < _config.bindings.count(); i++) {
 		ConfigBinding const& binding = _config.bindings[i];
@@ -42,11 +48,11 @@ void Session::run(Config const& config) {
 		});
 	}
 
+	_relayoutMonitors();
+
 	for (int i = 0; i < _config.autostarts.count(); i++) {
 		_doCommand(_config.autostarts[i]);
 	}
-
-	_relayoutMonitors();
 
 	_context->run(this);
 }
@@ -73,7 +79,11 @@ void Session::onWindowCreate(WindowEvent const& e) {
 		focusMonitor(monitor);
 	}
 	_activeMonitor->addWindow(e.window);
-	focusWindow(e.window);
+	_observer->onWindowFocus(e.window);
+
+	LOG("ACTIEV MON %p\n", _activeMonitor);
+	LOG("WINDOW CREATE %p, WS: %p, MON: %p\n", e.window, e.window->getWorkspace(), e.window->getMonitor());
+	_clipWindow(e.window);
 }
 
 void Session::onWindowDestroy(WindowEvent const& e) {
@@ -257,9 +267,21 @@ void Session::onKeyPress(KeyEvent const& e) {
 		#endif
 		return;
 	}
+
+	if (e.modKey == ModKey::Alt && e.key == Key::Tab) {
+		_context->bindModKey(ModKey::Alt);
+		cycleWindow();
+		return;
+	}
+
 }
 
 void Session::onKeyRelease(KeyEvent const& e) {
+	if (e.modKey == ModKey::Alt && e.key == Key::None) {
+		_context->unbindModKey(ModKey::Alt);
+		_cyclingWindow = false;
+		printf("END CYCLE\n");
+	}
 }
 
 void Session::onMonitorConnect(MonitorEvent const& e) {
@@ -394,6 +416,44 @@ void Session::focusWindow(Window* window) {
 }
 
 void Session::focusNearestWindow(Direction direction) {
+	Workspace* workspace = _activeMonitor->getActiveWorkspace();
+	Window* sourceWindow = workspace->getActiveWindow();
+	if (sourceWindow == nullptr) return;
+
+	Rect sourceRect = sourceWindow->getRect();
+
+	int shortestDistance = INT_MAX;
+	Window* shortestWindow = nullptr;
+
+	if (direction == Direction::East) {
+		for (int i = 0; i < workspace->getWindowList().count(); i++) {
+			Window* targetWindow = workspace->getWindowList()[i];
+			if (targetWindow == sourceWindow) continue;
+
+			Rect targetRect = targetWindow->getRect();
+			int distance = (targetRect.x) - (sourceRect.x + sourceRect.width);
+			if (distance > 0 && shortestDistance > distance) {
+				shortestDistance = distance;
+				shortestWindow = targetWindow;
+			}
+		}
+	} else if (direction == Direction::West) {
+		for (int i = 0; i < workspace->getWindowList().count(); i++) {
+			Window* targetWindow = workspace->getWindowList()[i];
+			if (targetWindow == sourceWindow) continue;
+
+			Rect targetRect = targetWindow->getRect();
+			int distance = (sourceRect.x) - (targetRect.x + targetRect.width) ;
+			if (distance > 0 && shortestDistance > distance) {
+				shortestDistance = distance;
+				shortestWindow = targetWindow;
+			}
+		}
+	}
+
+	if (shortestWindow) {
+		focusWindow(shortestWindow);
+	}
 }
 
 void Session::cycleWindow() {
@@ -402,6 +462,12 @@ void Session::cycleWindow() {
 	// on the first key-press create index where the cycle began
 	// pick the modifier like alt or super
 	// listen to that key-release to end and accept new active window
+	if (!_cyclingWindow) {
+		LOG("BEGIN CYCLE\n");
+		_cyclingWindow = true;
+	}
+
+	LOG("NEXT WINDOW\n");
 }
 
 void Session::closeWindow() {
@@ -468,6 +534,10 @@ void Session::_doCommand(ConfigCommand const& command) {
 		exec(argv);
 		return;
 	}
+	if (command.func == ConfigCommandFunc::FocusWindow) {
+		focusNearestWindow((Direction) command.arguments.asInt64());
+		return;
+	}
 	if (command.func == ConfigCommandFunc::CloseWindow) {
 		closeWindow();
 		return;
@@ -475,16 +545,23 @@ void Session::_doCommand(ConfigCommand const& command) {
 	if (command.func == ConfigCommandFunc::TileWindow) {
 		Window* window = _activeMonitor->getActiveWorkspace()->getActiveWindow();
 		if (window == nullptr) return;
-		Rect rect = _activeMonitor->getWorkingRect();
+		Rect avail = _activeMonitor->getWorkingRect();
 		wx::List<wx::WkValue> const& args = command.arguments.asList();
-		window->move(
-			rect.x + (rect.width * args[0].asFloat64()), 
-			rect.y + (rect.height * args[1].asFloat64())
-		);
-		window->resize(
-			(rect.width * args[2].asFloat64()), 
-			(rect.height * args[3].asFloat64())
-		);
+		wx::Float64 x = args[0].asFloat64();
+		wx::Float64 y = args[1].asFloat64();
+		wx::Float64 width = args[2].asFloat64();
+		wx::Float64 height = args[3].asFloat64();
+		Rect target;
+		target.x = avail.x + (avail.width * x);
+		target.y = avail.y + (avail.height * y);
+		target.width = (avail.width * width);
+		target.height = (avail.height * height);
+		LOG("[session] avail: (%d, %d, %d, %d)\n", avail.x, avail.y, avail.width, avail.height);
+		LOG("[session] multiplier: (%g, %g, %g, %g)\n", x, y, width, height);
+		LOG("[session] computed: (%d, %d, %d, %d)\n", target.x, target.y, target.width, target.height);
+		window->move(target.x, target.y);
+		window->resize(target.width, target.height);
+		_clipWindow(window);
 		return;
 	}
 	if (command.func == ConfigCommandFunc::FocusWorkspace) {
@@ -653,8 +730,14 @@ Workspace* Session::_getOrCreateWorkspace(wx::String const& id) {
 void Session::_clipWindow(Window* window) {
 	Monitor* monitor = window->getMonitor();
 	Rect windowRect = window->getRect();
+	WindowProp windowProp = window->getProp();
+	Rect windowBorderRect = windowRect;
+	windowBorderRect.x -= windowProp.borderWidth;
+	windowBorderRect.y -= windowProp.borderWidth;
+	windowBorderRect.width += 2 * windowProp.borderWidth;
+	windowBorderRect.height += 2 * windowProp.borderWidth;
 	Rect workingRect = monitor->getWorkingRect();
-	Rect intersectRect = intersectRectRect(workingRect, windowRect);
+	Rect intersectRect = intersectRectRect(workingRect, windowBorderRect);
 
 	if (intersectRect.width == 0 || intersectRect.height == 0) {
 		LOG("invalid intersection\n");

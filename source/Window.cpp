@@ -20,6 +20,10 @@ WindowType Window::getType() {
 	return _backend->getType();
 }
 
+wx::String Window::getTitle() {
+	return _backend->getTitle();
+}
+
 void Window::setWorkspace(Workspace* workspace) {
 	_workspace = workspace;
 }

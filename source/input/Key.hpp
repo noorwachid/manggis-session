@@ -158,8 +158,8 @@ enum struct Key: uint32_t {
 
 	ShiftL                        = 0xffe1,  /* Left shift */
 	ShiftR                        = 0xffe2,  /* Right shift */
-	ControlL                      = 0xffe3,  /* Left control */
-	ControlR                      = 0xffe4,  /* Right control */
+	CtrlL                         = 0xffe3,  /* Left control */
+	CtrlR                         = 0xffe4,  /* Right control */
 	CapsLock                      = 0xffe5,  /* Caps lock */
 	ShiftLock                     = 0xffe6,  /* Shift lock */
 

@@ -23,10 +23,10 @@ public:
 		WindowProp prop = windowBackend->getProp();
 
 		xcb_rectangle_t x11Rect;
-		x11Rect.x = rect.x - prop.borderWidth;
-		x11Rect.y = rect.y - prop.borderWidth;
-		x11Rect.width = rect.width + prop.borderWidth * 2;
-		x11Rect.height = rect.height + prop.borderWidth * 2;
+		x11Rect.x = rect.x;
+		x11Rect.y = rect.y;
+		x11Rect.width = rect.width;
+		x11Rect.height = rect.height;
 
 		xcb_shape_rectangles(
 			_conn->get(),

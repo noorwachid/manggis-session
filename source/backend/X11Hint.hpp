@@ -19,6 +19,8 @@ public:
 
 	Margin getWindowDockExtend(xcb_window_t id);
 
+	wx::String getWindowTitle(xcb_window_t id);
+
 	bool isWindowState(xcb_atom_t atom);
 
 	bool isActiveWindow(xcb_atom_t atom);

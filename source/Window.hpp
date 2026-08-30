@@ -17,6 +17,8 @@ public:
 
 	WindowType getType();
 
+	wx::String getTitle();
+
 	void setWorkspace(Workspace* workspace);
 
 	Workspace* getWorkspace();
