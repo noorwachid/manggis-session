@@ -238,40 +238,42 @@ void X11Context::run(IObserver* observer) {
 
 				Window* window = _getWindowByClient(e->window);
 				if (window) {
-					uint16_t mask = 0;
-					uint32_t values[7];
-					uint32_t i = 0;
-					if (e->value_mask & XCB_CONFIG_WINDOW_X) {
-						mask |= XCB_CONFIG_WINDOW_X;
-						values[i++] = e->x;
-					}
-					if (e->value_mask & XCB_CONFIG_WINDOW_Y) {
-						mask |= XCB_CONFIG_WINDOW_Y;
-						values[i++] = e->y;
-					}
-					if (e->value_mask & XCB_CONFIG_WINDOW_WIDTH) {
-						mask |= XCB_CONFIG_WINDOW_WIDTH;
-						values[i++] = e->width;
-					}
-					if (e->value_mask & XCB_CONFIG_WINDOW_HEIGHT) {
-						mask |= XCB_CONFIG_WINDOW_HEIGHT;
-						values[i++] = e->height; 
-					}
-					if (e->value_mask & XCB_CONFIG_WINDOW_BORDER_WIDTH) {
-						mask |= XCB_CONFIG_WINDOW_BORDER_WIDTH;
-						values[i++] = e->border_width;
-					}
-					if (e->value_mask & XCB_CONFIG_WINDOW_SIBLING) {
-						mask |= XCB_CONFIG_WINDOW_SIBLING;
-						values[i++] = e->sibling;
-					}
-					if (e->value_mask & XCB_CONFIG_WINDOW_STACK_MODE) {
-						mask |= XCB_CONFIG_WINDOW_STACK_MODE;
-						values[i++] = e->stack_mode;
-					}
-
-					xcb_configure_window(_conn->get(), ((X11WindowBackend*) window->getBackend())->getFrameHandle(), mask, values);
-					_conn->flush();
+					X11WindowBackend* backend = (X11WindowBackend*) window->getBackend();
+					backend->notifyClient();
+					// uint16_t mask = 0;
+					// uint32_t values[7];
+					// uint32_t i = 0;
+					// if (e->value_mask & XCB_CONFIG_WINDOW_X) {
+					// 	mask |= XCB_CONFIG_WINDOW_X;
+					// 	values[i++] = e->x;
+					// }
+					// if (e->value_mask & XCB_CONFIG_WINDOW_Y) {
+					// 	mask |= XCB_CONFIG_WINDOW_Y;
+					// 	values[i++] = e->y;
+					// }
+					// if (e->value_mask & XCB_CONFIG_WINDOW_WIDTH) {
+					// 	mask |= XCB_CONFIG_WINDOW_WIDTH;
+					// 	values[i++] = e->width;
+					// }
+					// if (e->value_mask & XCB_CONFIG_WINDOW_HEIGHT) {
+					// 	mask |= XCB_CONFIG_WINDOW_HEIGHT;
+					// 	values[i++] = e->height; 
+					// }
+					// if (e->value_mask & XCB_CONFIG_WINDOW_BORDER_WIDTH) {
+					// 	mask |= XCB_CONFIG_WINDOW_BORDER_WIDTH;
+					// 	values[i++] = e->border_width;
+					// }
+					// if (e->value_mask & XCB_CONFIG_WINDOW_SIBLING) {
+					// 	mask |= XCB_CONFIG_WINDOW_SIBLING;
+					// 	values[i++] = e->sibling;
+					// }
+					// if (e->value_mask & XCB_CONFIG_WINDOW_STACK_MODE) {
+					// 	mask |= XCB_CONFIG_WINDOW_STACK_MODE;
+					// 	values[i++] = e->stack_mode;
+					// }
+					//
+					// xcb_configure_window(_conn->get(), ((X11WindowBackend*) window->getBackend())->getFrameHandle(), mask, values);
+					// _conn->flush();
 					break;
 				}
 				uint16_t mask = 0;

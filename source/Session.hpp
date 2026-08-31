@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Collider.hpp"
 #include "Direction.hpp"
 #include "Event.hpp"
 #include "IObserver.hpp"
@@ -8,15 +7,10 @@
 #include "Monitor.hpp"
 #include "Workspace.hpp"
 #include "Window.hpp"
-#include "Logger.hpp"
 #include "config/Config.hpp"
-#include "input/MouseButton.hpp"
 #include "input/Key.hpp"
-#include "system/Exec.hpp"
 #include "backend/IContext.hpp"
 #include "backend/ISessionObserver.hpp"
-#include "wx/core/Assert.hpp"
-#include "wx/core/Hash.hpp"
 #include "wx/core/List.hpp"
 #include "wx/core/Func.hpp"
 
@@ -102,7 +96,9 @@ public:
 
 	void focusNearestWindow(Direction direction);
 
-	void cycleWindow();
+	void cycleNextWindow();
+
+	void cyclePreviousWindow();
 
 	void closeWindow();
 
@@ -139,6 +135,4 @@ private:
 	wx::List<Workspace*> _workspaceDB;
 
 	wx::HashTable<KeyIndex, KeyCallback> _keyBindings;
-
-	bool _cyclingWindow = false;
 };

@@ -16,6 +16,8 @@ enum struct ConfigCommandFunc {
 	Exec,
 	FocusWindow,
 	CloseWindow,
+	CycleNextWindow,
+	CyclePreviousWindow,
 	TileWindow,
 	MaximizeWindow,
 	RestoreWindow,

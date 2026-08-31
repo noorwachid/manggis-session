@@ -64,7 +64,7 @@ public:
 		values[1] = y;
 		xcb_configure_window(_conn->get(), _frame, XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y, values);
 		_conn->flush();
-		_notifyClient();
+		notifyClient();
 	}
 
 	virtual void resize(int width, int height) override {
@@ -77,19 +77,12 @@ public:
 		LOG("[x11.window] resize to %d, %d\n", values[0], values[1]);
 
 		uint32_t clientValues[] = {
-			0,
-			_prop.titlebarHeight,
 			(uint32_t)width,
 			(uint32_t)height - _prop.titlebarHeight,
 		};
-		xcb_configure_window(_conn->get(), _client,
-			XCB_CONFIG_WINDOW_X | 
-			XCB_CONFIG_WINDOW_Y | 
-			XCB_CONFIG_WINDOW_WIDTH | 
-			XCB_CONFIG_WINDOW_HEIGHT, 
-			clientValues
-		);
+		xcb_configure_window(_conn->get(), _client, XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT, clientValues);
 		_conn->flush();
+		notifyClient();
 		draw();
 	}
 
@@ -172,6 +165,24 @@ public:
 		_conn->flush();
 	}
 
+	void notifyClient() {
+		Rect rect = getRect();
+		xcb_configure_notify_event_t event {};
+		event.response_type = XCB_CONFIGURE_NOTIFY;
+		event.window = _client;
+		event.event = _client;
+		event.x = rect.x;
+		event.y = rect.y + _prop.titlebarHeight;
+		event.width = rect.width;
+		event.height = rect.height - _prop.titlebarHeight;
+		event.border_width = _prop.borderWidth;
+		event.above_sibling = XCB_NONE;
+		event.override_redirect = 0;
+		xcb_send_event(_conn->get(), 0, _client, XCB_EVENT_MASK_STRUCTURE_NOTIFY, (const char *)&event);
+		_conn->flush();
+	}
+
+
 private:
 	void _reparent() {
 		_frame = xcb_generate_id(_conn->get());
@@ -227,23 +238,6 @@ private:
 
 		_hint->setWindowFrame(_client, _prop.borderWidth, _prop.borderWidth + _prop.titlebarHeight, _prop.borderWidth, _prop.borderWidth);
 
-		_conn->flush();
-	}
-
-	void _notifyClient() {
-		Rect rect = getRect();
-		xcb_configure_notify_event_t event {};
-		event.response_type = XCB_CONFIGURE_NOTIFY;
-		event.window = _client;
-		event.event = _client;
-		event.x = rect.x;
-		event.y = rect.y + _prop.titlebarHeight;
-		event.width = rect.width;
-		event.height = rect.height - _prop.titlebarHeight;
-		event.border_width = _prop.borderWidth;
-		event.above_sibling = XCB_NONE;
-		event.override_redirect = 0;
-		xcb_send_event(_conn->get(), 0, _client, XCB_EVENT_MASK_STRUCTURE_NOTIFY, (const char *)&event);
 		_conn->flush();
 	}
 

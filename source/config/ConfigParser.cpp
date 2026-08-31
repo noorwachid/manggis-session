@@ -149,6 +149,34 @@ Config parseConfig(wx::WkValue const& value) {
 			}
 
 			{
+				wx::WkValue* cycleNextWindow = tup.getOrNull("cycleNextWindow");
+				if (cycleNextWindow) {
+					if (!cycleNextWindow->isNull()) {
+						LOG("[config] invalid cycleNextWindow command argument, expect null\n");
+						return {};
+					}
+
+					ConfigCommand command;
+					command.func = ConfigCommandFunc::CycleNextWindow;
+					return command;
+				}
+			}
+
+			{
+				wx::WkValue* cyclePreviousWindow = tup.getOrNull("cyclePreviousWindow");
+				if (cyclePreviousWindow) {
+					if (!cyclePreviousWindow->isNull()) {
+						LOG("[config] invalid cyclePreviousWindow command argument, expect null\n");
+						return {};
+					}
+
+					ConfigCommand command;
+					command.func = ConfigCommandFunc::CyclePreviousWindow;
+					return command;
+				}
+			}
+
+			{
 				wx::WkValue* focusWindow = tup.getOrNull("focusWindow");
 				if (focusWindow) {
 					if (!focusWindow->isString()) {

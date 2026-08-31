@@ -1,8 +1,11 @@
+#include "Logger.hpp"
+#include "Collider.hpp"
 #include "Session.hpp"
 #include "Direction.hpp"
 #include "backend/IWindowBackend.hpp"
 #include "config/Config.hpp"
 #include "input/Key.hpp"
+#include "system/Exec.hpp"
 #include <climits>
 
 bool operator==(KeyIndex a, KeyIndex b) {
@@ -31,7 +34,6 @@ void Session::run(Config const& config) {
 
 	_context->bindKey(ModKey::Alt, Key::A);
 	_context->bindKey(ModKey::Alt, Key::M);
-	_context->bindKey(ModKey::Alt, Key::Tab);
 
 	for (int i = 0; i < _config.bindings.count(); i++) {
 		ConfigBinding const& binding = _config.bindings[i];
@@ -268,20 +270,9 @@ void Session::onKeyPress(KeyEvent const& e) {
 		return;
 	}
 
-	if (e.modKey == ModKey::Alt && e.key == Key::Tab) {
-		_context->bindModKey(ModKey::Alt);
-		cycleWindow();
-		return;
-	}
-
 }
 
 void Session::onKeyRelease(KeyEvent const& e) {
-	if (e.modKey == ModKey::Alt && e.key == Key::None) {
-		_context->unbindModKey(ModKey::Alt);
-		_cyclingWindow = false;
-		printf("END CYCLE\n");
-	}
 }
 
 void Session::onMonitorConnect(MonitorEvent const& e) {
@@ -456,18 +447,42 @@ void Session::focusNearestWindow(Direction direction) {
 	}
 }
 
-void Session::cycleWindow() {
+void Session::cycleNextWindow() {
 	Workspace* workspace = _activeMonitor->getActiveWorkspace();
-	// TODO:
-	// on the first key-press create index where the cycle began
-	// pick the modifier like alt or super
-	// listen to that key-release to end and accept new active window
-	if (!_cyclingWindow) {
-		LOG("BEGIN CYCLE\n");
-		_cyclingWindow = true;
-	}
+	if (workspace->getWindowList().count() < 2) return;
 
-	LOG("NEXT WINDOW\n");
+	wx::List<Window*> windows = workspace->getWindowList();
+	Window* activeWindow = workspace->getActiveWindow();
+	int idx = -1;
+	for (int i = 0; i < windows.count(); i++) {
+		Window* window = windows[i];
+		if (window == activeWindow) {
+			idx = i;
+			break;
+		}
+	}
+	if (idx == -1) return;
+	Window* nextWindow = windows[(idx + 1) % windows.count()];
+	workspace->focusWindow(nextWindow);
+}
+
+void Session::cyclePreviousWindow() {
+	Workspace* workspace = _activeMonitor->getActiveWorkspace();
+	if (workspace->getWindowList().count() < 2) return;
+
+	wx::List<Window*> windows = workspace->getWindowList();
+	Window* activeWindow = workspace->getActiveWindow();
+	int idx = -1;
+	for (int i = 0; i < windows.count(); i++) {
+		Window* window = windows[i];
+		if (window == activeWindow) {
+			idx = i;
+			break;
+		}
+	}
+	if (idx == -1) return;
+	Window* nextWindow = windows[(idx + windows.count() - 1) % windows.count()];
+	workspace->focusWindow(nextWindow);
 }
 
 void Session::closeWindow() {
@@ -534,12 +549,16 @@ void Session::_doCommand(ConfigCommand const& command) {
 		exec(argv);
 		return;
 	}
-	if (command.func == ConfigCommandFunc::FocusWindow) {
-		focusNearestWindow((Direction) command.arguments.asInt64());
-		return;
-	}
 	if (command.func == ConfigCommandFunc::CloseWindow) {
 		closeWindow();
+		return;
+	}
+	if (command.func == ConfigCommandFunc::CycleNextWindow) {
+		cycleNextWindow();
+		return;
+	}
+	if (command.func == ConfigCommandFunc::CyclePreviousWindow) {
+		cyclePreviousWindow();
 		return;
 	}
 	if (command.func == ConfigCommandFunc::TileWindow) {
