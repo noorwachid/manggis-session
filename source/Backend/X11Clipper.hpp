@@ -1,8 +1,8 @@
 #pragma once
 
-#include "Logger.hpp"
-#include "backend/X11Connection.hpp"
-#include "backend/X11WindowBackend.hpp"
+#include "Common/Logger.hpp"
+#include "Backend/X11Connection.hpp"
+#include "Backend/X11WindowBackend.hpp"
 #include <xcb/shape.h>
 #include <xcb/xproto.h>
 

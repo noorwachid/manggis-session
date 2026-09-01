@@ -1,8 +1,8 @@
 #pragma once
 
-#include "Logger.hpp"
-#include "backend/X11Connection.hpp"
-#include "input/MouseCursor.hpp"
+#include "Common/Logger.hpp"
+#include "Backend/X11Connection.hpp"
+#include "Input/MouseCursor.hpp"
 #include <xcb/xcb_cursor.h>
 
 class X11MouseManager {

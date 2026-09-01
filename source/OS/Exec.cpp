@@ -4,13 +4,13 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
-bool exec(wx::List<wx::String> const& args) {
-	wx::List<char const*> argv;
-	argv.reserve(args.count() + 1);
-	for (int i = 0; i < args.count(); i++) {
-		argv.append(args[i].cptr());
+bool Exec(Wx::List<Wx::String> const& args) {
+	Wx::List<char const*> argv;
+	argv.Reserve(args.Count() + 1);
+	for (int i = 0; i < args.Count(); i++) {
+		argv.Append(args[i].CPtr());
 	}
-	argv.append(nullptr);
+	argv.Append(nullptr);
 
 	pid_t pid = fork();
     if (pid < 0) {
@@ -23,7 +23,7 @@ bool exec(wx::List<wx::String> const& args) {
         //
         // execvp() replaces this process with the requested application.
         // If execvp() succeeds, this code is never reached.
-        execvp(argv[0], const_cast<char* const*>(argv.ptr()));
+        execvp(argv[0], const_cast<char* const*>(argv.Ptr()));
 
         // execvp() failed.
         exit(127);

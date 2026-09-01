@@ -1,18 +1,18 @@
 #pragma once
 
-#include "Direction.hpp"
 #include "Event.hpp"
 #include "IObserver.hpp"
 #include "MonitorInfo.hpp"
 #include "Monitor.hpp"
 #include "Workspace.hpp"
 #include "Window.hpp"
-#include "config/Config.hpp"
-#include "input/Key.hpp"
-#include "backend/IContext.hpp"
-#include "backend/ISessionObserver.hpp"
-#include "wx/core/List.hpp"
-#include "wx/core/Func.hpp"
+#include "Common/Direction.hpp"
+#include "Config/Config.hpp"
+#include "Input/Key.hpp"
+#include "Backend/IContext.hpp"
+#include "Backend/ISessionObserver.hpp"
+#include "Wx/Core/List.hpp"
+#include "Wx/Core/Func.hpp"
 
 enum struct DragMode {
 	None,
@@ -33,11 +33,11 @@ struct KeyIndex {
 	Key key;
 };
 
-using KeyCallback = wx::Func<void()>;
+using KeyCallback = Wx::Func<void()>;
 
 bool operator==(KeyIndex a, KeyIndex b);
 
-wx::Uint32 getHash(KeyIndex index);
+Wx::Uint32 getHash(KeyIndex index);
 
 class Monitor;
 
@@ -82,7 +82,7 @@ public:
 
 	void focusMonitor(Monitor* monitor);
 
-	void focusWorkspaceID(wx::String const& id);
+	void focusWorkspaceID(Wx::String const& id);
 
 	void focusWorkspace(Workspace* workspace);
 
@@ -90,7 +90,7 @@ public:
 
 	void sendWindowToWorkspace(Window* window, Workspace* workspace);
 
-	void sendWindowToWorkspaceID(wx::String const& id);
+	void sendWindowToWorkspaceID(Wx::String const& id);
 
 	void focusWindow(Window* window);
 
@@ -107,7 +107,7 @@ private:
 
 	void _doCommand(ConfigCommand const& command);
 
-	Monitor* _queryMonitorByPort(wx::String const& port);
+	Monitor* _queryMonitorByPort(Wx::String const& port);
 
 	Monitor* _queryMonitorByPos(Point pos);
 
@@ -117,7 +117,7 @@ private:
 
 	Monitor* _getOrCreateMonitor(MonitorInfo const& info);
 
-	Workspace* _getOrCreateWorkspace(wx::String const& id);
+	Workspace* _getOrCreateWorkspace(Wx::String const& id);
 
 	void _clipWindow(Window* window);
 
@@ -127,12 +127,12 @@ private:
 
 	Monitor* _activeMonitor = nullptr;
 	Monitor* _fallbackMonitor = nullptr; // incase of all monitor disconnected all workspace/windows are here
-	wx::List<Monitor*> _monitors;
+	Wx::List<Monitor*> _monitors;
 	DragState _dragState;
 
 	Config _config;
-	wx::List<Monitor*> _monitorDB;
-	wx::List<Workspace*> _workspaceDB;
+	Wx::List<Monitor*> _monitorDB;
+	Wx::List<Workspace*> _workspaceDB;
 
-	wx::HashTable<KeyIndex, KeyCallback> _keyBindings;
+	Wx::HashTable<KeyIndex, KeyCallback> _keyBindings;
 };

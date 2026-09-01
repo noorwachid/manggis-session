@@ -1,9 +1,9 @@
 #pragma once
 
-#include "Logger.hpp"
-#include "backend/X11Connection.hpp"
-#include "input/Key.hpp"
-#include "wx/core/String.hpp"
+#include "Common/Logger.hpp"
+#include "Backend/X11Connection.hpp"
+#include "Input/Key.hpp"
+#include "Wx/Core/String.hpp"
 
 #ifdef __clang__
 	#pragma clang diagnostic push
@@ -120,7 +120,7 @@ public:
 		return _keyboardEventOffset;
 	}
 
-	wx::String getLayout() {
+	Wx::String getLayout() {
 		const char *layout = xkb_keymap_layout_get_name(_keymap, 0);
 		return layout;
 	}

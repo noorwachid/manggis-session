@@ -1,19 +1,19 @@
-#include "Logger.hpp"
-#include "Collider.hpp"
+#include "Common/Logger.hpp"
+#include "Common/Collider.hpp"
+#include "Common/Direction.hpp"
 #include "Session.hpp"
-#include "Direction.hpp"
-#include "backend/IWindowBackend.hpp"
-#include "config/Config.hpp"
-#include "input/Key.hpp"
-#include "system/Exec.hpp"
+#include "Backend/IWindowBackend.hpp"
+#include "Config/Config.hpp"
+#include "Input/Key.hpp"
+#include "OS/Exec.hpp"
 #include <climits>
 
 bool operator==(KeyIndex a, KeyIndex b) {
 	return a.modKey == b.modKey && a.key == b.key;
 }
 
-wx::Uint32 getHash(KeyIndex index) {
-	return wx::combineHash(wx::getHash((int)index.modKey), wx::getHash((int)index.key));
+Wx::Uint32 GetHash(KeyIndex index) {
+	return Wx::CombineHash(Wx::GetHash((int)index.modKey), Wx::GetHash((int)index.key));
 }
 
 class Monitor;
@@ -35,7 +35,7 @@ void Session::run(Config const& config) {
 	_context->bindKey(ModKey::Alt, Key::A);
 	_context->bindKey(ModKey::Alt, Key::M);
 
-	for (int i = 0; i < _config.bindings.count(); i++) {
+	for (int i = 0; i < _config.bindings.Count(); i++) {
 		ConfigBinding const& binding = _config.bindings[i];
 
 		KeyIndex index;
@@ -43,8 +43,8 @@ void Session::run(Config const& config) {
 		index.key = binding.key;
 
 		_context->bindKey(binding.modKey, binding.key);
-		_keyBindings.set(index, [this, binding]() {
-			for (int k = 0; k < binding.commands.count(); k++) {
+		_keyBindings.Set(index, [this, binding]() {
+			for (int k = 0; k < binding.commands.Count(); k++) {
 				_doCommand(binding.commands[k]);
 			}
 		});
@@ -52,7 +52,7 @@ void Session::run(Config const& config) {
 
 	_relayoutMonitors();
 
-	for (int i = 0; i < _config.autostarts.count(); i++) {
+	for (int i = 0; i < _config.autostarts.Count(); i++) {
 		_doCommand(_config.autostarts[i]);
 	}
 
@@ -60,7 +60,7 @@ void Session::run(Config const& config) {
 }
 
 ConfigBinding const* Session::queryBinding(ModKey modKey, Key key) {
-	for (int i = 0; i < _config.bindings.count(); i++) {
+	for (int i = 0; i < _config.bindings.Count(); i++) {
 		ConfigBinding const& binding = _config.bindings[i];
 		if (binding.modKey == modKey && binding.key == key) {
 			return &binding;
@@ -152,10 +152,10 @@ void Session::onMouseRelease(MouseButtonEvent const& e) {
 		Monitor* bestMonitor = nullptr;
 		int bestArea = 0;
 
-		for (int i = 0; i < _monitors.count(); i++) {
+		for (int i = 0; i < _monitors.Count(); i++) {
 			Monitor* monitor = _monitors[i];
 			Rect monitorRect = monitor->getRect();
-			Rect intersectRect = intersectRectRect(monitorRect, windowRect);
+			Rect intersectRect = IntersectRectRect(monitorRect, windowRect);
 			int area = intersectRect.width * intersectRect.height;
 			if (bestArea < area) {
 				bestArea = area;
@@ -251,7 +251,7 @@ void Session::onKeyPress(KeyEvent const& e) {
 	KeyIndex index;
 	index.modKey = e.modKey;
 	index.key = e.key;
-	KeyCallback* callback = _keyBindings.getOrNull(index);
+	KeyCallback* callback = _keyBindings.TryGet(index);
 	LOG("GOT %p\n", callback);
 	if (callback != nullptr) {
 		(*callback)();
@@ -276,17 +276,17 @@ void Session::onKeyRelease(KeyEvent const& e) {
 }
 
 void Session::onMonitorConnect(MonitorEvent const& e) {
-	LOG("monitor connected %s\n", e.port.cptr());
+	LOG("monitor connected %s\n", e.port.CPtr());
 	_relayoutMonitors();
 }
 
 void Session::onMonitorDisconnect(MonitorEvent const& e) {
-	LOG("monitor disconnected %s\n", e.port.cptr());
+	LOG("monitor disconnected %s\n", e.port.CPtr());
 	_relayoutMonitors();
 }
 
 void Session::onMonitorPropertyChange(MonitorEvent const& e) {
-	LOG("monitor property changed %s\n", e.port.cptr());
+	LOG("monitor property changed %s\n", e.port.CPtr());
 	_relayoutMonitors();
 }
 
@@ -300,15 +300,15 @@ void Session::focusMonitor(Monitor* monitor) {
 	_observer->onWorkspaceFocus(_activeMonitor->getActiveWorkspace());
 }
 
-void Session::focusWorkspaceID(wx::String const& id) {
+void Session::focusWorkspaceID(Wx::String const& id) {
 	Monitor* previousMonitor = _activeMonitor;
-	for (int i = 0; i < _monitors.count(); i++) {
+	for (int i = 0; i < _monitors.Count(); i++) {
 		Monitor* mon = _monitors[i];
 		Workspace* ws = mon->queryWorkspace(id);
 		if (ws == nullptr) {
 			continue;
 		}
-		LOG("activate workspace %s\n", id.cptr());
+		LOG("activate workspace %s\n", id.CPtr());
 		if (previousMonitor == mon) {
 			mon->getActiveWorkspace()->hide();
 		}
@@ -318,7 +318,7 @@ void Session::focusWorkspaceID(wx::String const& id) {
 		mon->getActiveWorkspace()->show();
 		return;
 	}
-	LOG("no workspace with id %s\n", id.cptr());
+	LOG("no workspace with id %s\n", id.CPtr());
 }
 
 void Session::focusWorkspace(Workspace* workspace) {
@@ -332,7 +332,7 @@ void Session::focusWorkspace(Workspace* workspace) {
 	focusMonitor(mon);
 	mon->activateWorkspace(workspace);
 	_observer->onWorkspaceFocus(workspace);
-	LOG("activate workspace %s\n", workspace->getID().cptr());
+	LOG("activate workspace %s\n", workspace->getID().CPtr());
 }
 
 void Session::sendWorkspaceToMonitor(Workspace* workspace, Monitor* monitor) {
@@ -340,7 +340,7 @@ void Session::sendWorkspaceToMonitor(Workspace* workspace, Monitor* monitor) {
 	monitor->addWorkspace(workspace);
 	if (oldMonitor != nullptr) {
 		if (oldMonitor != monitor) {
-			for (int i = 0; i < workspace->getWindowList().count(); i++) {
+			for (int i = 0; i < workspace->getWindowList().Count(); i++) {
 				Window* window = workspace->getWindowList()[i];
 				sendWindowToWorkspace(window, workspace);
 			}
@@ -379,12 +379,12 @@ void Session::sendWindowToWorkspace(Window* window, Workspace* workspace) {
 	workspace->addWindow(window);
 }
 
-void Session::sendWindowToWorkspaceID(wx::String const& id) {
+void Session::sendWindowToWorkspaceID(Wx::String const& id) {
 	Window* window = _activeMonitor->getActiveWorkspace()->getActiveWindow();
 	if (window == nullptr) {
 		return;
 	}
-	for (int i = 0; i < _monitors.count(); i++) {
+	for (int i = 0; i < _monitors.Count(); i++) {
 		Monitor* mon = _monitors[i];
 		Workspace* ws = mon->queryWorkspace(id);
 		if (ws == nullptr) {
@@ -393,7 +393,7 @@ void Session::sendWindowToWorkspaceID(wx::String const& id) {
 		sendWindowToWorkspace(window, ws);
 		return;
 	}
-	LOG("no workspace with id %s\n", id.cptr());
+	LOG("no workspace with id %s\n", id.CPtr());
 }
 
 void Session::focusWindow(Window* window) {
@@ -407,6 +407,7 @@ void Session::focusWindow(Window* window) {
 }
 
 void Session::focusNearestWindow(Direction direction) {
+	LOG("FOCUS NEAREST WINDOW %d\n", (int) direction);
 	Workspace* workspace = _activeMonitor->getActiveWorkspace();
 	Window* sourceWindow = workspace->getActiveWindow();
 	if (sourceWindow == nullptr) return;
@@ -417,19 +418,41 @@ void Session::focusNearestWindow(Direction direction) {
 	Window* shortestWindow = nullptr;
 
 	if (direction == Direction::East) {
-		for (int i = 0; i < workspace->getWindowList().count(); i++) {
+		for (int i = 0; i < workspace->getWindowList().Count(); i++) {
 			Window* targetWindow = workspace->getWindowList()[i];
 			if (targetWindow == sourceWindow) continue;
 
 			Rect targetRect = targetWindow->getRect();
-			int distance = (targetRect.x) - (sourceRect.x + sourceRect.width);
+			int distance = 0;
+
+			// partial overlap but target is visible
+			// +---+
+			// | +----+
+			// | |    |
+			// | +----+
+			// +---+
+			if (IsInsideRange(sourceRect.x + sourceRect.width, targetRect.x, targetRect.x + targetRect.width)) {
+				distance = (targetRect.x) - (sourceRect.x);
+			}
+
+
+			// non overlap
+			// +---+
+			// |   | +----+
+			// |   | |    |
+			// |   | +----+
+			// +---+
+			if (targetRect.x >= sourceRect.x + sourceRect.width) {
+				distance = (targetRect.x) - (sourceRect.x);
+			}
+
 			if (distance > 0 && shortestDistance > distance) {
 				shortestDistance = distance;
 				shortestWindow = targetWindow;
 			}
 		}
 	} else if (direction == Direction::West) {
-		for (int i = 0; i < workspace->getWindowList().count(); i++) {
+		for (int i = 0; i < workspace->getWindowList().Count(); i++) {
 			Window* targetWindow = workspace->getWindowList()[i];
 			if (targetWindow == sourceWindow) continue;
 
@@ -449,12 +472,12 @@ void Session::focusNearestWindow(Direction direction) {
 
 void Session::cycleNextWindow() {
 	Workspace* workspace = _activeMonitor->getActiveWorkspace();
-	if (workspace->getWindowList().count() < 2) return;
+	if (workspace->getWindowList().Count() < 2) return;
 
-	wx::List<Window*> windows = workspace->getWindowList();
+	Wx::List<Window*> windows = workspace->getWindowList();
 	Window* activeWindow = workspace->getActiveWindow();
 	int idx = -1;
-	for (int i = 0; i < windows.count(); i++) {
+	for (int i = 0; i < windows.Count(); i++) {
 		Window* window = windows[i];
 		if (window == activeWindow) {
 			idx = i;
@@ -462,18 +485,18 @@ void Session::cycleNextWindow() {
 		}
 	}
 	if (idx == -1) return;
-	Window* nextWindow = windows[(idx + 1) % windows.count()];
+	Window* nextWindow = windows[(idx + 1) % windows.Count()];
 	workspace->focusWindow(nextWindow);
 }
 
 void Session::cyclePreviousWindow() {
 	Workspace* workspace = _activeMonitor->getActiveWorkspace();
-	if (workspace->getWindowList().count() < 2) return;
+	if (workspace->getWindowList().Count() < 2) return;
 
-	wx::List<Window*> windows = workspace->getWindowList();
+	Wx::List<Window*> windows = workspace->getWindowList();
 	Window* activeWindow = workspace->getActiveWindow();
 	int idx = -1;
-	for (int i = 0; i < windows.count(); i++) {
+	for (int i = 0; i < windows.Count(); i++) {
 		Window* window = windows[i];
 		if (window == activeWindow) {
 			idx = i;
@@ -481,7 +504,7 @@ void Session::cyclePreviousWindow() {
 		}
 	}
 	if (idx == -1) return;
-	Window* nextWindow = windows[(idx + windows.count() - 1) % windows.count()];
+	Window* nextWindow = windows[(idx + windows.Count() - 1) % windows.Count()];
 	workspace->focusWindow(nextWindow);
 }
 
@@ -541,16 +564,20 @@ void Session::_beginDrag(DragMode mode, Window* window, WindowResizingArea area)
 
 void Session::_doCommand(ConfigCommand const& command) {
 	if (command.func == ConfigCommandFunc::Exec) {
-		wx::List<wx::String> argv;
-		for (int i = 0; i < command.arguments.asList().count(); i++) {
-			wx::WkValue const& arg = command.arguments.asList()[i];
-			argv.append(arg.asString());
+		Wx::List<Wx::String> argv;
+		for (int i = 0; i < command.arguments.AsList().Count(); i++) {
+			Wx::WkValue const& arg = command.arguments.AsList()[i];
+			argv.Append(arg.AsString());
 		}
-		exec(argv);
+		Exec(argv);
 		return;
 	}
 	if (command.func == ConfigCommandFunc::CloseWindow) {
 		closeWindow();
+		return;
+	}
+	if (command.func == ConfigCommandFunc::FocusWindow) {
+		focusNearestWindow((Direction) command.arguments.AsInt64());
 		return;
 	}
 	if (command.func == ConfigCommandFunc::CycleNextWindow) {
@@ -565,11 +592,11 @@ void Session::_doCommand(ConfigCommand const& command) {
 		Window* window = _activeMonitor->getActiveWorkspace()->getActiveWindow();
 		if (window == nullptr) return;
 		Rect avail = _activeMonitor->getWorkingRect();
-		wx::List<wx::WkValue> const& args = command.arguments.asList();
-		wx::Float64 x = args[0].asFloat64();
-		wx::Float64 y = args[1].asFloat64();
-		wx::Float64 width = args[2].asFloat64();
-		wx::Float64 height = args[3].asFloat64();
+		Wx::List<Wx::WkValue> const& args = command.arguments.AsList();
+		Wx::Float64 x = args[0].AsFloat64();
+		Wx::Float64 y = args[1].AsFloat64();
+		Wx::Float64 width = args[2].AsFloat64();
+		Wx::Float64 height = args[3].AsFloat64();
 		Rect target;
 		target.x = avail.x + (avail.width * x);
 		target.y = avail.y + (avail.height * y);
@@ -584,11 +611,11 @@ void Session::_doCommand(ConfigCommand const& command) {
 		return;
 	}
 	if (command.func == ConfigCommandFunc::FocusWorkspace) {
-		focusWorkspaceID(command.arguments.asString());
+		focusWorkspaceID(command.arguments.AsString());
 		return;
 	}
 	if (command.func == ConfigCommandFunc::SendWindowToWorkspace) {
-		sendWindowToWorkspaceID(command.arguments.asString());
+		sendWindowToWorkspaceID(command.arguments.AsString());
 		return;
 	}
 	if (command.func == ConfigCommandFunc::Quit) {
@@ -597,8 +624,8 @@ void Session::_doCommand(ConfigCommand const& command) {
 	}
 }
 
-Monitor* Session::_queryMonitorByPort(wx::String const& port) {
-	for (int i = 0; i < _monitors.count(); i++) {
+Monitor* Session::_queryMonitorByPort(Wx::String const& port) {
+	for (int i = 0; i < _monitors.Count(); i++) {
 		if (_monitors[i]->getPort() == port) {
 			return _monitors[i];
 		}
@@ -607,8 +634,8 @@ Monitor* Session::_queryMonitorByPort(wx::String const& port) {
 }
 
 Monitor* Session::_queryMonitorByPos(Point pos) {
-	for (int i = 0; i < _monitors.count(); i++) {
-		if (isPointIntersectRect(pos, _monitors[i]->getRect())) {
+	for (int i = 0; i < _monitors.Count(); i++) {
+		if (IsPointIntersectRect(pos, _monitors[i]->getRect())) {
 			return _monitors[i];
 		}
 	}
@@ -616,7 +643,7 @@ Monitor* Session::_queryMonitorByPos(Point pos) {
 }
 
 void Session::_relayoutMonitors() {
-	wx::List<MonitorInfo> monitorInfos = _context->getConnectedMonitorInfos();
+	Wx::List<MonitorInfo> monitorInfos = _context->getConnectedMonitorInfos();
 
 	MonitorInfo fallbackInfo;
 	fallbackInfo.port = "<fallback>";
@@ -624,35 +651,35 @@ void Session::_relayoutMonitors() {
 	_fallbackMonitor->clearWorkspaceList();
 
 	// TODO: reuse the monitor instance
-	_monitors.clear();
+	_monitors.Clear();
 
-	if (monitorInfos.isEmpty()) {
+	if (monitorInfos.IsEmpty()) {
 		_activeMonitor = _fallbackMonitor;
-		_monitors.append(_activeMonitor);
+		_monitors.Append(_activeMonitor);
 	} else {
 		Monitor* activeMonitor = nullptr;
-		for (int i = 0; i < monitorInfos.count(); i++) {
+		for (int i = 0; i < monitorInfos.Count(); i++) {
 			MonitorInfo const& info = monitorInfos[i];
 			Monitor* monitor = _getOrCreateMonitor(info);
 			monitor->clearWorkspaceList();
 			if (_activeMonitor == monitor) {
 				activeMonitor = monitor;
 			}
-			_monitors.append(monitor);
+			_monitors.Append(monitor);
 		}
 		if (activeMonitor == nullptr) {
-			_activeMonitor = _monitors.getFirst();
+			_activeMonitor = _monitors.GetFirst();
 		}
 	}
 
-	for (int i = 0; i < _config.workspaces.count(); i++) {
+	for (int i = 0; i < _config.workspaces.Count(); i++) {
 		ConfigWorkspace const& wsConfig = _config.workspaces[i];
 		Workspace* ws = _getOrCreateWorkspace(wsConfig.id);
-		if (wsConfig.ports.isEmpty()) {
+		if (wsConfig.ports.IsEmpty()) {
 			sendWorkspaceToMonitor(ws, _activeMonitor);
 		} else {
 			Monitor* monitor = nullptr;
-			for (int j = 0; j < wsConfig.ports.count(); j++) {
+			for (int j = 0; j < wsConfig.ports.Count(); j++) {
 				monitor = _queryMonitorByPort(wsConfig.ports[j]);
 				if (monitor) {
 					sendWorkspaceToMonitor(ws, monitor);
@@ -665,7 +692,7 @@ void Session::_relayoutMonitors() {
 		}
 	}
 
-	for (int i = 0; i < _monitors.count(); i++) {
+	for (int i = 0; i < _monitors.Count(); i++) {
 		Monitor* monitor = _monitors[i];
 		if (monitor->getActiveWorkspace() == nullptr) {
 			monitor->addWorkspace(new Workspace(monitor->getPort()));
@@ -673,14 +700,14 @@ void Session::_relayoutMonitors() {
 	}
 
 	// collect living workspace list
-	wx::List<Workspace*> workspaces;
+	Wx::List<Workspace*> workspaces;
 
-	for (int i = 0; i < _monitors.count(); i++) {
+	for (int i = 0; i < _monitors.Count(); i++) {
 		Monitor* monitor = _monitors[i];
-		for (int j = 0; j < monitor->getWorkspaceList().count(); j++) {
+		for (int j = 0; j < monitor->getWorkspaceList().Count(); j++) {
 			Workspace* workspace = monitor->getWorkspaceList()[j];
-			workspaces.append(workspace);
-			for (int k = 0; k < workspace->getWindowList().count(); k++) {
+			workspaces.Append(workspace);
+			for (int k = 0; k < workspace->getWindowList().Count(); k++) {
 				Window* window = workspace->getWindowList()[k];
 				// reclip window
 				_clipWindow(window);
@@ -694,24 +721,24 @@ void Session::_relayoutMonitors() {
 
 void Session::_logLayout() {
 	LOG("layout:\n");
-	for (int i = 0; i < _monitors.count(); i++) {
+	for (int i = 0; i < _monitors.Count(); i++) {
 		Monitor* mon = _monitors[i];
-		LOG("  mon %s:", mon->getPort().cptr());
+		LOG("  mon %s:", mon->getPort().CPtr());
 		if (mon == _activeMonitor) {
 			LOG(" # active");
 		}
 		LOG("\n");
-		for (int j = 0; j < mon->getWorkspaceList().count(); j++) {
+		for (int j = 0; j < mon->getWorkspaceList().Count(); j++) {
 			Workspace* ws = mon->getWorkspaceList()[j];
-			LOG("    ws %s: (mon: %s)", ws->getID().cptr(), ws->getMonitor()->getPort().cptr());
+			LOG("    ws %s: (mon: %s)", ws->getID().CPtr(), ws->getMonitor()->getPort().CPtr());
 			if (ws == mon->getActiveWorkspace()) {
 				LOG(" # active");
 			}
 			LOG("\n");
 
-			for (int k = 0; k < ws->getWindowList().count(); k++) {
+			for (int k = 0; k < ws->getWindowList().Count(); k++) {
 				Window* win = ws->getWindowList()[k];
-				LOG("      win %p: (ws: %s, mon: %s)", win, win->getWorkspace()->getID().cptr(), win->getMonitor()->getPort().cptr());
+				LOG("      win %p: (ws: %s, mon: %s)", win, win->getWorkspace()->getID().CPtr(), win->getMonitor()->getPort().CPtr());
 				if (win == ws->getActiveWindow()) {
 					LOG(" # active");
 				}
@@ -722,7 +749,7 @@ void Session::_logLayout() {
 }
 
 Monitor* Session::_getOrCreateMonitor(MonitorInfo const& info) {
-	for (int i = 0; i < _monitorDB.count(); i++) {
+	for (int i = 0; i < _monitorDB.Count(); i++) {
 		Monitor* monitor = _monitorDB[i];
 		if (monitor->getPort() == info.port) {
 			monitor->setInfo(info);
@@ -730,19 +757,19 @@ Monitor* Session::_getOrCreateMonitor(MonitorInfo const& info) {
 		}
 	}
 	Monitor* monitor = new Monitor(_context, info);
-	_monitorDB.append(monitor);
+	_monitorDB.Append(monitor);
 	return monitor;
 }
 
-Workspace* Session::_getOrCreateWorkspace(wx::String const& id) {
-	for (int i = 0; i < _workspaceDB.count(); i++) {
+Workspace* Session::_getOrCreateWorkspace(Wx::String const& id) {
+	for (int i = 0; i < _workspaceDB.Count(); i++) {
 		Workspace* workspace = _workspaceDB[i];
 		if (workspace->getID() == id) {
 			return workspace;
 		}
 	}
 	Workspace* workspace = new Workspace(id);
-	_workspaceDB.append(workspace);
+	_workspaceDB.Append(workspace);
 	return workspace;
 }
 
@@ -756,7 +783,7 @@ void Session::_clipWindow(Window* window) {
 	windowBorderRect.width += 2 * windowProp.borderWidth;
 	windowBorderRect.height += 2 * windowProp.borderWidth;
 	Rect workingRect = monitor->getWorkingRect();
-	Rect intersectRect = intersectRectRect(workingRect, windowBorderRect);
+	Rect intersectRect = IntersectRectRect(workingRect, windowBorderRect);
 
 	if (intersectRect.width == 0 || intersectRect.height == 0) {
 		LOG("invalid intersection\n");

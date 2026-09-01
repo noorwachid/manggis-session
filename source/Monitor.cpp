@@ -11,7 +11,7 @@ void Monitor::setInfo(MonitorInfo info) {
 	_info = info;
 }
 
-wx::String const& Monitor::getPort() const {
+Wx::String const& Monitor::getPort() const {
 	return _info.port;
 }
 
@@ -27,8 +27,8 @@ Workspace* Monitor::getActiveWorkspace() {
 	return _activeWorkspace;
 }
 
-Workspace* Monitor::queryWorkspace(wx::String const& id) {
-	for (int i = 0; i < _workspaces.count(); i++) {
+Workspace* Monitor::queryWorkspace(Wx::String const& id) {
+	for (int i = 0; i < _workspaces.Count(); i++) {
 		if (_workspaces[i]->getID() == id) {
 			return _workspaces[i];
 		}
@@ -49,31 +49,31 @@ void Monitor::addWorkspace(Workspace* workspace) {
 	// TODO: check if monitor already exists
 	workspace->setMonitor(this);
 
-	_workspaces.append(workspace);
+	_workspaces.Append(workspace);
 	if (_activeWorkspace == nullptr) {
 		_activeWorkspace = workspace;
 	}
 }
 
 void Monitor::removeWorkspace(Workspace* workspace) {
-	int index = _workspaces.find(workspace);
+	int index = _workspaces.Find(workspace);
 	if (index != -1) {
 		bool activeWorkspaceRemoved = _workspaces[index] == _activeWorkspace;
-		_workspaces.remove(index);
+		_workspaces.Remove(index);
 		if (activeWorkspaceRemoved) {
 			_activeWorkspace = nullptr;
-			if (!_workspaces.isEmpty()) {
-				activateWorkspace(_workspaces.getLast());
+			if (!_workspaces.IsEmpty()) {
+				activateWorkspace(_workspaces.GetLast());
 			}
 		}
 	}
 }
 
 void Monitor::clearWorkspaceList() {
-	_workspaces.clear();
+	_workspaces.Clear();
 }
 
-wx::List<Workspace*> const& Monitor::getWorkspaceList() const {
+Wx::List<Workspace*> const& Monitor::getWorkspaceList() const {
 	return _workspaces;
 }
 
@@ -82,7 +82,7 @@ void Monitor::calculateWorkingRect() {
 
 	Rect monitorRect = getRect();
 
-	for (int i = 0; i < _dockWindows.count(); i++) {
+	for (int i = 0; i < _dockWindows.Count(); i++) {
 		Window* window = _dockWindows[i];
 		Margin windowExtend = _context->getDockExtend(window);
 		if (margin.top < windowExtend.top) {
@@ -137,11 +137,11 @@ void Monitor::addWindow(Window* window) {
 		_activeWorkspace->addWindow(window);
 
 	} else if (type == WindowType::Dock) {
-		_dockWindows.append(window);
+		_dockWindows.Append(window);
 		calculateWorkingRect();
 		window->setMonitor(this);
 	} else {
-		_unmanagedWindows.append(window);
+		_unmanagedWindows.Append(window);
 		window->setMonitor(this);
 	}
 
@@ -154,15 +154,15 @@ void Monitor::removeWindow(Window* window) {
 		ws->removeWindow(window);
 		return;
 	}
-	for (int i = 0; i < _dockWindows.count(); i++) {
+	for (int i = 0; i < _dockWindows.Count(); i++) {
 		if (_dockWindows[i] == window) {
-			_dockWindows.remove(i);
+			_dockWindows.Remove(i);
 			return;
 		}
 	}
-	for (int i = 0; i < _unmanagedWindows.count(); i++) {
+	for (int i = 0; i < _unmanagedWindows.Count(); i++) {
 		if (_unmanagedWindows[i] == window) {
-			_unmanagedWindows.remove(i);
+			_unmanagedWindows.Remove(i);
 			return;
 		}
 	}

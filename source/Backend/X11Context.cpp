@@ -1,10 +1,10 @@
 #include "Event.hpp"
 #include "Monitor.hpp"
-#include "backend/IContext.hpp"
-#include "backend/IWindowBackend.hpp"
-#include "backend/X11WindowBackend.hpp"
-#include "input/Key.hpp"
-#include "backend/X11Context.hpp"
+#include "Backend/IContext.hpp"
+#include "Backend/IWindowBackend.hpp"
+#include "Backend/X11WindowBackend.hpp"
+#include "Backend/X11Context.hpp"
+#include "Input/Key.hpp"
 
 X11Context::X11Context() {
 	_conn = new X11Connection();
@@ -100,8 +100,8 @@ void X11Context::bindKey(ModKey modKey, Key key) {
 		return;
 	}
 
-	_keyBindings.append(binding);
-	_codeToKey.set(binding.keyCode, binding.key);
+	_keyBindings.Append(binding);
+	_codeToKey.Set(binding.keyCode, binding.key);
 
 	xcb_grab_key(
 		_conn->get(), 0, _conn->getScreen()->root, 
@@ -151,7 +151,7 @@ void X11Context::setMousePos(Point point) {
 	_conn->flush();
 }
 
-wx::List<MonitorInfo> X11Context::getConnectedMonitorInfos() {
+Wx::List<MonitorInfo> X11Context::getConnectedMonitorInfos() {
 	return _monitorManager->getConnectedMonitorInfos();
 }
 
@@ -187,7 +187,7 @@ void X11Context::run(IObserver* observer) {
 
 			case XCB_MAP_REQUEST: {
 				xcb_map_request_event_t* e = (xcb_map_request_event_t*) ev;
-				LOG("[x11] map request %08X (%s)\n", e->window, _hint->getWindowTitle(e->window).cptr());
+				LOG("[x11] map request %08X (%s)\n", e->window, _hint->getWindowTitle(e->window).CPtr());
 
 				Window* window = _getWindowByClient(e->window);
 				if (window == nullptr) {
@@ -213,8 +213,8 @@ void X11Context::run(IObserver* observer) {
 					WindowEvent event;
 					event.window = window;
 
-					_clientWindowMap.set(e->window, window);
-					_frameWindowMap.set(backend->getFrameHandle(), window);
+					_clientWindowMap.Set(e->window, window);
+					_frameWindowMap.Set(backend->getFrameHandle(), window);
 
 					observer->onWindowCreate(event);
 				} else {
@@ -342,8 +342,8 @@ void X11Context::run(IObserver* observer) {
 				event.window = window;
 				observer->onWindowDestroy(event);
 
-				_clientWindowMap.remove(e->window);
-				_frameWindowMap.remove(((X11WindowBackend*)window->getBackend())->getFrameHandle());
+				_clientWindowMap.Remove(e->window);
+				_frameWindowMap.Remove(((X11WindowBackend*)window->getBackend())->getFrameHandle());
 
 				delete window;
 				break;
@@ -407,7 +407,7 @@ void X11Context::run(IObserver* observer) {
 
 			case XCB_KEY_PRESS: {
 				xcb_key_press_event_t* e = (xcb_key_press_event_t*) ev;
-				Key* key = _codeToKey.getOrNull(e->detail);
+				Key* key = _codeToKey.TryGet(e->detail);
 				if (key == nullptr) {
 					break;
 				}
@@ -460,7 +460,7 @@ void X11Context::run(IObserver* observer) {
 					break;
 				}
 				LOG("[x11] key release %d\n", e->detail);
-				Key* key = _codeToKey.getOrNull(e->detail);
+				Key* key = _codeToKey.TryGet(e->detail);
 				if (key == nullptr) {
 					break;
 				}
@@ -477,7 +477,7 @@ void X11Context::run(IObserver* observer) {
 
 				Window* window = _getWindowByClient(e->window);
 				if (window == nullptr) {
-					LOG("[x11] unmanaged window id message request %d (%s)\n", e->window, _hint->atomToString(e->type).cptr());
+					LOG("[x11] unmanaged window id message request %d (%s)\n", e->window, _hint->atomToString(e->type).CPtr());
 					break;
 				}
 
@@ -617,7 +617,7 @@ void X11Context::run(IObserver* observer) {
 					}
 				}
 
-				LOG("uncaptured client message %d, %s\n", e->type, _hint->atomToString(e->type).cptr());
+				LOG("uncaptured client message %d, %s\n", e->type, _hint->atomToString(e->type).CPtr());
 				break;
 			}
 
@@ -672,20 +672,20 @@ void X11Context::stop() {
 
 Window* X11Context::_getWindowByFrame(xcb_window_t handle) {
 	if (handle == XCB_NONE) return nullptr;
-	Window** window = _frameWindowMap.getOrNull(handle);
+	Window** window = _frameWindowMap.TryGet(handle);
 	if (window != nullptr) return *window;
 	return nullptr;
 }
 
 Window* X11Context::_getWindowByClient(xcb_window_t handle) {
 	if (handle == XCB_NONE) return nullptr;
-	Window** window = _clientWindowMap.getOrNull(handle);
+	Window** window = _clientWindowMap.TryGet(handle);
 	if (window != nullptr) return *window;
 	return nullptr;
 }
 
 int X11Context::_fromModKey(ModKey modKey) {
-	wx::Uint32 flags = 0;
+	Wx::Uint32 flags = 0;
 
 	if (WX_FLAGS_CONTAIN(modKey, ModKey::Shift)) {
 		flags |= XCB_MOD_MASK_SHIFT;
@@ -728,9 +728,9 @@ MouseButton X11Context::_toMouseButton(int button) {
 }
 
 void X11Context::_attachKeyBindings() {
-	_codeToKey.clear();
+	_codeToKey.Clear();
 
-	for (int i = 0; i < _keyBindings.count(); i++) {
+	for (int i = 0; i < _keyBindings.Count(); i++) {
 		X11KeyBinding& binding = _keyBindings[i];
 		binding.keyCode = _keyboardManager->queryKeyCode(binding.key);
 		binding.modKeyCode = _fromModKey(binding.modKey);
@@ -739,7 +739,7 @@ void X11Context::_attachKeyBindings() {
 			continue;
 		}
 
-		_codeToKey.set(binding.keyCode, binding.key);
+		_codeToKey.Set(binding.keyCode, binding.key);
 
 		xcb_grab_key(
 			_conn->get(), 0, _conn->getScreen()->root, 
@@ -752,7 +752,7 @@ void X11Context::_attachKeyBindings() {
 }
 
 void X11Context::_detachKeyBindings() {
-	for (int i = 0; i < _keyBindings.count(); i++) {
+	for (int i = 0; i < _keyBindings.Count(); i++) {
 		X11KeyBinding& binding = _keyBindings[i];
 		if (binding.keyCode == 0) continue;
 
@@ -768,7 +768,7 @@ void X11Context::_detachKeyBindings() {
 
 void X11Context::_updateKeyBindings() {
 	_keyboardManager->updateKeymap();
-	wx::String layout = _keyboardManager->getLayout();
+	Wx::String layout = _keyboardManager->getLayout();
 
 	if (layout == _activeKeyboardLayout) {
 		return;
@@ -777,7 +777,7 @@ void X11Context::_updateKeyBindings() {
 	_detachKeyBindings();
 	_attachKeyBindings();
 
-	LOG("changing keyboard layout to %s\n", layout.cptr());
+	LOG("changing keyboard layout to %s\n", layout.CPtr());
 	_activeKeyboardLayout = layout;
 }
 
@@ -813,63 +813,63 @@ void X11Context::_ungrabWholeKeyboard() {
 	_conn->flush();
 }
 
-MonitorInfo* X11Context::_getMonitorInfoByPort(wx::String const& port, wx::List<MonitorInfo>& infos) {
-	for (int i = 0; i < infos.count(); i++) {
+MonitorInfo* X11Context::_getMonitorInfoByPort(Wx::String const& port, Wx::List<MonitorInfo>& infos) {
+	for (int i = 0; i < infos.Count(); i++) {
 		if (infos[i].port == port) return &infos[i];
 	}
 	return nullptr;
 }
 
 void X11Context::_updateMonitors(IObserver* observer) {
-	wx::List<MonitorInfo> currentMonitorInfos = _monitorManager->getConnectedMonitorInfos();
+	Wx::List<MonitorInfo> currentMonitorInfos = _monitorManager->getConnectedMonitorInfos();
 
-	wx::List<wx::String> connectedPorts;
-	wx::List<wx::String> disconnectedPorts;
-	wx::List<wx::String> propertyChangedPorts;
-	wx::List<wx::String> stayPorts;
+	Wx::List<Wx::String> connectedPorts;
+	Wx::List<Wx::String> disconnectedPorts;
+	Wx::List<Wx::String> propertyChangedPorts;
+	Wx::List<Wx::String> stayPorts;
 
-	for (int i = 0; i < currentMonitorInfos.count(); i++) {
+	for (int i = 0; i < currentMonitorInfos.Count(); i++) {
 		MonitorInfo const& current = currentMonitorInfos[i];
 		MonitorInfo* old = _getMonitorInfoByPort(current.port, _monitorInfos);
 		if (old == nullptr) {
-			connectedPorts.append(current.port);
+			connectedPorts.Append(current.port);
 		} else {
 			if (old->rect.x != current.rect.x ||
 				old->rect.y != current.rect.y ||
 				old->rect.width != current.rect.width ||
 				old->rect.height != current.rect.height) {
-				propertyChangedPorts.append(current.port);
+				propertyChangedPorts.Append(current.port);
 			}
-			stayPorts.append(current.port);
+			stayPorts.Append(current.port);
 		}
 	}
-	for (int i = 0; i < _monitorInfos.count(); i++) {
+	for (int i = 0; i < _monitorInfos.Count(); i++) {
 		MonitorInfo const& old = _monitorInfos[i];
 		MonitorInfo* current = _getMonitorInfoByPort(old.port, currentMonitorInfos);
 		if (current == nullptr) {
-			disconnectedPorts.append(old.port);
+			disconnectedPorts.Append(old.port);
 		}
 	}
 
-	for (int i = 0; i < connectedPorts.count(); i++) {
+	for (int i = 0; i < connectedPorts.Count(); i++) {
 		MonitorEvent event;
 		event.port = connectedPorts[i];
 		observer->onMonitorConnect(event);
 	}
 
-	for (int i = 0; i < disconnectedPorts.count(); i++) {
+	for (int i = 0; i < disconnectedPorts.Count(); i++) {
 		MonitorEvent event;
 		event.port = disconnectedPorts[i];
 		observer->onMonitorDisconnect(event);
 	}
 
-	for (int i = 0; i < propertyChangedPorts.count(); i++) {
+	for (int i = 0; i < propertyChangedPorts.Count(); i++) {
 		MonitorEvent event;
 		event.port = propertyChangedPorts[i];
 		observer->onMonitorPropertyChange(event);
 	}
 
-	_monitorInfos = static_cast<wx::List<MonitorInfo>&&>(currentMonitorInfos);
+	_monitorInfos = static_cast<Wx::List<MonitorInfo>&&>(currentMonitorInfos);
 }
 
 IContext* createContext() {

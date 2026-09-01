@@ -12,12 +12,12 @@ set(SOURCES
 	source/Workspace.cpp
 	source/Window.cpp
 	source/Session.cpp
-	source/Logger.cpp
-	source/backend/X11Context.cpp
-	source/backend/X11MonitorManager.cpp
-	source/backend/X11Hint.cpp
-	source/system/Exec.cpp
-	source/config/ConfigParser.cpp
+	source/Common/Logger.cpp
+	source/Backend/X11Context.cpp
+	source/Backend/X11MonitorManager.cpp
+	source/Backend/X11Hint.cpp
+	source/OS/Exec.cpp
+	source/Config/ConfigParser.cpp
 )
 
 option(XEPHYR_ENABLE "Enable Xephyr sanboxing" OFF)

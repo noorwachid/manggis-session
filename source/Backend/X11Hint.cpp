@@ -1,6 +1,6 @@
-#include "backend/X11Hint.hpp"
-#include "Common.hpp"
-#include "backend/X11Connection.hpp"
+#include "Common/Unit.hpp"
+#include "Backend/X11Hint.hpp"
+#include "Backend/X11Connection.hpp"
 #include <cstdio>
 #include <xcb/xcb_icccm.h>
 #include <xcb/xcb_ewmh.h>
@@ -102,7 +102,7 @@ void X11Hint::initialize() {
 		mask, vals
 	);
 
-	xcb_ewmh_set_wm_name(&_ewmh, _wmWindowId, _wmName.count(), _wmName.cptr());
+	xcb_ewmh_set_wm_name(&_ewmh, _wmWindowId, _wmName.Count(), _wmName.CPtr());
 	xcb_ewmh_set_supporting_wm_check(&_ewmh, _conn->getScreen()->root, _wmWindowId);
 	xcb_ewmh_set_supporting_wm_check(&_ewmh, _wmWindowId, _wmWindowId);
 }
@@ -186,8 +186,8 @@ Margin X11Hint::getWindowDockExtend(xcb_window_t id) {
 	}
 	return {};
 }
-wx::String X11Hint::getWindowTitle(xcb_window_t id) {
-	wx::String content;
+Wx::String X11Hint::getWindowTitle(xcb_window_t id) {
+	Wx::String content;
 	xcb_ewmh_get_utf8_strings_reply_t title;
 
 	if (xcb_ewmh_get_wm_name_reply(&_ewmh, xcb_ewmh_get_wm_name(&_ewmh, id), &title, NULL)) {
@@ -198,10 +198,10 @@ wx::String X11Hint::getWindowTitle(xcb_window_t id) {
 	return content;
 }
 
-void X11Hint::setWindowState(xcb_window_t id, wx::List<WindowState> const& states) {
+void X11Hint::setWindowState(xcb_window_t id, Wx::List<WindowState> const& states) {
 	int count = 0;
 	xcb_atom_t atoms[12];
-	for (int i = 0; i < states.count(); i++) {
+	for (int i = 0; i < states.Count(); i++) {
 		WindowState state = states[i];
 		xcb_atom_t atom = windowStateToAtom(state);
 		if (atom == XCB_NONE) {
@@ -339,21 +339,21 @@ void X11Hint::setWindowFrame(xcb_window_t id, int left, int top, int right, int 
 	xcb_ewmh_set_frame_extents(&_ewmh, id, left, right, top, bottom);
 }
 
-void X11Hint::setWorkspaces(wx::List<wx::String> const& workspaces) {
+void X11Hint::setWorkspaces(Wx::List<Wx::String> const& workspaces) {
 	_workspaces = workspaces;
-	xcb_ewmh_set_number_of_desktops(&_ewmh, _screenNumber, _workspaces.count());
-	wx::String combinedNames;
-	for (int i = 0; i < workspaces.count(); i++) {
-		wx::Byte nullByte = '\0';
-		wx::String const& workspace = _workspaces[i];
-		combinedNames.append(workspace);
-		combinedNames.append(1, &nullByte);
+	xcb_ewmh_set_number_of_desktops(&_ewmh, _screenNumber, _workspaces.Count());
+	Wx::String combinedNames;
+	for (int i = 0; i < workspaces.Count(); i++) {
+		Wx::Byte nullByte = '\0';
+		Wx::String const& workspace = _workspaces[i];
+		combinedNames.Append(workspace);
+		combinedNames.Append(1, &nullByte);
 	}
-	xcb_ewmh_set_desktop_names(&_ewmh, _screenNumber, combinedNames.count(), combinedNames.cptr());
+	xcb_ewmh_set_desktop_names(&_ewmh, _screenNumber, combinedNames.Count(), combinedNames.CPtr());
 }
 
-void X11Hint::setActiveWorkspace(wx::String const& workspace) {
-	for (int i = 0; i < _workspaces.count(); i++) {
+void X11Hint::setActiveWorkspace(Wx::String const& workspace) {
+	for (int i = 0; i < _workspaces.Count(); i++) {
 		if (_workspaces[i] == workspace) {
 			xcb_ewmh_set_current_desktop(&_ewmh, _screenNumber, i);
 			return;
@@ -365,15 +365,15 @@ bool X11Hint::isMoveResizeProperty(xcb_atom_t atom) {
 	return atom == _ewmh._NET_WM_MOVERESIZE;
 }
 
-wx::String X11Hint::atomToString(xcb_atom_t atom) {
+Wx::String X11Hint::atomToString(xcb_atom_t atom) {
 	xcb_get_atom_name_cookie_t cookie = xcb_get_atom_name(_conn->get(), atom);
 	xcb_get_atom_name_reply_t* reply = xcb_get_atom_name_reply(_conn->get(), cookie, NULL);
 
-	wx::String content;
+	Wx::String content;
 
 	if (reply) {
 		int nameSize = xcb_get_atom_name_name_length(reply);
-		content = wx::String(nameSize, (wx::Byte*)xcb_get_atom_name_name(reply));
+		content = Wx::String(nameSize, (Wx::Byte*)xcb_get_atom_name_name(reply));
 		free(reply);
 	} else {
 		printf("Failed to get atom name for atom %u\n", atom);

@@ -20,7 +20,7 @@ WindowType Window::getType() {
 	return _backend->getType();
 }
 
-wx::String Window::getTitle() {
+Wx::String Window::getTitle() {
 	return _backend->getTitle();
 }
 

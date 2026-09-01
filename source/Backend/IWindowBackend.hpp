@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Common.hpp"
-#include "wx/core/String.hpp"
+#include "Common/Unit.hpp"
+#include "Wx/Core/String.hpp"
 #include <cstdint>
 
 struct WindowProp {
@@ -52,7 +52,7 @@ public:
 
 	virtual WindowType getType() = 0;
 
-	virtual wx::String getTitle() = 0;
+	virtual Wx::String getTitle() = 0;
 
 	virtual void raise() = 0;
 

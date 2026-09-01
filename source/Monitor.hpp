@@ -1,9 +1,9 @@
 #pragma once
 
 #include "MonitorInfo.hpp"
-#include "backend/IContext.hpp"
-#include "wx/core/List.hpp"
-#include "wx/core/String.hpp"
+#include "Backend/IContext.hpp"
+#include "Wx/Core/List.hpp"
+#include "Wx/Core/String.hpp"
 
 class Window;
 
@@ -15,7 +15,7 @@ public:
 
 	void setInfo(MonitorInfo info);
 
-	wx::String const& getPort() const;
+	Wx::String const& getPort() const;
 
 	Rect getRect() const;
 
@@ -23,7 +23,7 @@ public:
 
 	Workspace* getActiveWorkspace();
 
-	Workspace* queryWorkspace(wx::String const& id);
+	Workspace* queryWorkspace(Wx::String const& id);
 
 	void activateWorkspace(Workspace* workspace);
 
@@ -33,7 +33,7 @@ public:
 
 	void clearWorkspaceList();
 
-	wx::List<Workspace*> const& getWorkspaceList() const;
+	Wx::List<Workspace*> const& getWorkspaceList() const;
 
 	void calculateWorkingRect();
 
@@ -49,9 +49,9 @@ private:
 	IContext* _context;
 	MonitorInfo _info;
 	Workspace* _activeWorkspace = nullptr;
-	wx::List<Workspace*> _workspaces;
-	wx::List<Window*> _unmanagedWindows;
-	wx::List<Window*> _dockWindows;
+	Wx::List<Workspace*> _workspaces;
+	Wx::List<Window*> _unmanagedWindows;
+	Wx::List<Window*> _dockWindows;
 	Rect _workingRect;
 };
 

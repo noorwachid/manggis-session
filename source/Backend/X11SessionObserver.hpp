@@ -1,9 +1,9 @@
 #pragma once
 
-#include "backend/ISessionObserver.hpp"
-#include "backend/X11Connection.hpp"
-#include "backend/X11Hint.hpp"
-#include "backend/X11WindowBackend.hpp"
+#include "Backend/ISessionObserver.hpp"
+#include "Backend/X11Connection.hpp"
+#include "Backend/X11Hint.hpp"
+#include "Backend/X11WindowBackend.hpp"
 #include "Window.hpp"
 #include "Workspace.hpp"
 
@@ -12,10 +12,10 @@ public:
 	X11SessionObserver(X11Connection* conn, X11Hint* hint): _conn{conn}, _hint{hint} {
 	}
 
-	virtual void onWorkspaceConfigure(wx::List<Workspace*> const& workspaces) override {
-		wx::List<wx::String> list;
-		for (int i = 0; i < workspaces.count(); i++) {
-			list.append(workspaces[i]->getID());
+	virtual void onWorkspaceConfigure(Wx::List<Workspace*> const& workspaces) override {
+		Wx::List<Wx::String> list;
+		for (int i = 0; i < workspaces.Count(); i++) {
+			list.Append(workspaces[i]->getID());
 		}
 		_hint->setWorkspaces(list);
 		_conn->flush();

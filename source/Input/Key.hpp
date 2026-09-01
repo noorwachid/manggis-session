@@ -1,6 +1,6 @@
 #pragma once
 
-#include "wx/core/Flags.hpp"
+#include "Wx/Core/Flags.hpp"
 #include <cstdint>
 
 // NOTE: subset copy of xkb-keysyms with nicer symbol names

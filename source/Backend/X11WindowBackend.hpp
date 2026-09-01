@@ -1,10 +1,10 @@
 #pragma once
 
-#include "Common.hpp"
-#include "Logger.hpp"
-#include "backend/IWindowBackend.hpp"
-#include "backend/X11Connection.hpp"
-#include "backend/X11Hint.hpp"
+#include "Common/Unit.hpp"
+#include "Common/Logger.hpp"
+#include "Backend/IWindowBackend.hpp"
+#include "Backend/X11Connection.hpp"
+#include "Backend/X11Hint.hpp"
 #include <cstdlib>
 #include <xcb/xproto.h>
 
@@ -48,7 +48,7 @@ public:
 		return _hint->getWindowType(_client);
 	}
 
-	virtual wx::String getTitle() override {
+	virtual Wx::String getTitle() override {
 		return _hint->getWindowTitle(_client);
 	}
 

@@ -1,9 +1,9 @@
 #pragma once
 
-#include "Common.hpp"
-#include "wx/core/String.hpp"
+#include "Common/Unit.hpp"
+#include "Wx/Core/String.hpp"
 
 struct MonitorInfo {
-	wx::String port;
+	Wx::String port;
 	Rect rect;
 };

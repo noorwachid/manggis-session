@@ -1,10 +1,10 @@
 #pragma once
 
-#include "Common.hpp"
+#include "Wx/Core/String.hpp"
+#include "Common/Unit.hpp"
+#include "Input/Key.hpp"
+#include "Input/MouseButton.hpp"
 #include "Window.hpp"
-#include "input/Key.hpp"
-#include "input/MouseButton.hpp"
-#include "wx/core/String.hpp"
 
 struct WindowEvent {
 	Window* window;
@@ -60,7 +60,7 @@ struct KeyEvent {
 };
 
 struct MonitorEvent {
-	wx::String port;
+	Wx::String port;
 };
 
 

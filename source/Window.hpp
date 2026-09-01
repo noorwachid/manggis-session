@@ -1,6 +1,6 @@
 #pragma once
 
-#include "backend/IWindowBackend.hpp"
+#include "Backend/IWindowBackend.hpp"
 
 class Monitor;
 class Workspace;
@@ -17,7 +17,7 @@ public:
 
 	WindowType getType();
 
-	wx::String getTitle();
+	Wx::String getTitle();
 
 	void setWorkspace(Workspace* workspace);
 

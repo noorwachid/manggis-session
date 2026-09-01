@@ -4,21 +4,21 @@
 #include "IObserver.hpp"
 #include "MonitorInfo.hpp"
 #include "Window.hpp"
-#include "Logger.hpp"
-#include "backend/IContext.hpp"
-#include "backend/X11Clipper.hpp"
-#include "backend/X11Connection.hpp"
-#include "backend/X11Hint.hpp"
-#include "backend/X11KeyboardManager.hpp"
-#include "backend/X11MonitorManager.hpp"
-#include "backend/X11MouseManager.hpp"
-#include "backend/X11SessionObserver.hpp"
-#include "backend/X11WindowBackend.hpp"
-#include "input/Key.hpp"
-#include "input/MouseButton.hpp"
-#include "wx/core/List.hpp"
-#include "wx/core/HashTable.hpp"
-#include "wx/core/String.hpp"
+#include "Common/Logger.hpp"
+#include "Backend/IContext.hpp"
+#include "Backend/X11Clipper.hpp"
+#include "Backend/X11Connection.hpp"
+#include "Backend/X11Hint.hpp"
+#include "Backend/X11KeyboardManager.hpp"
+#include "Backend/X11MonitorManager.hpp"
+#include "Backend/X11MouseManager.hpp"
+#include "Backend/X11SessionObserver.hpp"
+#include "Backend/X11WindowBackend.hpp"
+#include "Input/Key.hpp"
+#include "Input/MouseButton.hpp"
+#include "Wx/Core/List.hpp"
+#include "Wx/Core/HashTable.hpp"
+#include "Wx/Core/String.hpp"
 #include <cstdlib>
 #include <xcb/randr.h>
 #include <xcb/xproto.h>
@@ -58,7 +58,7 @@ public:
 
 	virtual void setMousePos(Point point) override;
 
-	virtual wx::List<MonitorInfo> getConnectedMonitorInfos() override;
+	virtual Wx::List<MonitorInfo> getConnectedMonitorInfos() override;
 
 	virtual void clipWindow(Window* window, Rect rect) override;
 
@@ -97,24 +97,24 @@ private:
 
 	void _ungrabWholeKeyboard();
 
-	MonitorInfo* _getMonitorInfoByPort(wx::String const& port, wx::List<MonitorInfo>& infos);
+	MonitorInfo* _getMonitorInfoByPort(Wx::String const& port, Wx::List<MonitorInfo>& infos);
 
 	void _updateMonitors(IObserver* observer);
 
 private:
 	X11Connection* _conn;
 	X11KeyboardManager* _keyboardManager;
-	wx::HashTable<xcb_window_t, Window*> _clientWindowMap;
-	wx::HashTable<xcb_window_t, Window*> _frameWindowMap;
+	Wx::HashTable<xcb_window_t, Window*> _clientWindowMap;
+	Wx::HashTable<xcb_window_t, Window*> _frameWindowMap;
 
-	wx::List<X11KeyBinding> _keyBindings;
-	wx::String _activeKeyboardLayout;
-	wx::HashTable<xcb_keycode_t, Key> _codeToKey;
+	Wx::List<X11KeyBinding> _keyBindings;
+	Wx::String _activeKeyboardLayout;
+	Wx::HashTable<xcb_keycode_t, Key> _codeToKey;
 
 	X11MouseManager* _mouseManager;
 
 	X11MonitorManager* _monitorManager;
-	wx::List<MonitorInfo> _monitorInfos;
+	Wx::List<MonitorInfo> _monitorInfos;
 
 	X11Clipper* _clipper;
 	X11Hint* _hint;

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "wx/core/String.hpp"
-#include "wx/core/List.hpp"
+#include "Wx/Core/String.hpp"
+#include "Wx/Core/List.hpp"
 
 class Window;
 
@@ -9,9 +9,9 @@ class Monitor;
 
 class Workspace {
 public:
-	Workspace(wx::String const& id);
+	Workspace(Wx::String const& id);
 
-	wx::String const& getID();
+	Wx::String const& getID();
 
 	void setMonitor(Monitor* monitor);
 
@@ -33,12 +33,12 @@ public:
 
 	void hide(); 
 
-	wx::List<Window*> const& getWindowList() const;
+	Wx::List<Window*> const& getWindowList() const;
 
 private:
 	Monitor* _monitor;
 	Window* _activeWindow = nullptr;
-	wx::String _id;
-	wx::List<Window*> _windows;
+	Wx::String _id;
+	Wx::List<Window*> _windows;
 };
 

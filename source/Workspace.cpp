@@ -1,10 +1,10 @@
 #include "Workspace.hpp"
 #include "Window.hpp"
 
-Workspace::Workspace(wx::String const& id): _id{id} {
+Workspace::Workspace(Wx::String const& id): _id{id} {
 }
 
-wx::String const& Workspace::getID() {
+Wx::String const& Workspace::getID() {
 	return _id;
 }
 
@@ -35,19 +35,19 @@ void Workspace::addWindow(Window* window) {
 	window->setMonitor(_monitor);
 	window->setWorkspace(this);
 
-	_windows.append(window);
+	_windows.Append(window);
 	focusWindow(window);
 }
 
 void Workspace::removeWindow(Window* window) {
-	int index = _windows.find(window);
+	int index = _windows.Find(window);
 	if (index != -1) {
 		bool activeWindowRemoved = _windows[index] == _activeWindow;
-		_windows.remove(index);
+		_windows.Remove(index);
 		if (activeWindowRemoved) {
 			_activeWindow = nullptr;
-			if (!_windows.isEmpty()) {
-				focusWindow(_windows.getLast());
+			if (!_windows.IsEmpty()) {
+				focusWindow(_windows.GetLast());
 			}
 		}
 	}
@@ -62,18 +62,18 @@ void Workspace::blur() {
 }
 
 void Workspace::show() {
-	for (int i = 0; i < _windows.count(); i++) {
+	for (int i = 0; i < _windows.Count(); i++) {
 		_windows[i]->show();
 	}
 }
 
 void Workspace::hide() {
-	for (int i = 0; i < _windows.count(); i++) {
+	for (int i = 0; i < _windows.Count(); i++) {
 		_windows[i]->hide();
 	}
 }
 
-wx::List<Window*> const& Workspace::getWindowList() const {
+Wx::List<Window*> const& Workspace::getWindowList() const {
 	return _windows;
 }
 

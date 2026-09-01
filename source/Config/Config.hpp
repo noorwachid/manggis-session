@@ -1,13 +1,13 @@
 #pragma once
 
-#include "input/Key.hpp"
-#include "wx/core/List.hpp"
-#include "wx/core/String.hpp"
-#include "wx/serializer/WkValue.hpp"
+#include "Input/Key.hpp"
+#include "Wx/Core/List.hpp"
+#include "Wx/Core/String.hpp"
+#include "Wx/Serializer/WkValue.hpp"
 
 struct ConfigWorkspace {
-	wx::String id;
-	wx::List<wx::String> ports;
+	Wx::String id;
+	Wx::List<Wx::String> ports;
 };
 
 enum struct ConfigCommandFunc {
@@ -30,19 +30,19 @@ enum struct ConfigCommandFunc {
 
 struct ConfigCommand {
 	ConfigCommandFunc func = ConfigCommandFunc::None;
-	wx::WkValue arguments;
+	Wx::WkValue arguments;
 
 };
 
 struct ConfigBinding {
 	ModKey modKey = ModKey::None;
 	Key key = Key::None;
-	wx::List<ConfigCommand> commands;
+	Wx::List<ConfigCommand> commands;
 };
 
 struct Config {
-	wx::List<ConfigWorkspace> workspaces;
-	wx::List<ConfigBinding> bindings;
+	Wx::List<ConfigWorkspace> workspaces;
+	Wx::List<ConfigBinding> bindings;
 
-	wx::List<ConfigCommand> autostarts;
+	Wx::List<ConfigCommand> autostarts;
 };

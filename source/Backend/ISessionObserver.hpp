@@ -8,7 +8,7 @@
 
 class ISessionObserver {
 public:
-	virtual void onWorkspaceConfigure(wx::List<Workspace*> const& workspaces) = 0;
+	virtual void onWorkspaceConfigure(Wx::List<Workspace*> const& workspaces) = 0;
 
 	virtual void onWorkspaceFocus(Workspace* workspace) = 0;
 

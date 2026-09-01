@@ -1,97 +1,97 @@
-#include "Direction.hpp"
-#include "Logger.hpp"
-#include "config/Config.hpp"
-#include "config/ConfigParser.hpp"
-#include "input/Key.hpp"
-#include "wx/serializer/WkValue.hpp"
+#include "Common/Direction.hpp"
+#include "Common/Logger.hpp"
+#include "Config/Config.hpp"
+#include "Config/ConfigParser.hpp"
+#include "Input/Key.hpp"
+#include "Wx/Serializer/WkValue.hpp"
 
-Config parseConfig(wx::WkValue const& value) {
+Config ParseConfig(Wx::WkValue const& value) {
 	struct Parser {
 		Config config;
 
-		void parse(wx::WkValue const& value) {
-			if (!value.isTuple()) {
+		void parse(Wx::WkValue const& value) {
+			if (!value.IsTuple()) {
 				return;
 			}
-			wx::HashTable<wx::String, wx::WkValue> const& tup = value.asTuple();
-			wx::WkValue* ws = tup.getOrNull("workspaces");
+			Wx::HashTable<Wx::String, Wx::WkValue> const& tup = value.AsTuple();
+			Wx::WkValue* ws = tup.TryGet("workspaces");
 			if (ws) {
 				parseWorkspaceList(*ws);
 			}
 
-			wx::WkValue* bindings = tup.getOrNull("bindings");
+			Wx::WkValue* bindings = tup.TryGet("bindings");
 			if (bindings) {
 				parseBindingList(*bindings);
 			}
 
-			wx::WkValue* autostarts = tup.getOrNull("autostarts");
+			Wx::WkValue* autostarts = tup.TryGet("autostarts");
 			if (autostarts) {
 				parseAutostartList(*autostarts);
 			}
 		}
 
-		void parseWorkspaceList(wx::WkValue const& value) {
-			if (!value.isList()) {
+		void parseWorkspaceList(Wx::WkValue const& value) {
+			if (!value.IsList()) {
 				return;
 			}
-			wx::List<wx::WkValue> const& list = value.asList();
-			for (int i = 0; i < list.count(); i++) {
+			Wx::List<Wx::WkValue> const& list = value.AsList();
+			for (int i = 0; i < list.Count(); i++) {
 				parseWorkspace(list[i]);
 			}
 		}
 
-		void parseWorkspace(wx::WkValue const& value) {
-			if (!value.isTuple()) {
+		void parseWorkspace(Wx::WkValue const& value) {
+			if (!value.IsTuple()) {
 				return;
 			}
-			wx::HashTable<wx::String, wx::WkValue> const& tup = value.asTuple();
-			wx::WkValue* id = tup.getOrNull("id");
-			wx::WkValue* port = tup.getOrNull("port");
+			Wx::HashTable<Wx::String, Wx::WkValue> const& tup = value.AsTuple();
+			Wx::WkValue* id = tup.TryGet("id");
+			Wx::WkValue* port = tup.TryGet("port");
 
-			if (id && id->isString()) {
+			if (id && id->IsString()) {
 				ConfigWorkspace ws;
-				ws.id = id->asString();
-				if (port && port->isString()) {
-					ws.ports.append(port->asString());
+				ws.id = id->AsString();
+				if (port && port->IsString()) {
+					ws.ports.Append(port->AsString());
 				}
-				config.workspaces.append(ws);
+				config.workspaces.Append(ws);
 			}
 		}
 
-		void parseBindingList(wx::WkValue const& value) {
-			if (!value.isList()) return;
-			wx::List<wx::WkValue> const& list = value.asList();
-			for (int i = 0; i < list.count(); i++) {
+		void parseBindingList(Wx::WkValue const& value) {
+			if (!value.IsList()) return;
+			Wx::List<Wx::WkValue> const& list = value.AsList();
+			for (int i = 0; i < list.Count(); i++) {
 				parseBinding(list[i]);
 			}
 		}
 
-		void parseBinding(wx::WkValue const& value) {
-			if (!value.isTuple()) return;
+		void parseBinding(Wx::WkValue const& value) {
+			if (!value.IsTuple()) return;
 
 			ConfigBinding binding;
 
-			wx::HashTable<wx::String, wx::WkValue> const& tup = value.asTuple();
-			wx::WkValue* key = tup.getOrNull("key");
+			Wx::HashTable<Wx::String, Wx::WkValue> const& tup = value.AsTuple();
+			Wx::WkValue* key = tup.TryGet("key");
 
-			if (key && key->isString()) {
-				wx::List<wx::Span<wx::Byte>> spans = splitKey(key->asString(), '+');
-				if (spans.count() == 1 || spans.count() == 0) {
-					LOG("[ManggisSession.Config] invalid key combination: %s\n", key->asString().cptr());
+			if (key && key->IsString()) {
+				Wx::List<Wx::Span<Wx::Byte>> spans = splitKey(key->AsString(), '+');
+				if (spans.Count() == 1 || spans.Count() == 0) {
+					LOG("[ManggisSession.Config] invalid key combination: %s\n", key->AsString().CPtr());
 					return;
 				}
 				ModKey modKey = ModKey::None;
-				for (int i = 0; i < spans.count() - 1; i++) {
-					ModKey mk = stringToModKey(wx::String(spans[i].count(), spans[i].ptr()));
+				for (int i = 0; i < spans.Count() - 1; i++) {
+					ModKey mk = stringToModKey(Wx::String(spans[i].Count(), spans[i].Ptr()));
 					if (mk == ModKey::None) {
-						LOG("[ManggisSession.Config] invalid mod-key: %s\n", key->asString().cptr());
+						LOG("[ManggisSession.Config] invalid mod-key: %s\n", key->AsString().CPtr());
 						return;
 					}
 					modKey |= mk;
 				}
-				Key k = stringToKey(wx::String(spans.getLast().count(), spans.getLast().ptr()));
+				Key k = stringToKey(Wx::String(spans.GetLast().Count(), spans.GetLast().Ptr()));
 				if (k == Key::None) {
-					LOG("[ManggisSession.Config] invalid key: %s\n", key->asString().cptr());
+					LOG("[ManggisSession.Config] invalid key: %s\n", key->AsString().CPtr());
 					return;
 				}
 
@@ -101,26 +101,26 @@ Config parseConfig(wx::WkValue const& value) {
 
 			ConfigCommand command = parseCommand(tup);
 			if (command.func != ConfigCommandFunc::None) {
-				binding.commands.append(command);
+				binding.commands.Append(command);
 			}
 
-			if (binding.commands.isEmpty()) {
+			if (binding.commands.IsEmpty()) {
 				return;
 			}
 
-			config.bindings.append(binding);
+			config.bindings.Append(binding);
 		}
 
-		ConfigCommand parseCommand(wx::HashTable<wx::String, wx::WkValue> const& tup) {
+		ConfigCommand parseCommand(Wx::HashTable<Wx::String, Wx::WkValue> const& tup) {
 			{
-				wx::WkValue* exec = tup.getOrNull("exec");
+				Wx::WkValue* exec = tup.TryGet("exec");
 				if (exec) {
-					if (!exec->isList()) {
+					if (!exec->IsList()) {
 						LOG("[config] invalid exec command argument, expect list\n");
 						return {};
 					}
-					for (int i = 0; i < exec->asList().count(); i++) {
-						if (!exec->asList()[i].isString()) {
+					for (int i = 0; i < exec->AsList().Count(); i++) {
+						if (!exec->AsList()[i].IsString()) {
 							LOG("[config] invalid exec command argument, expect list of string\n");
 							return {};
 						}
@@ -135,9 +135,9 @@ Config parseConfig(wx::WkValue const& value) {
 			}
 
 			{
-				wx::WkValue* closeWindow = tup.getOrNull("closeWindow");
+				Wx::WkValue* closeWindow = tup.TryGet("closeWindow");
 				if (closeWindow) {
-					if (!closeWindow->isNull()) {
+					if (!closeWindow->IsNull()) {
 						LOG("[config] invalid closeWindow command argument, expect null\n");
 						return {};
 					}
@@ -149,9 +149,9 @@ Config parseConfig(wx::WkValue const& value) {
 			}
 
 			{
-				wx::WkValue* cycleNextWindow = tup.getOrNull("cycleNextWindow");
+				Wx::WkValue* cycleNextWindow = tup.TryGet("cycleNextWindow");
 				if (cycleNextWindow) {
-					if (!cycleNextWindow->isNull()) {
+					if (!cycleNextWindow->IsNull()) {
 						LOG("[config] invalid cycleNextWindow command argument, expect null\n");
 						return {};
 					}
@@ -163,9 +163,9 @@ Config parseConfig(wx::WkValue const& value) {
 			}
 
 			{
-				wx::WkValue* cyclePreviousWindow = tup.getOrNull("cyclePreviousWindow");
+				Wx::WkValue* cyclePreviousWindow = tup.TryGet("cyclePreviousWindow");
 				if (cyclePreviousWindow) {
-					if (!cyclePreviousWindow->isNull()) {
+					if (!cyclePreviousWindow->IsNull()) {
 						LOG("[config] invalid cyclePreviousWindow command argument, expect null\n");
 						return {};
 					}
@@ -177,23 +177,23 @@ Config parseConfig(wx::WkValue const& value) {
 			}
 
 			{
-				wx::WkValue* focusWindow = tup.getOrNull("focusWindow");
+				Wx::WkValue* focusWindow = tup.TryGet("focusWindow");
 				if (focusWindow) {
-					if (!focusWindow->isString()) {
+					if (!focusWindow->IsString()) {
 						LOG("[config] invalid focusWindow command argument, expect string\n");
 						return {};
 					}
 
-					wx::WkValue direction;
+					Wx::WkValue direction;
 
-					if (focusWindow->asString() == "west") {
-						direction = wx::WkValue::createInt64((int) Direction::West);
-					} else if (focusWindow->asString() == "east") {
-						direction = wx::WkValue::createInt64((int) Direction::East);
-					} else if (focusWindow->asString() == "north") {
-						direction = wx::WkValue::createInt64((int) Direction::North);
-					} else if (focusWindow->asString() == "south") {
-						direction = wx::WkValue::createInt64((int) Direction::South);
+					if (focusWindow->AsString() == "west") {
+						direction = Wx::WkValue::CreateInt64((int) Direction::West);
+					} else if (focusWindow->AsString() == "east") {
+						direction = Wx::WkValue::CreateInt64((int) Direction::East);
+					} else if (focusWindow->AsString() == "north") {
+						direction = Wx::WkValue::CreateInt64((int) Direction::North);
+					} else if (focusWindow->AsString() == "south") {
+						direction = Wx::WkValue::CreateInt64((int) Direction::South);
 					} else {
 						LOG("[config] invalid focusWindow command argument, expect 'west', 'east', 'north', 'south' \n");
 						return {};
@@ -207,18 +207,18 @@ Config parseConfig(wx::WkValue const& value) {
 			}
 
 			{
-				wx::WkValue* tileWindow = tup.getOrNull("tileWindow");
+				Wx::WkValue* tileWindow = tup.TryGet("tileWindow");
 				if (tileWindow) {
-					if (!tileWindow->isList()) {
+					if (!tileWindow->IsList()) {
 						LOG("[config] invalid tileWindow command argument, expect list");
 						return {};
 					}
-					if (tileWindow->asList().count() != 4) {
+					if (tileWindow->AsList().Count() != 4) {
 						LOG("[config] invalid tileWindow command argument, expect list with 4 items");
 						return {};
 					}
-					for (int i = 0; i < tileWindow->asList().count(); i++) {
-						if (!tileWindow->asList()[i].isFloat64()) {
+					for (int i = 0; i < tileWindow->AsList().Count(); i++) {
+						if (!tileWindow->AsList()[i].IsFloat64()) {
 							LOG("[config] invalid tileWindow command argument, expect list of float\n");
 							return {};
 						}
@@ -232,9 +232,9 @@ Config parseConfig(wx::WkValue const& value) {
 			}
 
 			{
-				wx::WkValue* focusWorkspace = tup.getOrNull("focusWorkspace");
+				Wx::WkValue* focusWorkspace = tup.TryGet("focusWorkspace");
 				if (focusWorkspace) {
-					if (!focusWorkspace->isString()) {
+					if (!focusWorkspace->IsString()) {
 						LOG("[ManggisSession.Config] invalid focusWorkspace command argument, expect string\n");
 						return {};
 					}
@@ -248,9 +248,9 @@ Config parseConfig(wx::WkValue const& value) {
 			}
 
 			{
-				wx::WkValue* sendWindowToWorkspace = tup.getOrNull("sendWindowToWorkspace");
+				Wx::WkValue* sendWindowToWorkspace = tup.TryGet("sendWindowToWorkspace");
 				if (sendWindowToWorkspace) {
-					if (!sendWindowToWorkspace->isString()) {
+					if (!sendWindowToWorkspace->IsString()) {
 						LOG("[config] invalid sendWindowToWorkspace command argument, expect string\n");
 						return {};
 					}
@@ -264,9 +264,9 @@ Config parseConfig(wx::WkValue const& value) {
 			}
 
 			{
-				wx::WkValue* quit = tup.getOrNull("quit");
+				Wx::WkValue* quit = tup.TryGet("quit");
 				if (quit) {
-					if (!quit->isNull()) {
+					if (!quit->IsNull()) {
 						LOG("[config] invalid quit command argument, expect null\n");
 						return {};
 					}
@@ -281,19 +281,19 @@ Config parseConfig(wx::WkValue const& value) {
 			return {};
 		}
 
-		void parseKey(ConfigBinding& binding, wx::WkValue const& value) {
-			if (!value.isString()) return;
-			wx::List<wx::Span<wx::Byte>> splited = splitKey(value.asString(), '+');
+		void parseKey(ConfigBinding& binding, Wx::WkValue const& value) {
+			if (!value.IsString()) return;
+			Wx::List<Wx::Span<Wx::Byte>> splited = splitKey(value.AsString(), '+');
 		}
 
-		wx::Span<wx::Byte> trimSpace(wx::Span<wx::Byte> span) {
+		Wx::Span<Wx::Byte> trimSpace(Wx::Span<Wx::Byte> span) {
 			int k = 0;
-			for (; k < span.count(); k++) {
+			for (; k < span.Count(); k++) {
 				if (span[k] != ' ') {
 					break;
 				}
 			}
-			int j = span.count() - 1;
+			int j = span.Count() - 1;
 			for (; j > k; j--) {
 				if (span[j] != ' ') {
 					break;
@@ -302,25 +302,25 @@ Config parseConfig(wx::WkValue const& value) {
 			return span.slice(k, j - k + 1);
 		}
 
-		wx::List<wx::Span<wx::Byte>> splitKey(wx::String const& str, wx::Byte needle) {
-			wx::List<wx::Span<wx::Byte>> list;
+		Wx::List<Wx::Span<Wx::Byte>> splitKey(Wx::String const& str, Wx::Byte needle) {
+			Wx::List<Wx::Span<Wx::Byte>> list;
 			int i = 0;
 			int run = 0;
-			wx::Span<wx::Byte> span = str.toSpan();
-			while (i < span.count()) {
+			Wx::Span<Wx::Byte> span = str.ToSpan();
+			while (i < span.Count()) {
 				if (span[i] == needle) {
-					list.append(trimSpace(span.slice(run, i - run)));
+					list.Append(trimSpace(span.slice(run, i - run)));
 					run = i + 1;
 				}
 				i++;
 			}
-			if (run < span.count()) {
-				list.append(trimSpace(span.slice(run, span.count() - run)));
+			if (run < span.Count()) {
+				list.Append(trimSpace(span.slice(run, span.Count() - run)));
 			}
 			return list;
 		}
 
-		Key stringToKey(wx::String const& key) {
+		Key stringToKey(Wx::String const& key) {
 			if (key == "backspace") return Key::Backspace;
 			if (key == "tab") return Key::Tab;
 			if (key == "linefeed") return Key::Linefeed;
@@ -379,11 +379,11 @@ Config parseConfig(wx::WkValue const& value) {
 			if (key == "kp.down") return Key::KP_Down;
 			if (key == "kp.prior") return Key::KP_Prior;
 			if (key == "kp.pageUp") return Key::KP_PageUp;
-			if (key == "kp.next") return Key::KP_Next;
+			if (key == "kp.Next") return Key::KP_Next;
 			if (key == "kp.pageDown") return Key::KP_PageDown;
 			if (key == "kp.end") return Key::KP_End;
 			if (key == "kp.begin") return Key::KP_Begin;
-			if (key == "kp.insert") return Key::KP_Insert;
+			if (key == "kp.Insert") return Key::KP_Insert;
 			if (key == "kp.delete") return Key::KP_Delete;
 			if (key == "kp.equal") return Key::KP_Equal;
 			if (key == "kp.multiply") return Key::KP_Multiply;
@@ -467,8 +467,8 @@ Config parseConfig(wx::WkValue const& value) {
 			if (key == "iso.groupShift") return Key::ISO_GroupShift;
 			if (key == "iso.groupLatch") return Key::ISO_GroupLatch;
 			if (key == "iso.groupLock") return Key::ISO_GroupLock;
-			if (key == "iso.nextGroup") return Key::ISO_NextGroup;
-			if (key == "iso.nextGroupLock") return Key::ISO_NextGroupLock;
+			if (key == "iso.NextGroup") return Key::ISO_NextGroup;
+			if (key == "iso.NextGroupLock") return Key::ISO_NextGroupLock;
 			if (key == "iso.prevGroup") return Key::ISO_PrevGroup;
 			if (key == "iso.prevGroupLock") return Key::ISO_PrevGroupLock;
 			if (key == "iso.firstGroup") return Key::ISO_FirstGroup;
@@ -483,8 +483,8 @@ Config parseConfig(wx::WkValue const& value) {
 			if (key == "iso.partialLineDown") return Key::ISO_PartialLineDown;
 			if (key == "iso.partialSpaceLeft") return Key::ISO_PartialSpaceLeft;
 			if (key == "iso.partialSpaceRight") return Key::ISO_PartialSpaceRight;
-			if (key == "iso.setMarginLeft") return Key::ISO_SetMarginLeft;
-			if (key == "iso.setMarginRight") return Key::ISO_SetMarginRight;
+			if (key == "iso.SetMarginLeft") return Key::ISO_SetMarginLeft;
+			if (key == "iso.SetMarginRight") return Key::ISO_SetMarginRight;
 			if (key == "iso.releaseMarginLeft") return Key::ISO_ReleaseMarginLeft;
 			if (key == "iso.releaseMarginRight") return Key::ISO_ReleaseMarginRight;
 			if (key == "iso.releaseBothMargins") return Key::ISO_ReleaseBothMargins;
@@ -635,7 +635,7 @@ Config parseConfig(wx::WkValue const& value) {
 			if (key == "t3270.rule") return Key::T3270_Rule;
 			if (key == "t3270.copy") return Key::T3270_Copy;
 			if (key == "t3270.play") return Key::T3270_Play;
-			if (key == "t3270.setup") return Key::T3270_Setup;
+			if (key == "t3270.Setup") return Key::T3270_Setup;
 			if (key == "t3270.record") return Key::T3270_Record;
 			if (key == "t3270.changeScreen") return Key::T3270_ChangeScreen;
 			if (key == "t3270.deleteWord") return Key::T3270_DeleteWord;
@@ -920,7 +920,7 @@ Config parseConfig(wx::WkValue const& value) {
 			if (key == "xf86.cd") return Key::XF86_CD;
 			if (key == "xf86.mediaSelectCD") return Key::XF86_MediaSelectCD;
 			if (key == "xf86.calculater") return Key::XF86_Calculater;
-			if (key == "xf86.clear") return Key::XF86_Clear;
+			if (key == "xf86.Clear") return Key::XF86_Clear;
 			if (key == "xf86.close") return Key::XF86_Close;
 			if (key == "xf86.copy") return Key::XF86_Copy;
 			if (key == "xf86.cut") return Key::XF86_Cut;
@@ -1033,8 +1033,8 @@ Config parseConfig(wx::WkValue const& value) {
 			if (key == "xf86.switch_VT_12") return Key::XF86_Switch_VT_12;
 
 			if (key == "xf86.ungrab") return Key::XF86_Ungrab;
-			if (key == "xf86.clearGrab") return Key::XF86_ClearGrab;
-			if (key == "xf86.next_VMode") return Key::XF86_Next_VMode;
+			if (key == "xf86.ClearGrab") return Key::XF86_ClearGrab;
+			if (key == "xf86.Next_VMode") return Key::XF86_Next_VMode;
 			if (key == "xf86.prev_VMode") return Key::XF86_Prev_VMode;
 			if (key == "xf86.logWindowTree") return Key::XF86_LogWindowTree;
 			if (key == "xf86.logGrabInfo") return Key::XF86_LogGrabInfo;
@@ -1054,7 +1054,7 @@ Config parseConfig(wx::WkValue const& value) {
 			if (key == "xf86.mediaLanguageMenu") return Key::XF86_MediaLanguageMenu;
 			if (key == "xf86.mediaTitleMenu") return Key::XF86_MediaTitleMenu;
 			if (key == "xf86.audioChannelMode") return Key::XF86_AudioChannelMode;
-			if (key == "xf86.aspectRatio") return Key::XF86_AspectRatio;
+			if (key == "xf86.AspectRatio") return Key::XF86_AspectRatio;
 			if (key == "xf86.mediaSelectPC") return Key::XF86_MediaSelectPC;
 			if (key == "xf86.mediaSelectTV") return Key::XF86_MediaSelectTV;
 			if (key == "xf86.mediaSelectCable") return Key::XF86_MediaSelectCable;
@@ -1153,7 +1153,7 @@ Config parseConfig(wx::WkValue const& value) {
 			if (key == "xf86.appSelect") return Key::XF86_AppSelect;
 			if (key == "xf86.screensaver") return Key::XF86_Screensaver;
 			if (key == "xf86.voiceCommand") return Key::XF86_VoiceCommand;
-			if (key == "xf86.assistant") return Key::XF86_Assistant;
+			if (key == "xf86.Assistant") return Key::XF86_Assistant;
 			if (key == "xf86.emojiPicker") return Key::XF86_EmojiPicker;
 			if (key == "xf86.dictate") return Key::XF86_Dictate;
 			if (key == "xf86.cameraAccessEnable") return Key::XF86_CameraAccessEnable;
@@ -1184,7 +1184,7 @@ Config parseConfig(wx::WkValue const& value) {
 			if (key == "xf86.num12") return Key::XF86_Numeric12;
 			if (key == "xf86.audioDesc") return Key::XF86_AudioDesc;
 			if (key == "xf86.3DMode") return Key::XF86_3DMode;
-			if (key == "xf86.nextFavorite") return Key::XF86_NextFavorite;
+			if (key == "xf86.NextFavorite") return Key::XF86_NextFavorite;
 			if (key == "xf86.stopRecord") return Key::XF86_StopRecord;
 			if (key == "xf86.pauseRecord") return Key::XF86_PauseRecord;
 			if (key == "xf86.vOD") return Key::XF86_VOD;
@@ -1195,7 +1195,7 @@ Config parseConfig(wx::WkValue const& value) {
 			if (key == "xf86.onScreenKeyboard") return Key::XF86_OnScreenKeyboard;
 			if (key == "xf86.privacyScreenToggle") return Key::XF86_PrivacyScreenToggle;
 			if (key == "xf86.selectiveScreenshot") return Key::XF86_SelectiveScreenshot;
-			if (key == "xf86.nextElement") return Key::XF86_NextElement;
+			if (key == "xf86.NextElement") return Key::XF86_NextElement;
 			if (key == "xf86.previousElement") return Key::XF86_PreviousElement;
 			if (key == "xf86.autopilotEngageToggle") return Key::XF86_AutopilotEngageToggle;
 			if (key == "xf86.markWaypoint") return Key::XF86_MarkWaypoint;
@@ -1206,7 +1206,7 @@ Config parseConfig(wx::WkValue const& value) {
 			if (key == "xf86.dualRangeRadar") return Key::XF86_DualRangeRadar;
 			if (key == "xf86.radarOverlay") return Key::XF86_RadarOverlay;
 			if (key == "xf86.traditionalSonar") return Key::XF86_TraditionalSonar;
-			if (key == "xf86.clearvuSonar") return Key::XF86_ClearvuSonar;
+			if (key == "xf86.ClearvuSonar") return Key::XF86_ClearvuSonar;
 			if (key == "xf86.sidevuSonar") return Key::XF86_SidevuSonar;
 			if (key == "xf86.navInfo") return Key::XF86_NavInfo;
 			if (key == "xf86.macro1") return Key::XF86_Macro1;
@@ -1255,7 +1255,7 @@ Config parseConfig(wx::WkValue const& value) {
 			return Key::None;
 		};
 
-		ModKey stringToModKey(wx::String const& modKey) {
+		ModKey stringToModKey(Wx::String const& modKey) {
 			if (modKey == "shift") return ModKey::Shift;
 			if (modKey == "ctrl") return ModKey::Ctrl;
 			if (modKey == "alt") return ModKey::Alt;
@@ -1263,19 +1263,19 @@ Config parseConfig(wx::WkValue const& value) {
 			return ModKey::None;
 		}
 
-		void parseAutostartList(wx::WkValue const& value) {
-			if (!value.isList()) return;
+		void parseAutostartList(Wx::WkValue const& value) {
+			if (!value.IsList()) return;
 
-			wx::List<wx::WkValue> const& list = value.asList();
-			for (int i = 0; i < list.count(); i++) {
-				if (!list[i].isTuple()) {
+			Wx::List<Wx::WkValue> const& list = value.AsList();
+			for (int i = 0; i < list.Count(); i++) {
+				if (!list[i].IsTuple()) {
 					continue;
 				}
-				ConfigCommand command = parseCommand(list[i].asTuple());
+				ConfigCommand command = parseCommand(list[i].AsTuple());
 				if (command.func == ConfigCommandFunc::None) {
 					continue;
 				}
-				config.autostarts.append(command);
+				config.autostarts.Append(command);
 			}
 		}
 	};

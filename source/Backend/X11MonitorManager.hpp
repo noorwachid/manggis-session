@@ -1,8 +1,8 @@
 #pragma once
 
-#include "wx/core/List.hpp"
-#include "backend/X11Connection.hpp"
+#include "Backend/X11Connection.hpp"
 #include "MonitorInfo.hpp"
+#include "Wx/Core/List.hpp"
 #include <xcb/randr.h>
 
 class X11MonitorManager {
@@ -13,7 +13,7 @@ public:
 
 	int getEventOffset();
 
-	wx::List<MonitorInfo> getConnectedMonitorInfos();
+	Wx::List<MonitorInfo> getConnectedMonitorInfos();
 
 
 private:

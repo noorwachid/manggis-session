@@ -30,9 +30,9 @@ int X11MonitorManager::getEventOffset() {
 	return _eventOffset;
 }
 
-wx::List<MonitorInfo> X11MonitorManager::getConnectedMonitorInfos() {
+Wx::List<MonitorInfo> X11MonitorManager::getConnectedMonitorInfos() {
 	#ifdef XEPHYR_ENABLE
-		wx::List<MonitorInfo> infos;
+		Wx::List<MonitorInfo> infos;
 
 		#ifdef XEPHYR_EMULATE_TWO_MONITOR
 		bool left = false;
@@ -55,7 +55,7 @@ wx::List<MonitorInfo> X11MonitorManager::getConnectedMonitorInfos() {
 			left.rect.y = 0;
 			left.rect.width = XEPHYR_WIDTH / 2;
 			left.rect.height = XEPHYR_HEIGHT;
-			infos.append(left);
+			infos.Append(left);
 		}
 
 		if (right) {
@@ -65,7 +65,7 @@ wx::List<MonitorInfo> X11MonitorManager::getConnectedMonitorInfos() {
 			right.rect.y = 0;
 			right.rect.width = XEPHYR_WIDTH / 2;
 			right.rect.height = XEPHYR_HEIGHT;
-			infos.append(right);
+			infos.Append(right);
 		}
 
 		return infos;
@@ -76,7 +76,7 @@ wx::List<MonitorInfo> X11MonitorManager::getConnectedMonitorInfos() {
 		right.rect.y = 0;
 		right.rect.width = XEPHYR_WIDTH;
 		right.rect.height = XEPHYR_HEIGHT;
-		infos.append(right);
+		infos.Append(right);
 
 		return infos;
 		#endif
@@ -92,7 +92,7 @@ wx::List<MonitorInfo> X11MonitorManager::getConnectedMonitorInfos() {
 	int outputSize = xcb_randr_get_screen_resources_current_outputs_length(res);
 	xcb_randr_output_t* outputs = xcb_randr_get_screen_resources_current_outputs(res);
 
-	wx::List<MonitorInfo> infos;
+	Wx::List<MonitorInfo> infos;
 
 	for (int i = 0; i < outputSize; i++) {
 		xcb_randr_get_output_info_cookie_t outCookie = xcb_randr_get_output_info(_conn->get(), outputs[i], XCB_CURRENT_TIME);
@@ -109,7 +109,7 @@ wx::List<MonitorInfo> X11MonitorManager::getConnectedMonitorInfos() {
 				xcb_randr_get_crtc_info_reply_t* crtc = xcb_randr_get_crtc_info_reply(_conn->get(), crtcCookie, NULL);
 
 				if (crtc) {
-					wx::String port(nameSize, (wx::Byte const*)name);
+					Wx::String port(nameSize, (Wx::Byte const*)name);
 
 					MonitorInfo info = {
 						.port = port,
@@ -121,7 +121,7 @@ wx::List<MonitorInfo> X11MonitorManager::getConnectedMonitorInfos() {
 						}
 					};
 
-					infos.append(info);
+					infos.Append(info);
 					free(crtc);
 				}
 			}
