@@ -49,7 +49,7 @@ int main(int argc, char **argv) {
 	}
 
 	Session session;
-	session.run(config);
+	session.Run(config);
 
 	Logger::Shutdown();
 

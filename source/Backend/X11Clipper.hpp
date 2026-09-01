@@ -11,16 +11,16 @@ public:
 	X11Clipper(X11Connection* conn): _conn{conn} {
 	}
 
-	void initialize() {
-		const xcb_query_extension_reply_t *ext = xcb_get_extension_data(_conn->get(), &xcb_shape_id);
+	void Init() {
+		const xcb_query_extension_reply_t *ext = xcb_get_extension_data(_conn->Get(), &xcb_shape_id);
 		if (!ext || !ext->present) {
 			LOG("[X11Clipper] shape extension not available\n");
 			return;
 		}
 	}
 
-	void clip(X11WindowBackend* windowBackend, Rect rect) {
-		WindowProp prop = windowBackend->getProp();
+	void Clip(X11WindowBackend* windowBackend, Rect rect) {
+		WindowProp prop = windowBackend->GetProp();
 
 		xcb_rectangle_t x11Rect;
 		x11Rect.x = rect.x;
@@ -29,7 +29,7 @@ public:
 		x11Rect.height = rect.height;
 
 		xcb_shape_rectangles(
-			_conn->get(),
+			_conn->Get(),
 			XCB_SHAPE_SO_SET,
 			XCB_SHAPE_SK_BOUNDING,
 			0,
@@ -42,9 +42,9 @@ public:
 		_conn->flush();
 	}
 
-	void unclip(X11WindowBackend* windowBackend) {
+	void Unclip(X11WindowBackend* windowBackend) {
 		xcb_shape_mask(
-			_conn->get(),
+			_conn->Get(),
 			XCB_SHAPE_SO_SET,
 			XCB_SHAPE_SK_BOUNDING,
 			windowBackend->getFrameHandle(),

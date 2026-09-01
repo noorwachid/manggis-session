@@ -29,8 +29,8 @@ public:
 		_reparent();
 	}
 
-	virtual Rect getRect() override {
-		xcb_get_geometry_reply_t* geom = xcb_get_geometry_reply(_conn->get(), xcb_get_geometry(_conn->get(), _frame), NULL);
+	virtual Rect GetRect() override {
+		xcb_get_geometry_reply_t* geom = xcb_get_geometry_reply(_conn->Get(), xcb_get_geometry(_conn->Get(), _frame), NULL);
 		Rect rect;
 		rect.x = geom->x;
 		rect.y = geom->y;
@@ -40,39 +40,39 @@ public:
 		return rect;
 	}
 
-	virtual WindowProp getProp() override {
+	virtual WindowProp GetProp() override {
 		return _prop;
 	}
 
-	virtual WindowType getType() override {
-		return _hint->getWindowType(_client);
+	virtual WindowType GetType() override {
+		return _hint->GetWindowType(_client);
 	}
 
-	virtual Wx::String getTitle() override {
-		return _hint->getWindowTitle(_client);
+	virtual Wx::String GetTitle() override {
+		return _hint->GetWindowTitle(_client);
 	}
 
-	virtual void raise() override {
+	virtual void Raise() override {
 		uint32_t value = XCB_STACK_MODE_ABOVE;
-		xcb_configure_window(_conn->get(), _frame, XCB_CONFIG_WINDOW_STACK_MODE, &value);
+		xcb_configure_window(_conn->Get(), _frame, XCB_CONFIG_WINDOW_STACK_MODE, &value);
 		_conn->flush();
 	}
 
-	virtual void move(int x, int y) override {
+	virtual void Move(int x, int y) override {
 		uint32_t values[2];
 		values[0] = x;
 		values[1] = y;
-		xcb_configure_window(_conn->get(), _frame, XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y, values);
+		xcb_configure_window(_conn->Get(), _frame, XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y, values);
 		_conn->flush();
 		notifyClient();
 	}
 
-	virtual void resize(int width, int height) override {
+	virtual void Resize(int width, int height) override {
 		uint32_t values[2];
 		int borders = _prop.borderWidth * 2;
 		values[0] = width > borders ? width - borders : 0;
 		values[1] = height > borders ? height - borders : 0;
-		xcb_configure_window(_conn->get(), _frame, XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT, values);
+		xcb_configure_window(_conn->Get(), _frame, XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT, values);
 
 		LOG("[x11.window] resize to %d, %d\n", values[0], values[1]);
 
@@ -80,37 +80,37 @@ public:
 			(uint32_t)width,
 			(uint32_t)height - _prop.titlebarHeight,
 		};
-		xcb_configure_window(_conn->get(), _client, XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT, clientValues);
+		xcb_configure_window(_conn->Get(), _client, XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT, clientValues);
 		_conn->flush();
 		notifyClient();
 		draw();
 	}
 
-	virtual void show() override {
-		xcb_map_window(_conn->get(), _frame);
-		xcb_map_window(_conn->get(), _client);
+	virtual void Show() override {
+		xcb_map_window(_conn->Get(), _frame);
+		xcb_map_window(_conn->Get(), _client);
 		_conn->flush();
 	}
 
-	virtual void hide() override {
-		xcb_unmap_window(_conn->get(), _frame);
+	virtual void Hide() override {
+		xcb_unmap_window(_conn->Get(), _frame);
 		_conn->flush();
 	}
 
-	virtual void focus() override {
+	virtual void Focus() override {
 		_prop.borderColor = windowstyle::active::borderColor;
 		_prop.titlebarColor = windowstyle::active::titlebarColor;
 		draw();
 	}
 
-	virtual void blur() override {
+	virtual void Blur() override {
 		_prop.borderColor = windowstyle::inactive::borderColor;
 		_prop.titlebarColor = windowstyle::inactive::titlebarColor;
 		draw();
 	}
 
-	virtual void close() override {
-		_hint->closeWindow(_client);
+	virtual void Close() override {
+		_hint->CloseWindow(_client);
 		_conn->flush();
 	}
 
@@ -140,33 +140,33 @@ public:
 
 	void draw() {
 		xcb_change_window_attributes(
-			_conn->get(),
+			_conn->Get(),
 			_frame,
 			XCB_CW_BORDER_PIXEL,
 			&_prop.borderColor
 		);
 
 		xcb_configure_window(
-			_conn->get(), 
+			_conn->Get(), 
 			_frame, 
 			XCB_CONFIG_WINDOW_BORDER_WIDTH, 
 			&_prop.borderWidth
 		);
 
-		Rect geom = getRect();
+		Rect geom = GetRect();
 		xcb_rectangle_t rect;
 		rect.x = 0;
 		rect.y = 0;
 		rect.width = geom.width;
 		rect.height = _prop.titlebarHeight;
 
-		xcb_change_gc(_conn->get(), _gc, XCB_GC_FOREGROUND, &_prop.titlebarColor);
-		xcb_poly_fill_rectangle(_conn->get(), _frame, _gc, 1, &rect);
+		xcb_change_gc(_conn->Get(), _gc, XCB_GC_FOREGROUND, &_prop.titlebarColor);
+		xcb_poly_fill_rectangle(_conn->Get(), _frame, _gc, 1, &rect);
 		_conn->flush();
 	}
 
 	void notifyClient() {
-		Rect rect = getRect();
+		Rect rect = GetRect();
 		xcb_configure_notify_event_t event {};
 		event.response_type = XCB_CONFIGURE_NOTIFY;
 		event.window = _client;
@@ -178,16 +178,16 @@ public:
 		event.border_width = _prop.borderWidth;
 		event.above_sibling = XCB_NONE;
 		event.override_redirect = 0;
-		xcb_send_event(_conn->get(), 0, _client, XCB_EVENT_MASK_STRUCTURE_NOTIFY, (const char *)&event);
+		xcb_send_event(_conn->Get(), 0, _client, XCB_EVENT_MASK_STRUCTURE_NOTIFY, (const char *)&event);
 		_conn->flush();
 	}
 
 
 private:
 	void _reparent() {
-		_frame = xcb_generate_id(_conn->get());
+		_frame = xcb_generate_id(_conn->Get());
 		
-		if (_hint->isWindowDecorated(_client)) {
+		if (_hint->IsWindowDecorated(_client)) {
 			_prop.borderWidth = windowstyle::borderWidth;
 			_prop.titlebarHeight = windowstyle::titlebarHeight;
 		} else {
@@ -209,7 +209,7 @@ private:
 			)
 		};
 
-		xcb_get_geometry_reply_t* geom = xcb_get_geometry_reply(_conn->get(), xcb_get_geometry(_conn->get(), _client), NULL);
+		xcb_get_geometry_reply_t* geom = xcb_get_geometry_reply(_conn->Get(), xcb_get_geometry(_conn->Get(), _client), NULL);
 
 		int x = geom->x;
 		int y = geom->y;
@@ -218,25 +218,25 @@ private:
 
 		free(geom);
 
-		xcb_create_window(_conn->get(), _conn->getScreen()->root_depth, _frame, _conn->getScreen()->root,
+		xcb_create_window(_conn->Get(), _conn->GetScreen()->root_depth, _frame, _conn->GetScreen()->root,
 			x, 
 			y,
 			width,
 			height,
 			_prop.borderWidth, XCB_WINDOW_CLASS_INPUT_OUTPUT,
-			_conn->getScreen()->root_visual, mask, values
+			_conn->GetScreen()->root_visual, mask, values
 		);
 
-		_gc = xcb_generate_id(_conn->get());
-		uint32_t gcValues[] = { _conn->getScreen()->black_pixel };
-		xcb_create_gc(_conn->get(), _gc, _frame, XCB_GC_FOREGROUND, gcValues);
+		_gc = xcb_generate_id(_conn->Get());
+		uint32_t gcValues[] = { _conn->GetScreen()->black_pixel };
+		xcb_create_gc(_conn->Get(), _gc, _frame, XCB_GC_FOREGROUND, gcValues);
 
 		int clientBorderWidth = 0;
-		xcb_configure_window(_conn->get(), _client, XCB_CONFIG_WINDOW_BORDER_WIDTH, &clientBorderWidth);
-		xcb_reparent_window(_conn->get(), _client, _frame, 0, _prop.titlebarHeight);
-		xcb_map_window(_conn->get(), _client);
+		xcb_configure_window(_conn->Get(), _client, XCB_CONFIG_WINDOW_BORDER_WIDTH, &clientBorderWidth);
+		xcb_reparent_window(_conn->Get(), _client, _frame, 0, _prop.titlebarHeight);
+		xcb_map_window(_conn->Get(), _client);
 
-		_hint->setWindowFrame(_client, _prop.borderWidth, _prop.borderWidth + _prop.titlebarHeight, _prop.borderWidth, _prop.borderWidth);
+		_hint->SetWindowFrame(_client, _prop.borderWidth, _prop.borderWidth + _prop.titlebarHeight, _prop.borderWidth, _prop.borderWidth);
 
 		_conn->flush();
 	}

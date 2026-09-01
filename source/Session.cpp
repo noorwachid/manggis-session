@@ -23,17 +23,17 @@ extern int xephyrMonitorConfiguration;
 #endif
 
 
-void Session::run(Config const& config) {
+void Session::Run(Config const& config) {
 	_config = config;
 
 	_context = createContext();
-	_observer = _context->getSessionObserver();
+	_observer = _context->GetSessionObserver();
 
-	_context->bindMouseButton(ModKey::Alt, MouseButton::Left);
-	_context->bindMouseButton(ModKey::Alt|ModKey::Shift, MouseButton::Left);
+	_context->BindMouseButton(ModKey::Alt, MouseButton::Left);
+	_context->BindMouseButton(ModKey::Alt|ModKey::Shift, MouseButton::Left);
 
-	_context->bindKey(ModKey::Alt, Key::A);
-	_context->bindKey(ModKey::Alt, Key::M);
+	_context->BindKey(ModKey::Alt, Key::A);
+	_context->BindKey(ModKey::Alt, Key::M);
 
 	for (int i = 0; i < _config.bindings.Count(); i++) {
 		ConfigBinding const& binding = _config.bindings[i];
@@ -42,24 +42,24 @@ void Session::run(Config const& config) {
 		index.modKey = binding.modKey;
 		index.key = binding.key;
 
-		_context->bindKey(binding.modKey, binding.key);
+		_context->BindKey(binding.modKey, binding.key);
 		_keyBindings.Set(index, [this, binding]() {
 			for (int k = 0; k < binding.commands.Count(); k++) {
-				_doCommand(binding.commands[k]);
+				DoCommand(binding.commands[k]);
 			}
 		});
 	}
 
-	_relayoutMonitors();
+	UpdateLayout();
 
 	for (int i = 0; i < _config.autostarts.Count(); i++) {
-		_doCommand(_config.autostarts[i]);
+		DoCommand(_config.autostarts[i]);
 	}
 
-	_context->run(this);
+	_context->Run(this);
 }
 
-ConfigBinding const* Session::queryBinding(ModKey modKey, Key key) {
+ConfigBinding const* Session::QueryBinding(ModKey modKey, Key key) {
 	for (int i = 0; i < _config.bindings.Count(); i++) {
 		ConfigBinding const& binding = _config.bindings[i];
 		if (binding.modKey == modKey && binding.key == key) {
@@ -69,92 +69,92 @@ ConfigBinding const* Session::queryBinding(ModKey modKey, Key key) {
 	return nullptr;
 }
 
-void Session::onWindowCreate(WindowEvent const& e) {
-	Point mousePos = _context->getMousePos();
-	Monitor* monitor = _queryMonitorByPos(mousePos);
+void Session::OnWindowCreate(WindowEvent const& e) {
+	Point mousePos = _context->GetMousePos();
+	Monitor* monitor = QueryMonitorByPos(mousePos);
 	if (monitor == nullptr) {
 		WX_ASSERT(monitor == nullptr, "invalid monitor state\n");
 		return;
 	}
 
 	if (_activeMonitor != monitor) {
-		focusMonitor(monitor);
+		FocusMonitor(monitor);
 	}
-	_activeMonitor->addWindow(e.window);
-	_observer->onWindowFocus(e.window);
+	_activeMonitor->AddWindow(e.window);
+	_observer->OnWindowFocus(e.window);
 
 	LOG("ACTIEV MON %p\n", _activeMonitor);
-	LOG("WINDOW CREATE %p, WS: %p, MON: %p\n", e.window, e.window->getWorkspace(), e.window->getMonitor());
-	_clipWindow(e.window);
+	LOG("WINDOW CREATE %p, WS: %p, MON: %p\n", e.window, e.window->GetWorkspace(), e.window->GetMonitor());
+	ClipWindow(e.window);
 }
 
-void Session::onWindowDestroy(WindowEvent const& e) {
-	Monitor* monitor = e.window->getMonitor();
-	monitor->removeWindow(e.window);
+void Session::OnWindowDestroy(WindowEvent const& e) {
+	Monitor* monitor = e.window->GetMonitor();
+	monitor->RemoveWindow(e.window);
 }
 
-void Session::onWindowMoveRequest(WindowMovementEvent const& e) {
-	_beginDrag(DragMode::Move, e.window);
+void Session::OnWindowMoveRequest(WindowMovementEvent const& e) {
+	BeginDrag(DragMode::Move, e.window);
 }
 
-void Session::onWindowResizeRequest(WindowResizingEvent const& e) {
-	_beginDrag(DragMode::Resize, e.window, e.area);
+void Session::OnWindowResizeRequest(WindowResizingEvent const& e) {
+	BeginDrag(DragMode::Resize, e.window, e.area);
 }
 
-void Session::onWindowMaximizeRequest(WindowActionEvent const& e) {
+void Session::OnWindowMaximizeRequest(WindowActionEvent const& e) {
 }
 
-void Session::onWindowFullscreenRequest(WindowActionEvent const& e) {
+void Session::OnWindowFullscreenRequest(WindowActionEvent const& e) {
 }
 
-void Session::onMousePress(MouseButtonEvent const& e) {
+void Session::OnMousePress(MouseButtonEvent const& e) {
 	if (e.window == nullptr) {
-		Monitor* mon = _queryMonitorByPos(e.pos);
+		Monitor* mon = QueryMonitorByPos(e.pos);
 		if (mon != nullptr) {
-			focusMonitor(mon);
+			FocusMonitor(mon);
 		}
 		return;
 	}
 
-	WindowType type = e.window->getType();
+	WindowType type = e.window->GetType();
 	if (type != WindowType::Normal) {
 		return;
 	}
 
-	focusWindow(e.window);
+	FocusWindow(e.window);
 
 	if (e.button == MouseButton::Left) {
 		if (e.modKey == (ModKey::Alt)) {
-			_beginDrag(DragMode::Move, e.window);
+			BeginDrag(DragMode::Move, e.window);
 		} else if (e.modKey == (ModKey::Alt|ModKey::Shift)) {
-			_beginDrag(DragMode::Resize, e.window);
+			BeginDrag(DragMode::Resize, e.window);
 		} else {
 			// titlebar grabbing
-			Rect rect = e.window->getRect();
-			WindowProp prop = e.window->getProp();
+			Rect rect = e.window->GetRect();
+			WindowProp prop = e.window->GetProp();
 			if (e.pos.y < rect.y + prop.titlebarHeight) {
-				_beginDrag(DragMode::Move, e.window);
+				BeginDrag(DragMode::Move, e.window);
 			}
 		}
 	}
 
 }
 
-void Session::onMouseRelease(MouseButtonEvent const& e) {
+void Session::OnMouseRelease(MouseButtonEvent const& e) {
 	if (_dragState.mode != DragMode::None) {
 		Window* window = _dragState.window;
 
 		_dragState.mode = DragMode::None;
 		_dragState.window = nullptr;
-		_context->unbindMouseMovement();
+		_context->UnbindMouseMovement();
 
-		Rect windowRect = window->getRect();
+		Rect windowRect = window->GetRect();
 		Monitor* bestMonitor = nullptr;
 		int bestArea = 0;
 
 		for (int i = 0; i < _monitors.Count(); i++) {
 			Monitor* monitor = _monitors[i];
-			Rect monitorRect = monitor->getRect();
+			Rect monitorRect = monitor->GetRect();
 			Rect intersectRect = IntersectRectRect(monitorRect, windowRect);
 			int area = intersectRect.width * intersectRect.height;
 			if (bestArea < area) {
@@ -169,20 +169,20 @@ void Session::onMouseRelease(MouseButtonEvent const& e) {
 		}
 
 		if (_activeMonitor != bestMonitor) {
-			focusWorkspace(bestMonitor->getActiveWorkspace());
-			window->getWorkspace()->removeWindow(window);
-			bestMonitor->getActiveWorkspace()->addWindow(window);
+			FocusWorkspace(bestMonitor->GetActiveWorkspace());
+			window->GetWorkspace()->RemoveWindow(window);
+			bestMonitor->GetActiveWorkspace()->AddWindow(window);
 		}
 
-		_clipWindow(window);
+		ClipWindow(window);
 	}
 }
 
-void Session::onMouseMove(MouseMovementEvent const& e) {
+void Session::OnMouseMove(MouseMovementEvent const& e) {
 	if (_dragState.mode == DragMode::Move) {
 		int x = _dragState.initialWindowRect.x + (e.pos.x - _dragState.initialMousePos.x);
 		int y = _dragState.initialWindowRect.y + (e.pos.y - _dragState.initialMousePos.y);
-		_dragState.window->move(x, y);
+		_dragState.window->Move(x, y);
 	}
 	if (_dragState.mode == DragMode::Resize) {
 		if (_dragState.area == WindowResizingArea::NorthWest) {
@@ -190,24 +190,24 @@ void Session::onMouseMove(MouseMovementEvent const& e) {
 			int y = _dragState.initialWindowRect.y + (e.pos.y - _dragState.initialMousePos.y);
 			int width = _dragState.initialWindowRect.width - (e.pos.x - _dragState.initialMousePos.x);
 			int height = _dragState.initialWindowRect.height - (e.pos.y - _dragState.initialMousePos.y);
-			_dragState.window->move(x, y);
-			_dragState.window->resize(width, height);
+			_dragState.window->Move(x, y);
+			_dragState.window->Resize(width, height);
 		}
 		if (_dragState.area == WindowResizingArea::North) {
 			int x = _dragState.initialWindowRect.x;
 			int y = _dragState.initialWindowRect.y + (e.pos.y - _dragState.initialMousePos.y);
 			int width = _dragState.initialWindowRect.width;
 			int height = _dragState.initialWindowRect.height - (e.pos.y - _dragState.initialMousePos.y);
-			_dragState.window->move(x, y);
-			_dragState.window->resize(width, height);
+			_dragState.window->Move(x, y);
+			_dragState.window->Resize(width, height);
 		}
 		if (_dragState.area == WindowResizingArea::West) {
 			int x = _dragState.initialWindowRect.x + (e.pos.x - _dragState.initialMousePos.x);
 			int y = _dragState.initialWindowRect.y;
 			int width = _dragState.initialWindowRect.width - (e.pos.x - _dragState.initialMousePos.x);
 			int height = _dragState.initialWindowRect.height;
-			_dragState.window->move(x, y);
-			_dragState.window->resize(width, height);
+			_dragState.window->Move(x, y);
+			_dragState.window->Resize(width, height);
 		}
 
 
@@ -216,38 +216,38 @@ void Session::onMouseMove(MouseMovementEvent const& e) {
 			int y = _dragState.initialWindowRect.y + (e.pos.y - _dragState.initialMousePos.y);
 			int width = _dragState.initialWindowRect.width + (e.pos.x - _dragState.initialMousePos.x);
 			int height = _dragState.initialWindowRect.height - (e.pos.y - _dragState.initialMousePos.y);
-			_dragState.window->move(x, y);
-			_dragState.window->resize(width, height);
+			_dragState.window->Move(x, y);
+			_dragState.window->Resize(width, height);
 		}
 		if (_dragState.area == WindowResizingArea::SouthWest) {
 			int x = _dragState.initialWindowRect.x + (e.pos.x - _dragState.initialMousePos.x);
 			int y = _dragState.initialWindowRect.y;
 			int width = _dragState.initialWindowRect.width - (e.pos.x - _dragState.initialMousePos.x);
 			int height = _dragState.initialWindowRect.height + (e.pos.y - _dragState.initialMousePos.y);
-			_dragState.window->move(x, y);
-			_dragState.window->resize(width, height);
+			_dragState.window->Move(x, y);
+			_dragState.window->Resize(width, height);
 		}
 
 
 		if (_dragState.area == WindowResizingArea::East) {
 			int width = _dragState.initialWindowRect.width + (e.pos.x - _dragState.initialMousePos.x);
 			int height = _dragState.initialWindowRect.height;
-			_dragState.window->resize(width, height);
+			_dragState.window->Resize(width, height);
 		}
 		if (_dragState.area == WindowResizingArea::South) {
 			int width = _dragState.initialWindowRect.width;
 			int height = _dragState.initialWindowRect.height + (e.pos.y - _dragState.initialMousePos.y);
-			_dragState.window->resize(width, height);
+			_dragState.window->Resize(width, height);
 		}
 		if (_dragState.area == WindowResizingArea::SouthEast) {
 			int width = _dragState.initialWindowRect.width + (e.pos.x - _dragState.initialMousePos.x);
 			int height = _dragState.initialWindowRect.height + (e.pos.y - _dragState.initialMousePos.y);
-			_dragState.window->resize(width, height);
+			_dragState.window->Resize(width, height);
 		}
 	}
 }
 
-void Session::onKeyPress(KeyEvent const& e) {
+void Session::OnKeyPress(KeyEvent const& e) {
 	KeyIndex index;
 	index.modKey = e.modKey;
 	index.key = e.key;
@@ -259,170 +259,170 @@ void Session::onKeyPress(KeyEvent const& e) {
 	}
 
 	if (e.modKey == ModKey::Alt && e.key == Key::A) {
-		_logLayout();
+		LogLayout();
 		return;
 	}
 	if (e.modKey == ModKey::Alt && e.key == Key::M) {
 		#ifdef XEPHYR_ENABLE
 		xephyrMonitorConfiguration++;
-		_relayoutMonitors();
+		UpdateLayout();
 		#endif
 		return;
 	}
 
 }
 
-void Session::onKeyRelease(KeyEvent const& e) {
+void Session::OnKeyRelease(KeyEvent const& e) {
 }
 
-void Session::onMonitorConnect(MonitorEvent const& e) {
+void Session::OnMonitorConnect(MonitorEvent const& e) {
 	LOG("monitor connected %s\n", e.port.CPtr());
-	_relayoutMonitors();
+	UpdateLayout();
 }
 
-void Session::onMonitorDisconnect(MonitorEvent const& e) {
+void Session::OnMonitorDisconnect(MonitorEvent const& e) {
 	LOG("monitor disconnected %s\n", e.port.CPtr());
-	_relayoutMonitors();
+	UpdateLayout();
 }
 
-void Session::onMonitorPropertyChange(MonitorEvent const& e) {
+void Session::OnMonitorPropertyChange(MonitorEvent const& e) {
 	LOG("monitor property changed %s\n", e.port.CPtr());
-	_relayoutMonitors();
+	UpdateLayout();
 }
 
-void Session::focusMonitor(Monitor* monitor) {
+void Session::FocusMonitor(Monitor* monitor) {
 	if (_activeMonitor == monitor) return;
 	if (_activeMonitor != nullptr) {
-		_activeMonitor->blur();
+		_activeMonitor->Blur();
 	}
 	_activeMonitor = monitor;
-	_activeMonitor->focus();
-	_observer->onWorkspaceFocus(_activeMonitor->getActiveWorkspace());
+	_activeMonitor->Focus();
+	_observer->OnWorkspaceFocus(_activeMonitor->GetActiveWorkspace());
 }
 
-void Session::focusWorkspaceID(Wx::String const& id) {
+void Session::FocusWorkspaceID(Wx::String const& id) {
 	Monitor* previousMonitor = _activeMonitor;
 	for (int i = 0; i < _monitors.Count(); i++) {
 		Monitor* mon = _monitors[i];
-		Workspace* ws = mon->queryWorkspace(id);
+		Workspace* ws = mon->QueryWorkspace(id);
 		if (ws == nullptr) {
 			continue;
 		}
 		LOG("activate workspace %s\n", id.CPtr());
 		if (previousMonitor == mon) {
-			mon->getActiveWorkspace()->hide();
+			mon->GetActiveWorkspace()->Hide();
 		}
-		focusMonitor(mon);
-		mon->activateWorkspace(ws);
-		_observer->onWorkspaceFocus(ws);
-		mon->getActiveWorkspace()->show();
+		FocusMonitor(mon);
+		mon->FocusWorkspace(ws);
+		_observer->OnWorkspaceFocus(ws);
+		mon->GetActiveWorkspace()->Show();
 		return;
 	}
 	LOG("no workspace with id %s\n", id.CPtr());
 }
 
-void Session::focusWorkspace(Workspace* workspace) {
+void Session::FocusWorkspace(Workspace* workspace) {
 	Monitor* previousMonitor = _activeMonitor;
-	Monitor* mon = workspace->getMonitor();
+	Monitor* mon = workspace->GetMonitor();
 	if (previousMonitor == mon) {
-		if (previousMonitor->getActiveWorkspace() != workspace) {
-			mon->getActiveWorkspace()->hide();
+		if (previousMonitor->GetActiveWorkspace() != workspace) {
+			mon->GetActiveWorkspace()->Hide();
 		}
 	}
-	focusMonitor(mon);
-	mon->activateWorkspace(workspace);
-	_observer->onWorkspaceFocus(workspace);
-	LOG("activate workspace %s\n", workspace->getID().CPtr());
+	FocusMonitor(mon);
+	mon->FocusWorkspace(workspace);
+	_observer->OnWorkspaceFocus(workspace);
+	LOG("activate workspace %s\n", workspace->GetID().CPtr());
 }
 
-void Session::sendWorkspaceToMonitor(Workspace* workspace, Monitor* monitor) {
-	Monitor* oldMonitor = workspace->getMonitor();
-	monitor->addWorkspace(workspace);
+void Session::SendWorkspaceToMonitor(Workspace* workspace, Monitor* monitor) {
+	Monitor* oldMonitor = workspace->GetMonitor();
+	monitor->AddWorkspace(workspace);
 	if (oldMonitor != nullptr) {
 		if (oldMonitor != monitor) {
-			for (int i = 0; i < workspace->getWindowList().Count(); i++) {
-				Window* window = workspace->getWindowList()[i];
-				sendWindowToWorkspace(window, workspace);
+			for (int i = 0; i < workspace->GetWindowList().Count(); i++) {
+				Window* window = workspace->GetWindowList()[i];
+				SendWindowToWorkspace(window, workspace);
 			}
 		}
 	}
 }
 
-void Session::sendWindowToWorkspace(Window* window, Workspace* workspace) {
-	Workspace* previousWorkspace = window->getWorkspace();
-	Monitor* previousMonitor = window->getMonitor();
-	Monitor* monitor = workspace->getMonitor();
+void Session::SendWindowToWorkspace(Window* window, Workspace* workspace) {
+	Workspace* previousWorkspace = window->GetWorkspace();
+	Monitor* previousMonitor = window->GetMonitor();
+	Monitor* monitor = workspace->GetMonitor();
 
 	if (previousMonitor == monitor && previousWorkspace == workspace) {
 		return;
 	}
 
 	if (previousMonitor == monitor) {
-		window->hide();
+		window->Hide();
 	} else {
-		if (workspace->getMonitor()->getActiveWorkspace() != workspace) {
-			window->hide();
+		if (workspace->GetMonitor()->GetActiveWorkspace() != workspace) {
+			window->Hide();
 		}
 
-		Rect windowRect = window->getRect();
-		Rect previousRect = previousMonitor->getRect();
-		Rect nextRect = monitor->getRect();
-		window->move(
+		Rect windowRect = window->GetRect();
+		Rect previousRect = previousMonitor->GetRect();
+		Rect nextRect = monitor->GetRect();
+		window->Move(
 			nextRect.x + (windowRect.x - previousRect.x),
 			nextRect.y + (windowRect.y - previousRect.y)
 		);
 
-		_clipWindow(window);
+		ClipWindow(window);
 	}
 
-	window->getWorkspace()->removeWindow(window);
-	workspace->addWindow(window);
+	window->GetWorkspace()->RemoveWindow(window);
+	workspace->AddWindow(window);
 }
 
-void Session::sendWindowToWorkspaceID(Wx::String const& id) {
-	Window* window = _activeMonitor->getActiveWorkspace()->getActiveWindow();
+void Session::SendWindowToWorkspaceID(Wx::String const& id) {
+	Window* window = _activeMonitor->GetActiveWorkspace()->GetActiveWindow();
 	if (window == nullptr) {
 		return;
 	}
 	for (int i = 0; i < _monitors.Count(); i++) {
 		Monitor* mon = _monitors[i];
-		Workspace* ws = mon->queryWorkspace(id);
+		Workspace* ws = mon->QueryWorkspace(id);
 		if (ws == nullptr) {
 			continue;
 		}
-		sendWindowToWorkspace(window, ws);
+		SendWindowToWorkspace(window, ws);
 		return;
 	}
 	LOG("no workspace with id %s\n", id.CPtr());
 }
 
-void Session::focusWindow(Window* window) {
+void Session::FocusWindow(Window* window) {
 	// raise to top (if background wallpaper or desktop orginizer you dont have to move it forward)
-	window->raise();
+	window->Raise();
 	
-	Workspace* ws = window->getWorkspace();
-	focusWorkspace(ws);
-	ws->focusWindow(window);
-	_observer->onWindowFocus(window);
+	Workspace* ws = window->GetWorkspace();
+	FocusWorkspace(ws);
+	ws->FocusWindow(window);
+	_observer->OnWindowFocus(window);
 }
 
-void Session::focusNearestWindow(Direction direction) {
+void Session::FocusNearestWindow(Direction direction) {
 	LOG("FOCUS NEAREST WINDOW %d\n", (int) direction);
-	Workspace* workspace = _activeMonitor->getActiveWorkspace();
-	Window* sourceWindow = workspace->getActiveWindow();
+	Workspace* workspace = _activeMonitor->GetActiveWorkspace();
+	Window* sourceWindow = workspace->GetActiveWindow();
 	if (sourceWindow == nullptr) return;
 
-	Rect sourceRect = sourceWindow->getRect();
+	Rect sourceRect = sourceWindow->GetRect();
 
 	int shortestDistance = INT_MAX;
 	Window* shortestWindow = nullptr;
 
 	if (direction == Direction::East) {
-		for (int i = 0; i < workspace->getWindowList().Count(); i++) {
-			Window* targetWindow = workspace->getWindowList()[i];
+		for (int i = 0; i < workspace->GetWindowList().Count(); i++) {
+			Window* targetWindow = workspace->GetWindowList()[i];
 			if (targetWindow == sourceWindow) continue;
 
-			Rect targetRect = targetWindow->getRect();
+			Rect targetRect = targetWindow->GetRect();
 			int distance = 0;
 
 			// partial overlap but target is visible
@@ -452,11 +452,11 @@ void Session::focusNearestWindow(Direction direction) {
 			}
 		}
 	} else if (direction == Direction::West) {
-		for (int i = 0; i < workspace->getWindowList().Count(); i++) {
-			Window* targetWindow = workspace->getWindowList()[i];
+		for (int i = 0; i < workspace->GetWindowList().Count(); i++) {
+			Window* targetWindow = workspace->GetWindowList()[i];
 			if (targetWindow == sourceWindow) continue;
 
-			Rect targetRect = targetWindow->getRect();
+			Rect targetRect = targetWindow->GetRect();
 			int distance = (sourceRect.x) - (targetRect.x + targetRect.width) ;
 			if (distance > 0 && shortestDistance > distance) {
 				shortestDistance = distance;
@@ -466,16 +466,16 @@ void Session::focusNearestWindow(Direction direction) {
 	}
 
 	if (shortestWindow) {
-		focusWindow(shortestWindow);
+		FocusWindow(shortestWindow);
 	}
 }
 
-void Session::cycleNextWindow() {
-	Workspace* workspace = _activeMonitor->getActiveWorkspace();
-	if (workspace->getWindowList().Count() < 2) return;
+void Session::CycleNextWindow() {
+	Workspace* workspace = _activeMonitor->GetActiveWorkspace();
+	if (workspace->GetWindowList().Count() < 2) return;
 
-	Wx::List<Window*> windows = workspace->getWindowList();
-	Window* activeWindow = workspace->getActiveWindow();
+	Wx::List<Window*> windows = workspace->GetWindowList();
+	Window* activeWindow = workspace->GetActiveWindow();
 	int idx = -1;
 	for (int i = 0; i < windows.Count(); i++) {
 		Window* window = windows[i];
@@ -486,15 +486,15 @@ void Session::cycleNextWindow() {
 	}
 	if (idx == -1) return;
 	Window* nextWindow = windows[(idx + 1) % windows.Count()];
-	workspace->focusWindow(nextWindow);
+	workspace->FocusWindow(nextWindow);
 }
 
-void Session::cyclePreviousWindow() {
-	Workspace* workspace = _activeMonitor->getActiveWorkspace();
-	if (workspace->getWindowList().Count() < 2) return;
+void Session::CyclePreviousWindow() {
+	Workspace* workspace = _activeMonitor->GetActiveWorkspace();
+	if (workspace->GetWindowList().Count() < 2) return;
 
-	Wx::List<Window*> windows = workspace->getWindowList();
-	Window* activeWindow = workspace->getActiveWindow();
+	Wx::List<Window*> windows = workspace->GetWindowList();
+	Window* activeWindow = workspace->GetActiveWindow();
 	int idx = -1;
 	for (int i = 0; i < windows.Count(); i++) {
 		Window* window = windows[i];
@@ -505,24 +505,24 @@ void Session::cyclePreviousWindow() {
 	}
 	if (idx == -1) return;
 	Window* nextWindow = windows[(idx + windows.Count() - 1) % windows.Count()];
-	workspace->focusWindow(nextWindow);
+	workspace->FocusWindow(nextWindow);
 }
 
-void Session::closeWindow() {
-	Workspace* ws = _activeMonitor->getActiveWorkspace();
-	Window* window = ws->getActiveWindow();
+void Session::CloseWindow() {
+	Workspace* ws = _activeMonitor->GetActiveWorkspace();
+	Window* window = ws->GetActiveWindow();
 	if (window) {
-		window->close();
+		window->Close();
 	}
 }
 
-void Session::_beginDrag(DragMode mode, Window* window, WindowResizingArea area) {
+void Session::BeginDrag(DragMode mode, Window* window, WindowResizingArea area) {
 	_dragState.mode = mode;
 	_dragState.window = window;
 
 
-	Rect windowRect = _dragState.window->getRect();
-	Point mousePos = _context->getMousePos();
+	Rect windowRect = _dragState.window->GetRect();
+	Point mousePos = _context->GetMousePos();
 
 	if (area == WindowResizingArea::None) {
 		int xSlice = (float(mousePos.x - windowRect.x) / float(windowRect.width)) * 3;
@@ -558,11 +558,11 @@ void Session::_beginDrag(DragMode mode, Window* window, WindowResizingArea area)
 
 	_dragState.area = area;
 
-	_context->unclipWindow(_dragState.window);
-	_context->bindMouseMovement();
+	_context->UnclipWindow(_dragState.window);
+	_context->BindMouseMovement();
 }
 
-void Session::_doCommand(ConfigCommand const& command) {
+void Session::DoCommand(ConfigCommand const& command) {
 	if (command.func == ConfigCommandFunc::Exec) {
 		Wx::List<Wx::String> argv;
 		for (int i = 0; i < command.arguments.AsList().Count(); i++) {
@@ -573,25 +573,25 @@ void Session::_doCommand(ConfigCommand const& command) {
 		return;
 	}
 	if (command.func == ConfigCommandFunc::CloseWindow) {
-		closeWindow();
+		CloseWindow();
 		return;
 	}
 	if (command.func == ConfigCommandFunc::FocusWindow) {
-		focusNearestWindow((Direction) command.arguments.AsInt64());
+		FocusNearestWindow((Direction) command.arguments.AsInt64());
 		return;
 	}
 	if (command.func == ConfigCommandFunc::CycleNextWindow) {
-		cycleNextWindow();
+		CycleNextWindow();
 		return;
 	}
 	if (command.func == ConfigCommandFunc::CyclePreviousWindow) {
-		cyclePreviousWindow();
+		CyclePreviousWindow();
 		return;
 	}
 	if (command.func == ConfigCommandFunc::TileWindow) {
-		Window* window = _activeMonitor->getActiveWorkspace()->getActiveWindow();
+		Window* window = _activeMonitor->GetActiveWorkspace()->GetActiveWindow();
 		if (window == nullptr) return;
-		Rect avail = _activeMonitor->getWorkingRect();
+		Rect avail = _activeMonitor->GetWorkingRect();
 		Wx::List<Wx::WkValue> const& args = command.arguments.AsList();
 		Wx::Float64 x = args[0].AsFloat64();
 		Wx::Float64 y = args[1].AsFloat64();
@@ -605,50 +605,50 @@ void Session::_doCommand(ConfigCommand const& command) {
 		LOG("[session] avail: (%d, %d, %d, %d)\n", avail.x, avail.y, avail.width, avail.height);
 		LOG("[session] multiplier: (%g, %g, %g, %g)\n", x, y, width, height);
 		LOG("[session] computed: (%d, %d, %d, %d)\n", target.x, target.y, target.width, target.height);
-		window->move(target.x, target.y);
-		window->resize(target.width, target.height);
-		_clipWindow(window);
+		window->Move(target.x, target.y);
+		window->Resize(target.width, target.height);
+		ClipWindow(window);
 		return;
 	}
 	if (command.func == ConfigCommandFunc::FocusWorkspace) {
-		focusWorkspaceID(command.arguments.AsString());
+		FocusWorkspaceID(command.arguments.AsString());
 		return;
 	}
 	if (command.func == ConfigCommandFunc::SendWindowToWorkspace) {
-		sendWindowToWorkspaceID(command.arguments.AsString());
+		SendWindowToWorkspaceID(command.arguments.AsString());
 		return;
 	}
 	if (command.func == ConfigCommandFunc::Quit) {
-		_context->stop();
+		_context->Stop();
 		return;
 	}
 }
 
-Monitor* Session::_queryMonitorByPort(Wx::String const& port) {
+Monitor* Session::QueryMonitorByPort(Wx::String const& port) {
 	for (int i = 0; i < _monitors.Count(); i++) {
-		if (_monitors[i]->getPort() == port) {
+		if (_monitors[i]->GetPort() == port) {
 			return _monitors[i];
 		}
 	}
 	return nullptr;
 }
 
-Monitor* Session::_queryMonitorByPos(Point pos) {
+Monitor* Session::QueryMonitorByPos(Point pos) {
 	for (int i = 0; i < _monitors.Count(); i++) {
-		if (IsPointIntersectRect(pos, _monitors[i]->getRect())) {
+		if (IsPointIntersectRect(pos, _monitors[i]->GetRect())) {
 			return _monitors[i];
 		}
 	}
 	return nullptr;
 }
 
-void Session::_relayoutMonitors() {
-	Wx::List<MonitorDef> monitorDefs = _context->getConnectedMonitorDefs();
+void Session::UpdateLayout() {
+	Wx::List<MonitorDef> monitorDefs = _context->GetConnectedMonitorDefs();
 
 	MonitorDef fallbackDef;
 	fallbackDef.port = "<fallback>";
-	_fallbackMonitor = _getOrCreateMonitor(fallbackDef);
-	_fallbackMonitor->clearWorkspaceList();
+	_fallbackMonitor = GetOrCreateMonitor(fallbackDef);
+	_fallbackMonitor->ClearWorkspaceList();
 
 	// TODO: reuse the monitor instance
 	_monitors.Clear();
@@ -660,8 +660,8 @@ void Session::_relayoutMonitors() {
 		Monitor* activeMonitor = nullptr;
 		for (int i = 0; i < monitorDefs.Count(); i++) {
 			MonitorDef const& def = monitorDefs[i];
-			Monitor* monitor = _getOrCreateMonitor(def);
-			monitor->clearWorkspaceList();
+			Monitor* monitor = GetOrCreateMonitor(def);
+			monitor->ClearWorkspaceList();
 			if (_activeMonitor == monitor) {
 				activeMonitor = monitor;
 			}
@@ -674,28 +674,28 @@ void Session::_relayoutMonitors() {
 
 	for (int i = 0; i < _config.workspaces.Count(); i++) {
 		ConfigWorkspace const& wsConfig = _config.workspaces[i];
-		Workspace* ws = _getOrCreateWorkspace(wsConfig.id);
+		Workspace* ws = GetOrCreateWorkspace(wsConfig.id);
 		if (wsConfig.ports.IsEmpty()) {
-			sendWorkspaceToMonitor(ws, _activeMonitor);
+			SendWorkspaceToMonitor(ws, _activeMonitor);
 		} else {
 			Monitor* monitor = nullptr;
 			for (int j = 0; j < wsConfig.ports.Count(); j++) {
-				monitor = _queryMonitorByPort(wsConfig.ports[j]);
+				monitor = QueryMonitorByPort(wsConfig.ports[j]);
 				if (monitor) {
-					sendWorkspaceToMonitor(ws, monitor);
+					SendWorkspaceToMonitor(ws, monitor);
 					break;
 				}
 			}
 			if (monitor == nullptr) {
-				sendWorkspaceToMonitor(ws, _activeMonitor);
+				SendWorkspaceToMonitor(ws, _activeMonitor);
 			}
 		}
 	}
 
 	for (int i = 0; i < _monitors.Count(); i++) {
 		Monitor* monitor = _monitors[i];
-		if (monitor->getActiveWorkspace() == nullptr) {
-			monitor->addWorkspace(new Workspace(monitor->getPort()));
+		if (monitor->GetActiveWorkspace() == nullptr) {
+			monitor->AddWorkspace(new Workspace(monitor->GetPort()));
 		}
 	}
 
@@ -704,42 +704,42 @@ void Session::_relayoutMonitors() {
 
 	for (int i = 0; i < _monitors.Count(); i++) {
 		Monitor* monitor = _monitors[i];
-		for (int j = 0; j < monitor->getWorkspaceList().Count(); j++) {
-			Workspace* workspace = monitor->getWorkspaceList()[j];
+		for (int j = 0; j < monitor->GetWorkspaceList().Count(); j++) {
+			Workspace* workspace = monitor->GetWorkspaceList()[j];
 			workspaces.Append(workspace);
-			for (int k = 0; k < workspace->getWindowList().Count(); k++) {
-				Window* window = workspace->getWindowList()[k];
+			for (int k = 0; k < workspace->GetWindowList().Count(); k++) {
+				Window* window = workspace->GetWindowList()[k];
 				// reclip window
-				_clipWindow(window);
+				ClipWindow(window);
 			}
 		}
 	}
 
-	_observer->onWorkspaceConfigure(workspaces);
-	_logLayout();
+	_observer->OnWorkspaceConfigure(workspaces);
+	LogLayout();
 }
 
-void Session::_logLayout() {
+void Session::LogLayout() {
 	LOG("layout:\n");
 	for (int i = 0; i < _monitors.Count(); i++) {
 		Monitor* mon = _monitors[i];
-		LOG("  mon %s:", mon->getPort().CPtr());
+		LOG("  mon %s:", mon->GetPort().CPtr());
 		if (mon == _activeMonitor) {
 			LOG(" # active");
 		}
 		LOG("\n");
-		for (int j = 0; j < mon->getWorkspaceList().Count(); j++) {
-			Workspace* ws = mon->getWorkspaceList()[j];
-			LOG("    ws %s: (mon: %s)", ws->getID().CPtr(), ws->getMonitor()->getPort().CPtr());
-			if (ws == mon->getActiveWorkspace()) {
+		for (int j = 0; j < mon->GetWorkspaceList().Count(); j++) {
+			Workspace* ws = mon->GetWorkspaceList()[j];
+			LOG("    ws %s: (mon: %s)", ws->GetID().CPtr(), ws->GetMonitor()->GetPort().CPtr());
+			if (ws == mon->GetActiveWorkspace()) {
 				LOG(" # active");
 			}
 			LOG("\n");
 
-			for (int k = 0; k < ws->getWindowList().Count(); k++) {
-				Window* win = ws->getWindowList()[k];
-				LOG("      win %p: (ws: %s, mon: %s)", win, win->getWorkspace()->getID().CPtr(), win->getMonitor()->getPort().CPtr());
-				if (win == ws->getActiveWindow()) {
+			for (int k = 0; k < ws->GetWindowList().Count(); k++) {
+				Window* win = ws->GetWindowList()[k];
+				LOG("      win %p: (ws: %s, mon: %s)", win, win->GetWorkspace()->GetID().CPtr(), win->GetMonitor()->GetPort().CPtr());
+				if (win == ws->GetActiveWindow()) {
 					LOG(" # active");
 				}
 				LOG("\n");
@@ -748,11 +748,11 @@ void Session::_logLayout() {
 	}
 }
 
-Monitor* Session::_getOrCreateMonitor(MonitorDef const& def) {
+Monitor* Session::GetOrCreateMonitor(MonitorDef const& def) {
 	for (int i = 0; i < _monitorDB.Count(); i++) {
 		Monitor* monitor = _monitorDB[i];
-		if (monitor->getPort() == def.port) {
-			monitor->setDef(def);
+		if (monitor->GetPort() == def.port) {
+			monitor->SetDef(def);
 			return monitor;
 		}
 	}
@@ -761,10 +761,10 @@ Monitor* Session::_getOrCreateMonitor(MonitorDef const& def) {
 	return monitor;
 }
 
-Workspace* Session::_getOrCreateWorkspace(Wx::String const& id) {
+Workspace* Session::GetOrCreateWorkspace(Wx::String const& id) {
 	for (int i = 0; i < _workspaceDB.Count(); i++) {
 		Workspace* workspace = _workspaceDB[i];
-		if (workspace->getID() == id) {
+		if (workspace->GetID() == id) {
 			return workspace;
 		}
 	}
@@ -773,16 +773,16 @@ Workspace* Session::_getOrCreateWorkspace(Wx::String const& id) {
 	return workspace;
 }
 
-void Session::_clipWindow(Window* window) {
-	Monitor* monitor = window->getMonitor();
-	Rect windowRect = window->getRect();
-	WindowProp windowProp = window->getProp();
+void Session::ClipWindow(Window* window) {
+	Monitor* monitor = window->GetMonitor();
+	Rect windowRect = window->GetRect();
+	WindowProp windowProp = window->GetProp();
 	Rect windowBorderRect = windowRect;
 	windowBorderRect.x -= windowProp.borderWidth;
 	windowBorderRect.y -= windowProp.borderWidth;
 	windowBorderRect.width += 2 * windowProp.borderWidth;
 	windowBorderRect.height += 2 * windowProp.borderWidth;
-	Rect workingRect = monitor->getWorkingRect();
+	Rect workingRect = monitor->GetWorkingRect();
 	Rect intersectRect = IntersectRectRect(workingRect, windowBorderRect);
 
 	if (intersectRect.width == 0 || intersectRect.height == 0) {
@@ -796,5 +796,5 @@ void Session::_clipWindow(Window* window) {
 	clipRect.width = intersectRect.width;
 	clipRect.height = intersectRect.height;
 
-	_context->clipWindow(window, clipRect);
+	_context->ClipWindow(window, clipRect);
 }

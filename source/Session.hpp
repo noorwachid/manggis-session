@@ -47,78 +47,78 @@ extern int xephyrMonitorConfiguration;
 
 class Session: public IObserver {
 public:
-	void run(Config const& config);
+	void Run(Config const& config);
 
-	ConfigBinding const* queryBinding(ModKey modKey, Key key);
+	ConfigBinding const* QueryBinding(ModKey modKey, Key key);
 
-	virtual void onWindowCreate(WindowEvent const& e) override;
+	virtual void OnWindowCreate(WindowEvent const& e) override;
 
-	virtual void onWindowDestroy(WindowEvent const& e) override;
+	virtual void OnWindowDestroy(WindowEvent const& e) override;
 
-	virtual void onWindowMoveRequest(WindowMovementEvent const& e) override;
+	virtual void OnWindowMoveRequest(WindowMovementEvent const& e) override;
 
-	virtual void onWindowResizeRequest(WindowResizingEvent const& e) override;
+	virtual void OnWindowResizeRequest(WindowResizingEvent const& e) override;
 
-	virtual void onWindowMaximizeRequest(WindowActionEvent const& e) override;
+	virtual void OnWindowMaximizeRequest(WindowActionEvent const& e) override;
 
-	virtual void onWindowFullscreenRequest(WindowActionEvent const& e) override;
+	virtual void OnWindowFullscreenRequest(WindowActionEvent const& e) override;
 
-	virtual void onMousePress(MouseButtonEvent const& e) override;
+	virtual void OnMousePress(MouseButtonEvent const& e) override;
 
-	virtual void onMouseRelease(MouseButtonEvent const& e) override;
+	virtual void OnMouseRelease(MouseButtonEvent const& e) override;
 
-	virtual void onMouseMove(MouseMovementEvent const& e) override;
+	virtual void OnMouseMove(MouseMovementEvent const& e) override;
 
-	virtual void onKeyPress(KeyEvent const& e) override;
+	virtual void OnKeyPress(KeyEvent const& e) override;
 
-	virtual void onKeyRelease(KeyEvent const& e) override;
+	virtual void OnKeyRelease(KeyEvent const& e) override;
 
-	virtual void onMonitorConnect(MonitorEvent const& e) override;
+	virtual void OnMonitorConnect(MonitorEvent const& e) override;
 
-	virtual void onMonitorDisconnect(MonitorEvent const& e) override;
+	virtual void OnMonitorDisconnect(MonitorEvent const& e) override;
 
-	virtual void onMonitorPropertyChange(MonitorEvent const& e) override;
+	virtual void OnMonitorPropertyChange(MonitorEvent const& e) override;
 
-	void focusMonitor(Monitor* monitor);
+	void FocusMonitor(Monitor* monitor);
 
-	void focusWorkspaceID(Wx::String const& id);
+	void FocusWorkspaceID(Wx::String const& id);
 
-	void focusWorkspace(Workspace* workspace);
+	void FocusWorkspace(Workspace* workspace);
 
-	void sendWorkspaceToMonitor(Workspace* workspace, Monitor* monitor);
+	void SendWorkspaceToMonitor(Workspace* workspace, Monitor* monitor);
 
-	void sendWindowToWorkspace(Window* window, Workspace* workspace);
+	void SendWindowToWorkspace(Window* window, Workspace* workspace);
 
-	void sendWindowToWorkspaceID(Wx::String const& id);
+	void SendWindowToWorkspaceID(Wx::String const& id);
 
-	void focusWindow(Window* window);
+	void FocusWindow(Window* window);
 
-	void focusNearestWindow(Direction direction);
+	void FocusNearestWindow(Direction direction);
 
-	void cycleNextWindow();
+	void CycleNextWindow();
 
-	void cyclePreviousWindow();
+	void CyclePreviousWindow();
 
-	void closeWindow();
+	void CloseWindow();
 
 private:
-	void _beginDrag(DragMode mode, Window* window, WindowResizingArea area = WindowResizingArea::None);
+	void BeginDrag(DragMode mode, Window* window, WindowResizingArea area = WindowResizingArea::None);
 
-	void _doCommand(ConfigCommand const& command);
+	void DoCommand(ConfigCommand const& command);
 
-	Monitor* _queryMonitorByPort(Wx::String const& port);
+	Monitor* QueryMonitorByPort(Wx::String const& port);
 
-	Monitor* _queryMonitorByPos(Point pos);
+	Monitor* QueryMonitorByPos(Point pos);
 
-	void _relayoutMonitors();
+	void UpdateLayout();
 
-	void _logLayout();
+	void LogLayout();
 
-	Monitor* _getOrCreateMonitor(MonitorDef const& def);
+	Monitor* GetOrCreateMonitor(MonitorDef const& def);
 
-	Workspace* _getOrCreateWorkspace(Wx::String const& id);
+	Workspace* GetOrCreateWorkspace(Wx::String const& id);
 
-	void _clipWindow(Window* window);
+	void ClipWindow(Window* window);
 
 private:
 	IContext* _context;

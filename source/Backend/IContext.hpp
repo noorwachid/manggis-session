@@ -10,43 +10,43 @@
 
 class IContext {
 public:
-	virtual ISessionObserver* getSessionObserver() = 0;
+	virtual ISessionObserver* GetSessionObserver() = 0;
 
-	virtual void bindMouseButton(ModKey modKey, MouseButton button) = 0;
+	virtual void BindMouseButton(ModKey modKey, MouseButton button) = 0;
 
-	virtual void unbindMouseButton(ModKey modKey, MouseButton button) = 0;
+	virtual void UnbindMouseButton(ModKey modKey, MouseButton button) = 0;
 
-	virtual void bindMouseMovement() = 0;
+	virtual void BindMouseMovement() = 0;
 
-	virtual void unbindMouseMovement() = 0;
+	virtual void UnbindMouseMovement() = 0;
 
-	virtual void bindKey(ModKey modKey, Key key) = 0;
+	virtual void BindKey(ModKey modKey, Key key) = 0;
 
-	virtual void unbindKey(ModKey modKey, Key key) = 0;
+	virtual void UnbindKey(ModKey modKey, Key key) = 0;
 
-	virtual void bindModKey(ModKey modKey) = 0;
+	virtual void BindModKey(ModKey modKey) = 0;
 
-	virtual void unbindModKey(ModKey modKey) = 0;
+	virtual void UnbindModKey(ModKey modKey) = 0;
 
-	virtual Point getMousePos() = 0;
+	virtual Point GetMousePos() = 0;
 
-	virtual void setMousePos(Point point) = 0;
+	virtual void SetMousePos(Point point) = 0;
 
-	virtual Wx::List<MonitorDef> getConnectedMonitorDefs() = 0;
+	virtual Wx::List<MonitorDef> GetConnectedMonitorDefs() = 0;
 
-	virtual void clipWindow(Window* window, Rect rect) = 0;
+	virtual void ClipWindow(Window* window, Rect rect) = 0;
 
-	virtual void unclipWindow(Window* window) = 0;
+	virtual void UnclipWindow(Window* window) = 0;
 
-	virtual void highlightWindow(Window* window) = 0;
+	virtual void HighlightWindow(Window* window) = 0;
 
-	virtual void unhighlightWindow(Window* window) = 0;
+	virtual void UnhighlightWindow(Window* window) = 0;
 
-	virtual Margin getDockExtend(Window* window) = 0;
+	virtual Margin GetDockExtend(Window* window) = 0;
 
-	virtual void run(IObserver* observer) = 0;
+	virtual void Run(IObserver* observer) = 0;
 
-	virtual void stop() = 0;
+	virtual void Stop() = 0;
 
 	virtual ~IContext() {
 	}

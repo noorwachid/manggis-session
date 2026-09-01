@@ -10,26 +10,26 @@ public:
 	X11MouseManager(X11Connection* conn): _conn{conn} {
 	}
 
-	void initialize() {
-		if (xcb_cursor_context_new(_conn->get(), _conn->getScreen(), &_cursor) < 0) {
+	void Init() {
+		if (xcb_cursor_context_new(_conn->Get(), _conn->GetScreen(), &_cursor) < 0) {
 			LOG("ERROR: failed to create cursor context\n");
 			return;
 		}
-		setCursor(MouseCursor::Arrow);
+		SetCursor(MouseCursor::Arrow);
 	}
 
-	void setCursor(MouseCursor cursor) {
+	void SetCursor(MouseCursor cursor) {
 		switch (cursor) {
 			case MouseCursor::Arrow:
-				_setCursor("left_ptr");
+				SetQueryCursor("left_ptr");
 				break;
 		}
 	}
 
 private:
-	void _setCursor(char const* name) {
+	void SetQueryCursor(char const* name) {
 		xcb_cursor_t cursorId = xcb_cursor_load_cursor(_cursor, name);
-		xcb_change_window_attributes(_conn->get(), _conn->getScreen()->root, XCB_CW_CURSOR, &cursorId);
+		xcb_change_window_attributes(_conn->Get(), _conn->GetScreen()->root, XCB_CW_CURSOR, &cursorId);
 		_conn->flush();
 	}
 

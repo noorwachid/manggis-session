@@ -8,17 +8,17 @@
 X11Hint::X11Hint(X11Connection* conn): _conn{conn} {
 }
 
-void X11Hint::initialize() {
-	xcb_intern_atom_cookie_t* cookies = xcb_ewmh_init_atoms(_conn->get(), &_ewmh);
+void X11Hint::Init() {
+	xcb_intern_atom_cookie_t* cookies = xcb_ewmh_init_atoms(_conn->Get(), &_ewmh);
 	if (!xcb_ewmh_init_atoms_replies(&_ewmh, cookies, nullptr)) {
 		printf("ERROR: failed to initialize EWMH atoms\n");
 		return;
 	}
 
 	// ICCCM atoms
-	xcb_intern_atom_reply_t* protocols = xcb_intern_atom_reply(_conn->get(), xcb_intern_atom(_conn->get(), 0, 12, "WM_PROTOCOLS"), nullptr);
-	xcb_intern_atom_reply_t* deletes = xcb_intern_atom_reply(_conn->get(), xcb_intern_atom(_conn->get(), 0, 16, "WM_DELETE_WINDOW"), nullptr);
-	xcb_intern_atom_reply_t* motifHints = xcb_intern_atom_reply(_conn->get(), xcb_intern_atom(_conn->get(), 0, 15, "_MOTIF_WM_HINTS"), nullptr);
+	xcb_intern_atom_reply_t* protocols = xcb_intern_atom_reply(_conn->Get(), xcb_intern_atom(_conn->Get(), 0, 12, "WM_PROTOCOLS"), nullptr);
+	xcb_intern_atom_reply_t* deletes = xcb_intern_atom_reply(_conn->Get(), xcb_intern_atom(_conn->Get(), 0, 16, "WM_DELETE_WINDOW"), nullptr);
+	xcb_intern_atom_reply_t* motifHints = xcb_intern_atom_reply(_conn->Get(), xcb_intern_atom(_conn->Get(), 0, 15, "_MOTIF_WM_HINTS"), nullptr);
 
 	_wmPROTOCOLS = protocols->atom;
 	_wmDELETE_WINDOW = deletes->atom;
@@ -88,31 +88,31 @@ void X11Hint::initialize() {
 
 	xcb_ewmh_set_supported(&_ewmh, _screenNumber, size, atoms);
 
-	_wmWindowId = xcb_generate_id(_conn->get());
+	_wmWindowId = xcb_generate_id(_conn->Get());
 	uint32_t mask = XCB_CW_OVERRIDE_REDIRECT | XCB_CW_EVENT_MASK;
 	uint32_t vals[] = { 1, 0 };
 	xcb_create_window(
-		_conn->get(),
+		_conn->Get(),
 		XCB_COPY_FROM_PARENT,
 		_wmWindowId,
-		_conn->getScreen()->root,
+		_conn->GetScreen()->root,
 		0, 0, 1, 1, 0,
 		XCB_WINDOW_CLASS_INPUT_OUTPUT,
-		_conn->getScreen()->root_visual,
+		_conn->GetScreen()->root_visual,
 		mask, vals
 	);
 
 	xcb_ewmh_set_wm_name(&_ewmh, _wmWindowId, _wmName.Count(), _wmName.CPtr());
-	xcb_ewmh_set_supporting_wm_check(&_ewmh, _conn->getScreen()->root, _wmWindowId);
+	xcb_ewmh_set_supporting_wm_check(&_ewmh, _conn->GetScreen()->root, _wmWindowId);
 	xcb_ewmh_set_supporting_wm_check(&_ewmh, _wmWindowId, _wmWindowId);
 }
 
-void X11Hint::terminate() {
-	xcb_destroy_window(_conn->get(), _wmWindowId);
+void X11Hint::Shutdown() {
+	xcb_destroy_window(_conn->Get(), _wmWindowId);
 	xcb_ewmh_connection_wipe(&_ewmh);
 }
 
-WindowType X11Hint::getWindowType(xcb_window_t id) {
+WindowType X11Hint::GetWindowType(xcb_window_t id) {
 	xcb_ewmh_get_atoms_reply_t types;
 	xcb_get_property_cookie_t cookie = xcb_ewmh_get_wm_window_type_unchecked(&_ewmh, id);
 
@@ -172,7 +172,7 @@ WindowType X11Hint::getWindowType(xcb_window_t id) {
 	return WindowType::Normal;
 }
 
-Margin X11Hint::getWindowDockExtend(xcb_window_t id) {
+Margin X11Hint::GetWindowDockExtend(xcb_window_t id) {
 	xcb_get_property_cookie_t cookie = xcb_ewmh_get_wm_strut_partial_unchecked(&_ewmh, id);
 	xcb_ewmh_wm_strut_partial_t reply;
 
@@ -186,7 +186,7 @@ Margin X11Hint::getWindowDockExtend(xcb_window_t id) {
 	}
 	return {};
 }
-Wx::String X11Hint::getWindowTitle(xcb_window_t id) {
+Wx::String X11Hint::GetWindowTitle(xcb_window_t id) {
 	Wx::String content;
 	xcb_ewmh_get_utf8_strings_reply_t title;
 
@@ -198,12 +198,12 @@ Wx::String X11Hint::getWindowTitle(xcb_window_t id) {
 	return content;
 }
 
-void X11Hint::setWindowState(xcb_window_t id, Wx::List<WindowState> const& states) {
+void X11Hint::SetWindowState(xcb_window_t id, Wx::List<WindowState> const& states) {
 	int count = 0;
 	xcb_atom_t atoms[12];
 	for (int i = 0; i < states.Count(); i++) {
 		WindowState state = states[i];
-		xcb_atom_t atom = windowStateToAtom(state);
+		xcb_atom_t atom = WindowStateToAtom(state);
 		if (atom == XCB_NONE) {
 			continue;
 		}
@@ -212,15 +212,15 @@ void X11Hint::setWindowState(xcb_window_t id, Wx::List<WindowState> const& state
 	xcb_ewmh_set_wm_state(&_ewmh, id, count, atoms);
 }
 
-bool X11Hint::isWindowState(xcb_atom_t atom) {
+bool X11Hint::IsWindowState(xcb_atom_t atom) {
 	return atom == _ewmh._NET_WM_STATE;
 }
 
-bool X11Hint::isActiveWindow(xcb_atom_t atom) {
+bool X11Hint::IsActiveWindow(xcb_atom_t atom) {
 	return atom == _ewmh._NET_ACTIVE_WINDOW;
 }
 
-WindowState X11Hint::atomToWindowState(xcb_atom_t atom) {
+WindowState X11Hint::AtomToWindowState(xcb_atom_t atom) {
 	if (_ewmh._NET_WM_STATE_MODAL == atom) return WindowState::Modal;
 	if (_ewmh._NET_WM_STATE_STICKY == atom) return WindowState::Sticky;
 	if (_ewmh._NET_WM_STATE_MAXIMIZED_VERT == atom) return WindowState::MaximizedVertical;
@@ -237,7 +237,7 @@ WindowState X11Hint::atomToWindowState(xcb_atom_t atom) {
 	return WindowState::Unknown;
 }
 
-xcb_atom_t X11Hint::windowStateToAtom(WindowState state) {
+xcb_atom_t X11Hint::WindowStateToAtom(WindowState state) {
 	if (WindowState::Modal == state) return _ewmh._NET_WM_STATE_MODAL;
 	if (WindowState::Sticky == state) return _ewmh._NET_WM_STATE_STICKY;
 	if (WindowState::MaximizedVertical == state) return _ewmh._NET_WM_STATE_MAXIMIZED_VERT;
@@ -257,8 +257,8 @@ xcb_atom_t X11Hint::windowStateToAtom(WindowState state) {
 #define _MOTIF_WM_HINTS_ELEMENTS 5
 #define MWM_HINTS_DECORATIONS (1L << 1)
 
-bool X11Hint::isWindowDecorated(xcb_window_t id) {
-	WindowType type = getWindowType(id);
+bool X11Hint::IsWindowDecorated(xcb_window_t id) {
+	WindowType type = GetWindowType(id);
 
 	switch (type) {
 		case WindowType::Desktop:
@@ -285,8 +285,8 @@ bool X11Hint::isWindowDecorated(xcb_window_t id) {
 		uint32_t status;
 	} MotifWmHints;
 
-	xcb_get_property_cookie_t propCookie = xcb_get_property(_conn->get(), 0, id, _wmMOTIF_HINTS, _wmMOTIF_HINTS, 0, _MOTIF_WM_HINTS_ELEMENTS);
-	xcb_get_property_reply_t *prop = xcb_get_property_reply(_conn->get(), propCookie, NULL);
+	xcb_get_property_cookie_t propCookie = xcb_get_property(_conn->Get(), 0, id, _wmMOTIF_HINTS, _wmMOTIF_HINTS, 0, _MOTIF_WM_HINTS_ELEMENTS);
+	xcb_get_property_reply_t *prop = xcb_get_property_reply(_conn->Get(), propCookie, NULL);
 
 	if (prop && prop->type != XCB_NONE && prop->value_len >= _MOTIF_WM_HINTS_ELEMENTS) {
 		MotifWmHints *hints = (MotifWmHints *) xcb_get_property_value(prop);
@@ -297,14 +297,14 @@ bool X11Hint::isWindowDecorated(xcb_window_t id) {
 	return true;
 }
 
-void X11Hint::setActiveWindow(xcb_window_t id) {
+void X11Hint::SetActiveWindow(xcb_window_t id) {
 	xcb_ewmh_set_active_window(&_ewmh, _screenNumber, id);
 }
 
-void X11Hint::closeWindow(xcb_window_t id) {
-	xcb_get_property_cookie_t protocolCookie = xcb_icccm_get_wm_protocols_unchecked(_conn->get(), id, _wmPROTOCOLS);
+void X11Hint::CloseWindow(xcb_window_t id) {
+	xcb_get_property_cookie_t protocolCookie = xcb_icccm_get_wm_protocols_unchecked(_conn->Get(), id, _wmPROTOCOLS);
 	xcb_icccm_get_wm_protocols_reply_t protocols;
-	if (xcb_icccm_get_wm_protocols_reply(_conn->get(), protocolCookie, &protocols, nullptr)) {
+	if (xcb_icccm_get_wm_protocols_reply(_conn->Get(), protocolCookie, &protocols, nullptr)) {
 		bool has_delete = false;
 		for (unsigned i = 0; i < protocols.atoms_len; ++i) {
 			if (protocols.atoms[i] == _wmDELETE_WINDOW) {
@@ -321,25 +321,25 @@ void X11Hint::closeWindow(xcb_window_t id) {
 			ev.data.data32[0] = _wmDELETE_WINDOW;
 			ev.data.data32[1] = XCB_CURRENT_TIME;
 
-			xcb_send_event(_conn->get(), false, id, XCB_EVENT_MASK_NO_EVENT, (const char*)&ev);
-			xcb_flush(_conn->get());
+			xcb_send_event(_conn->Get(), false, id, XCB_EVENT_MASK_NO_EVENT, (const char*)&ev);
+			xcb_flush(_conn->Get());
 			printf("sent WM_DELETE_WINDOW to %d\n", id);
 		} else {
-			xcb_kill_client(_conn->get(), id);  // Force kill
+			xcb_kill_client(_conn->Get(), id);  // Force kill
 			printf("force kill %d\n", id);
 		}
 		xcb_icccm_get_wm_protocols_reply_wipe(&protocols);
 	} else {
-		xcb_kill_client(_conn->get(), id);
+		xcb_kill_client(_conn->Get(), id);
 		printf("force kill %d\n", id);
 	}
 }
 
-void X11Hint::setWindowFrame(xcb_window_t id, int left, int top, int right, int bottom) {
+void X11Hint::SetWindowFrame(xcb_window_t id, int left, int top, int right, int bottom) {
 	xcb_ewmh_set_frame_extents(&_ewmh, id, left, right, top, bottom);
 }
 
-void X11Hint::setWorkspaces(Wx::List<Wx::String> const& workspaces) {
+void X11Hint::SetWorkspaces(Wx::List<Wx::String> const& workspaces) {
 	_workspaces = workspaces;
 	xcb_ewmh_set_number_of_desktops(&_ewmh, _screenNumber, _workspaces.Count());
 	Wx::String combinedNames;
@@ -352,7 +352,7 @@ void X11Hint::setWorkspaces(Wx::List<Wx::String> const& workspaces) {
 	xcb_ewmh_set_desktop_names(&_ewmh, _screenNumber, combinedNames.Count(), combinedNames.CPtr());
 }
 
-void X11Hint::setActiveWorkspace(Wx::String const& workspace) {
+void X11Hint::SetActiveWorkspace(Wx::String const& workspace) {
 	for (int i = 0; i < _workspaces.Count(); i++) {
 		if (_workspaces[i] == workspace) {
 			xcb_ewmh_set_current_desktop(&_ewmh, _screenNumber, i);
@@ -361,13 +361,13 @@ void X11Hint::setActiveWorkspace(Wx::String const& workspace) {
 	}
 }
 
-bool X11Hint::isMoveResizeProperty(xcb_atom_t atom) {
+bool X11Hint::IsMoveResizeProperty(xcb_atom_t atom) {
 	return atom == _ewmh._NET_WM_MOVERESIZE;
 }
 
-Wx::String X11Hint::atomToString(xcb_atom_t atom) {
-	xcb_get_atom_name_cookie_t cookie = xcb_get_atom_name(_conn->get(), atom);
-	xcb_get_atom_name_reply_t* reply = xcb_get_atom_name_reply(_conn->get(), cookie, NULL);
+Wx::String X11Hint::AtomToString(xcb_atom_t atom) {
+	xcb_get_atom_name_cookie_t cookie = xcb_get_atom_name(_conn->Get(), atom);
+	xcb_get_atom_name_reply_t* reply = xcb_get_atom_name_reply(_conn->Get(), cookie, NULL);
 
 	Wx::String content;
 

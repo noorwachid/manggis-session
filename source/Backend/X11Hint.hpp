@@ -11,41 +11,41 @@ class X11Hint {
 public:
 	X11Hint(X11Connection* conn);
 
-	void initialize();
+	void Init();
 
-	void terminate();
+	void Shutdown();
 
-	WindowType getWindowType(xcb_window_t id);
+	WindowType GetWindowType(xcb_window_t id);
 
-	Margin getWindowDockExtend(xcb_window_t id);
+	Margin GetWindowDockExtend(xcb_window_t id);
 
-	Wx::String getWindowTitle(xcb_window_t id);
+	Wx::String GetWindowTitle(xcb_window_t id);
 
-	bool isWindowState(xcb_atom_t atom);
+	bool IsWindowState(xcb_atom_t atom);
 
-	bool isActiveWindow(xcb_atom_t atom);
+	bool IsActiveWindow(xcb_atom_t atom);
 
-	Wx::String atomToString(xcb_atom_t atom);
+	Wx::String AtomToString(xcb_atom_t atom);
 
-	WindowState atomToWindowState(xcb_atom_t atom);
+	WindowState AtomToWindowState(xcb_atom_t atom);
 
-	xcb_atom_t windowStateToAtom(WindowState state);
+	xcb_atom_t WindowStateToAtom(WindowState state);
 
-	void setWindowState(xcb_window_t id, Wx::List<WindowState> const& states);
+	void SetWindowState(xcb_window_t id, Wx::List<WindowState> const& states);
 
-	bool isWindowDecorated(xcb_window_t id);
+	bool IsWindowDecorated(xcb_window_t id);
 
-	void setActiveWindow(xcb_window_t id);
+	void SetActiveWindow(xcb_window_t id);
 
-	void closeWindow(xcb_window_t id);
+	void CloseWindow(xcb_window_t id);
 
-	void setWindowFrame(xcb_window_t id, int left, int top, int right, int bottom);
+	void SetWindowFrame(xcb_window_t id, int left, int top, int right, int bottom);
 
-	void setWorkspaces(Wx::List<Wx::String> const& workspaces);
+	void SetWorkspaces(Wx::List<Wx::String> const& workspaces);
 
-	void setActiveWorkspace(Wx::String const& workspace);
+	void SetActiveWorkspace(Wx::String const& workspace);
 
-	bool isMoveResizeProperty(xcb_atom_t atom);
+	bool IsMoveResizeProperty(xcb_atom_t atom);
 
 private:
 	X11Connection* _conn;

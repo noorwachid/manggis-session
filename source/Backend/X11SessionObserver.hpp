@@ -12,22 +12,22 @@ public:
 	X11SessionObserver(X11Connection* conn, X11Hint* hint): _conn{conn}, _hint{hint} {
 	}
 
-	virtual void onWorkspaceConfigure(Wx::List<Workspace*> const& workspaces) override {
+	virtual void OnWorkspaceConfigure(Wx::List<Workspace*> const& workspaces) override {
 		Wx::List<Wx::String> list;
 		for (int i = 0; i < workspaces.Count(); i++) {
-			list.Append(workspaces[i]->getID());
+			list.Append(workspaces[i]->GetID());
 		}
-		_hint->setWorkspaces(list);
+		_hint->SetWorkspaces(list);
 		_conn->flush();
 	}
 
-	virtual void onWorkspaceFocus(Workspace* workspace) override {
-		_hint->setActiveWorkspace(workspace->getID());
+	virtual void OnWorkspaceFocus(Workspace* workspace) override {
+		_hint->SetActiveWorkspace(workspace->GetID());
 		_conn->flush();
 	}
 
-	virtual void onWindowFocus(Window* window) override {
-		xcb_set_input_focus(_conn->get(), XCB_INPUT_FOCUS_POINTER_ROOT, ((X11WindowBackend*) window->getBackend())->getClientHandle(), XCB_CURRENT_TIME);
+	virtual void OnWindowFocus(Window* window) override {
+		xcb_set_input_focus(_conn->Get(), XCB_INPUT_FOCUS_POINTER_ROOT, ((X11WindowBackend*) window->GetBackend())->getClientHandle(), XCB_CURRENT_TIME);
 		_conn->flush();
 	}
 

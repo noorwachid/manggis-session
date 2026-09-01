@@ -10,8 +10,8 @@ int xephyrMonitorConfiguration = 0;
 X11MonitorManager::X11MonitorManager(X11Connection* conn): _conn{conn} {
 }
 
-void X11MonitorManager::initialize() {
-	const xcb_query_extension_reply_t* ext = xcb_get_extension_data(_conn->get(), &xcb_randr_id);
+void X11MonitorManager::Init() {
+	const xcb_query_extension_reply_t* ext = xcb_get_extension_data(_conn->Get(), &xcb_randr_id);
 	if (!ext || !ext->present) {
 		printf("X.RandR extension is not available\n");
 		return;
@@ -20,17 +20,17 @@ void X11MonitorManager::initialize() {
 	_eventOffset = ext->first_event;
 
 	xcb_randr_select_input(
-		_conn->get(), 
-		_conn->getScreen()->root,
+		_conn->Get(), 
+		_conn->GetScreen()->root,
 		XCB_RANDR_NOTIFY_MASK_OUTPUT_CHANGE | XCB_RANDR_NOTIFY_MASK_CRTC_CHANGE | XCB_RANDR_NOTIFY_MASK_SCREEN_CHANGE
 	);
 }
 
-int X11MonitorManager::getEventOffset() {
+int X11MonitorManager::GetEventOffset() {
 	return _eventOffset;
 }
 
-Wx::List<MonitorDef> X11MonitorManager::getConnectedMonitorDefs() {
+Wx::List<MonitorDef> X11MonitorManager::GetConnectedMonitorDefs() {
 	#ifdef XEPHYR_ENABLE
 		Wx::List<MonitorDef> defs;
 
@@ -82,8 +82,8 @@ Wx::List<MonitorDef> X11MonitorManager::getConnectedMonitorDefs() {
 		#endif
 	#else
 
-	xcb_randr_get_screen_resources_current_cookie_t resCookie = xcb_randr_get_screen_resources_current(_conn->get(), _conn->getScreen()->root);
-	xcb_randr_get_screen_resources_current_reply_t* res = xcb_randr_get_screen_resources_current_reply(_conn->get(), resCookie, NULL);
+	xcb_randr_get_screen_resources_current_cookie_t resCookie = xcb_randr_get_screen_resources_current(_conn->Get(), _conn->GetScreen()->root);
+	xcb_randr_get_screen_resources_current_reply_t* res = xcb_randr_get_screen_resources_current_reply(_conn->Get(), resCookie, NULL);
 	if (!res) {
 		fprintf(stderr, "Failed to get screen resources.\n");
 		return {};
@@ -95,8 +95,8 @@ Wx::List<MonitorDef> X11MonitorManager::getConnectedMonitorDefs() {
 	Wx::List<MonitorDef> defs;
 
 	for (int i = 0; i < outputSize; i++) {
-		xcb_randr_get_output_def_cookie_t outCookie = xcb_randr_get_output_def(_conn->get(), outputs[i], XCB_CURRENT_TIME);
-		xcb_randr_get_output_def_reply_t* out = xcb_randr_get_output_def_reply(_conn->get(), outCookie, NULL);
+		xcb_randr_get_output_def_cookie_t outCookie = xcb_randr_get_output_def(_conn->Get(), outputs[i], XCB_CURRENT_TIME);
+		xcb_randr_get_output_def_reply_t* out = xcb_randr_get_output_def_reply(_conn->Get(), outCookie, NULL);
 
 		if (!out) continue;
 
@@ -105,8 +105,8 @@ Wx::List<MonitorDef> X11MonitorManager::getConnectedMonitorDefs() {
 			int nameSize = xcb_randr_get_output_def_name_length(out);
 
 			if (out->crtc != XCB_NONE) {
-				xcb_randr_get_crtc_def_cookie_t crtcCookie = xcb_randr_get_crtc_def(_conn->get(), out->crtc, XCB_CURRENT_TIME);
-				xcb_randr_get_crtc_def_reply_t* crtc = xcb_randr_get_crtc_def_reply(_conn->get(), crtcCookie, NULL);
+				xcb_randr_get_crtc_def_cookie_t crtcCookie = xcb_randr_get_crtc_def(_conn->Get(), out->crtc, XCB_CURRENT_TIME);
+				xcb_randr_get_crtc_def_reply_t* crtc = xcb_randr_get_crtc_def_reply(_conn->Get(), crtcCookie, NULL);
 
 				if (crtc) {
 					Wx::String port(nameSize, (Wx::Byte const*)name);

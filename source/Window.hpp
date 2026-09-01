@@ -11,39 +11,39 @@ public:
 
 	~Window();
 
-	IWindowBackend* getBackend();
+	IWindowBackend* GetBackend();
 
-	WindowProp getProp();
+	WindowProp GetProp();
 
-	WindowType getType();
+	WindowType GetType();
 
-	Wx::String getTitle();
+	Wx::String GetTitle();
 
-	void setWorkspace(Workspace* workspace);
+	void SetWorkspace(Workspace* workspace);
 
-	Workspace* getWorkspace();
+	Workspace* GetWorkspace();
 
-	void setMonitor(Monitor* monitor);
+	void SetMonitor(Monitor* monitor);
 
-	Monitor* getMonitor();
+	Monitor* GetMonitor();
 
-	Rect getRect();
+	Rect GetRect();
 
-	void raise();
+	void Raise();
 
-	void move(int x, int y);
+	void Move(int x, int y);
 
-	void resize(int width, int height);
+	void Resize(int width, int height);
 
-	void show();
+	void Show();
 
-	void hide();
+	void Hide();
 
-	void focus();
+	void Focus();
 
-	void blur();
+	void Blur();
 
-	void close();
+	void Close();
 
 private:
 	IWindowBackend* _backend;

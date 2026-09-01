@@ -36,70 +36,70 @@ public:
 
 	virtual ~X11Context() override;
 
-	virtual ISessionObserver* getSessionObserver() override;
+	virtual ISessionObserver* GetSessionObserver() override;
 
-	virtual void bindMouseButton(ModKey modKey, MouseButton button) override;
+	virtual void BindMouseButton(ModKey modKey, MouseButton button) override;
 
-	virtual void unbindMouseButton(ModKey modKey, MouseButton button) override;
+	virtual void UnbindMouseButton(ModKey modKey, MouseButton button) override;
 
-	virtual void bindMouseMovement() override;
+	virtual void BindMouseMovement() override;
 
-	virtual void unbindMouseMovement() override;
+	virtual void UnbindMouseMovement() override;
 
-	virtual void bindKey(ModKey modKey, Key key) override;
+	virtual void BindKey(ModKey modKey, Key key) override;
 
-	virtual void unbindKey(ModKey modKey, Key key) override;
+	virtual void UnbindKey(ModKey modKey, Key key) override;
 
-	virtual void bindModKey(ModKey modKey) override;
+	virtual void BindModKey(ModKey modKey) override;
 
-	virtual void unbindModKey(ModKey modKey) override;
+	virtual void UnbindModKey(ModKey modKey) override;
 
-	virtual Point getMousePos() override;
+	virtual Point GetMousePos() override;
 
-	virtual void setMousePos(Point point) override;
+	virtual void SetMousePos(Point point) override;
 
-	virtual Wx::List<MonitorDef> getConnectedMonitorDefs() override;
+	virtual Wx::List<MonitorDef> GetConnectedMonitorDefs() override;
 
-	virtual void clipWindow(Window* window, Rect rect) override;
+	virtual void ClipWindow(Window* window, Rect rect) override;
 
-	virtual void unclipWindow(Window* window) override;
+	virtual void UnclipWindow(Window* window) override;
 
-	virtual void highlightWindow(Window* window) override;
+	virtual void HighlightWindow(Window* window) override;
 
-	virtual void unhighlightWindow(Window* window) override;
+	virtual void UnhighlightWindow(Window* window) override;
 
-	virtual Margin getDockExtend(Window* window) override;
+	virtual Margin GetDockExtend(Window* window) override;
 
-	virtual void run(IObserver* observer) override;
+	virtual void Run(IObserver* observer) override;
 
-	virtual void stop() override;
+	virtual void Stop() override;
 
 private:
-	Window* _getWindowByFrame(xcb_window_t handle);
+	Window* QueryWindowByFrame(xcb_window_t handle);
 
-	Window* _getWindowByClient(xcb_window_t handle);
+	Window* QueryWindowByClient(xcb_window_t handle);
 
-	int _fromModKey(ModKey modKey);
+	int FromModKey(ModKey modKey);
 
-	ModKey _toModKey(int modKey);
+	ModKey ToModKey(int modKey);
 
-	int _fromMouseButton(MouseButton button);
+	int FromMouseButton(MouseButton button);
 
-	MouseButton _toMouseButton(int button);
+	MouseButton ToMouseButton(int button);
 
-	void _attachKeyBindings();
+	void AttachKeyBindings();
 
-	void _detachKeyBindings();
+	void DetachKeyBindings();
 
-	void _updateKeyBindings();
+	void UpdateKeyBindings();
 
-	void _grabWholeKeyboard();
+	void GrabWholeKeyboard();
 
-	void _ungrabWholeKeyboard();
+	void UngrabWholeKeyboard();
 
-	MonitorDef* _getMonitorDefByPort(Wx::String const& port, Wx::List<MonitorDef>& defs);
+	MonitorDef* QueryMonitorDefByPort(Wx::String const& port, Wx::List<MonitorDef>& defs);
 
-	void _updateMonitors(IObserver* observer);
+	void UpdateMonitors(IObserver* observer);
 
 private:
 	X11Connection* _conn;

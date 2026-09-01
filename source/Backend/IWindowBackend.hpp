@@ -46,29 +46,29 @@ enum struct WindowState {
 
 class IWindowBackend {
 public:
-	virtual Rect getRect() = 0;
+	virtual Rect GetRect() = 0;
 
-	virtual WindowProp getProp() = 0;
+	virtual WindowProp GetProp() = 0;
 
-	virtual WindowType getType() = 0;
+	virtual WindowType GetType() = 0;
 
-	virtual Wx::String getTitle() = 0;
+	virtual Wx::String GetTitle() = 0;
 
-	virtual void raise() = 0;
+	virtual void Raise() = 0;
 
-	virtual void move(int x, int y) = 0;
+	virtual void Move(int x, int y) = 0;
 
-	virtual void resize(int width, int height) = 0;
+	virtual void Resize(int width, int height) = 0;
 
-	virtual void show() = 0;
+	virtual void Show() = 0;
 
-	virtual void hide() = 0;
+	virtual void Hide() = 0;
 
-	virtual void focus() = 0;
+	virtual void Focus() = 0;
 
-	virtual void blur() = 0;
+	virtual void Blur() = 0;
 
-	virtual void close() = 0;
+	virtual void Close() = 0;
 
 	virtual ~IWindowBackend() {
 	}

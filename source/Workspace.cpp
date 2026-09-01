@@ -4,42 +4,42 @@
 Workspace::Workspace(Wx::String const& id): _id{id} {
 }
 
-Wx::String const& Workspace::getID() {
+Wx::String const& Workspace::GetID() {
 	return _id;
 }
 
-void Workspace::setMonitor(Monitor* monitor) {
+void Workspace::SetMonitor(Monitor* monitor) {
 	_monitor = monitor;
 }
 
-Monitor* Workspace::getMonitor() {
+Monitor* Workspace::GetMonitor() {
 	return _monitor;
 }
 
-Window* Workspace::getActiveWindow() {
+Window* Workspace::GetActiveWindow() {
 	return _activeWindow;
 }
 
-void Workspace::focusWindow(Window* window) {
+void Workspace::FocusWindow(Window* window) {
 	if (_activeWindow == window) return;
 	if (_activeWindow != nullptr) {
-		_activeWindow->blur();
+		_activeWindow->Blur();
 	}
-	window->raise();
-	window->focus();
+	window->Raise();
+	window->Focus();
 	_activeWindow = window;
 }
 
-void Workspace::addWindow(Window* window) {
+void Workspace::AddWindow(Window* window) {
 	// TODO: check if workspace already exists
-	window->setMonitor(_monitor);
-	window->setWorkspace(this);
+	window->SetMonitor(_monitor);
+	window->SetWorkspace(this);
 
 	_windows.Append(window);
-	focusWindow(window);
+	FocusWindow(window);
 }
 
-void Workspace::removeWindow(Window* window) {
+void Workspace::RemoveWindow(Window* window) {
 	int index = _windows.Find(window);
 	if (index != -1) {
 		bool activeWindowRemoved = _windows[index] == _activeWindow;
@@ -47,33 +47,33 @@ void Workspace::removeWindow(Window* window) {
 		if (activeWindowRemoved) {
 			_activeWindow = nullptr;
 			if (!_windows.IsEmpty()) {
-				focusWindow(_windows.GetLast());
+				FocusWindow(_windows.GetLast());
 			}
 		}
 	}
 }
 
-void Workspace::focus() {
-	if (_activeWindow) _activeWindow->focus();
+void Workspace::Focus() {
+	if (_activeWindow) _activeWindow->Focus();
 }
 
-void Workspace::blur() {
-	if (_activeWindow) _activeWindow->blur();
+void Workspace::Blur() {
+	if (_activeWindow) _activeWindow->Blur();
 }
 
-void Workspace::show() {
+void Workspace::Show() {
 	for (int i = 0; i < _windows.Count(); i++) {
-		_windows[i]->show();
+		_windows[i]->Show();
 	}
 }
 
-void Workspace::hide() {
+void Workspace::Hide() {
 	for (int i = 0; i < _windows.Count(); i++) {
-		_windows[i]->hide();
+		_windows[i]->Hide();
 	}
 }
 
-Wx::List<Window*> const& Workspace::getWindowList() const {
+Wx::List<Window*> const& Workspace::GetWindowList() const {
 	return _windows;
 }
 

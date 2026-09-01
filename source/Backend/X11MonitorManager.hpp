@@ -9,11 +9,11 @@ class X11MonitorManager {
 public:
 	X11MonitorManager(X11Connection* conn);
 
-	void initialize();
+	void Init();
 
-	int getEventOffset();
+	int GetEventOffset();
 
-	Wx::List<MonitorDef> getConnectedMonitorDefs();
+	Wx::List<MonitorDef> GetConnectedMonitorDefs();
 
 
 private:

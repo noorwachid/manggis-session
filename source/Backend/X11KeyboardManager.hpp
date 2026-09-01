@@ -28,10 +28,10 @@ public:
 	X11KeyboardManager(X11Connection* conn): _conn{conn} {
 	}
 
-	void initialize() {
+	void Init() {
 		// Initialize libxkbcommon-x11
 		if (!xkb_x11_setup_xkb_extension(
-				_conn->get(), XKB_X11_MIN_MAJOR_XKB_VERSION,
+				_conn->Get(), XKB_X11_MIN_MAJOR_XKB_VERSION,
 				XKB_X11_MIN_MINOR_XKB_VERSION,
 				XKB_X11_SETUP_XKB_EXTENSION_NO_FLAGS,
 				NULL, NULL, &_keyboardEventOffset, NULL)) {
@@ -43,12 +43,12 @@ public:
 			LOG("ERROR: failed to create xkb context\n");
 		}
 
-		_keyboardDeviceId = xkb_x11_get_core_keyboard_device_id(_conn->get());
+		_keyboardDeviceId = xkb_x11_get_core_keyboard_device_id(_conn->Get());
 		if (_keyboardDeviceId == -1) {
 			LOG("ERROR: failed to get core keyboard device\n");
 		}
 
-		_keymap = xkb_x11_keymap_new_from_device(_keyboard, _conn->get(), _keyboardDeviceId, XKB_KEYMAP_COMPILE_NO_FLAGS);
+		_keymap = xkb_x11_keymap_new_from_device(_keyboard, _conn->Get(), _keyboardDeviceId, XKB_KEYMAP_COMPILE_NO_FLAGS);
 
 		const char *layout = xkb_keymap_layout_get_name(_keymap, 0);
 		LOG("initial keyboard layout is %s\n", layout);
@@ -80,7 +80,7 @@ public:
 		};
 
 		xcb_void_cookie_t cookie = xcb_xkb_select_events_aux_checked(
-			_conn->get(),
+			_conn->Get(),
 			_keyboardDeviceId,
 			required_events,    /* affectWhich */
 			0,                  /* clear */
@@ -89,14 +89,14 @@ public:
 			required_map_parts, /* map */
 			&details);          /* details */
 
-		xcb_generic_error_t* error = xcb_request_check(_conn->get(), cookie);
+		xcb_generic_error_t* error = xcb_request_check(_conn->Get(), cookie);
 		if (error) {
 			LOG("ERROR: listening keyboard notification\n");
 			return;
 		}
 	}
 
-	xcb_keycode_t queryKeyCode(Key key) {
+	xcb_keycode_t QueryKeyCode(Key key) {
 		xkb_keysym_t targetKeysym = (xkb_keysym_t) key;
 
 		for (xkb_keycode_t keycode = xkb_keymap_min_keycode(_keymap); keycode <= xkb_keymap_max_keycode(_keymap); keycode++) {
@@ -116,17 +116,17 @@ public:
 	}
 
 
-	int getEventOffset() {
+	int GetEventOffset() {
 		return _keyboardEventOffset;
 	}
 
-	Wx::String getLayout() {
+	Wx::String GetLayout() {
 		const char *layout = xkb_keymap_layout_get_name(_keymap, 0);
 		return layout;
 	}
 
-	void updateKeymap() {
-		_keymap = xkb_x11_keymap_new_from_device(_keyboard, _conn->get(), _keyboardDeviceId, XKB_KEYMAP_COMPILE_NO_FLAGS);
+	void UpdateKeymap() {
+		_keymap = xkb_x11_keymap_new_from_device(_keyboard, _conn->Get(), _keyboardDeviceId, XKB_KEYMAP_COMPILE_NO_FLAGS);
 	}
 
 

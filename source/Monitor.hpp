@@ -13,37 +13,37 @@ class Monitor {
 public:
 	Monitor(IContext* context, MonitorDef def);
 
-	void setDef(MonitorDef def);
+	void SetDef(MonitorDef def);
 
-	Wx::String const& getPort() const;
+	Wx::String const& GetPort() const;
 
-	Rect getRect() const;
+	Rect GetRect() const;
 
-	Rect getWorkingRect() const;
+	Rect GetWorkingRect() const;
 
-	Workspace* getActiveWorkspace();
+	Workspace* GetActiveWorkspace();
 
-	Workspace* queryWorkspace(Wx::String const& id);
+	Workspace* QueryWorkspace(Wx::String const& id);
 
-	void activateWorkspace(Workspace* workspace);
+	void FocusWorkspace(Workspace* workspace);
 
-	void addWorkspace(Workspace* workspace);
+	void AddWorkspace(Workspace* workspace);
 
-	void removeWorkspace(Workspace* workspace);
+	void RemoveWorkspace(Workspace* workspace);
 
-	void clearWorkspaceList();
+	void ClearWorkspaceList();
 
-	Wx::List<Workspace*> const& getWorkspaceList() const;
+	Wx::List<Workspace*> const& GetWorkspaceList() const;
 
-	void calculateWorkingRect();
+	void CalculateWorkingRect();
 
-	void focus();
+	void Focus();
 
-	void blur();
+	void Blur();
 
-	void addWindow(Window* window);
+	void AddWindow(Window* window);
 
-	void removeWindow(Window* window);
+	void RemoveWindow(Window* window);
 
 private:
 	IContext* _context;

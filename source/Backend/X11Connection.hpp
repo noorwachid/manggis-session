@@ -18,15 +18,15 @@ public:
 		xcb_disconnect(_conn);
 	}
 
-	xcb_connection_t* get() {
+	xcb_connection_t* Get() {
 		return _conn;
 	}
 
-	xcb_screen_t* getScreen() {
+	xcb_screen_t* GetScreen() {
 		return _screen;
 	}
 
-	xcb_window_t getRoot() {
+	xcb_window_t GetRoot() {
 		return _root;
 	}
 

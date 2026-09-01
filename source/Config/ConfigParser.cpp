@@ -9,38 +9,38 @@ Config ParseConfig(Wx::WkValue const& value) {
 	struct Parser {
 		Config config;
 
-		void parse(Wx::WkValue const& value) {
+		void Parse(Wx::WkValue const& value) {
 			if (!value.IsTuple()) {
 				return;
 			}
 			Wx::HashTable<Wx::String, Wx::WkValue> const& tup = value.AsTuple();
 			Wx::WkValue* ws = tup.TryGet("workspaces");
 			if (ws) {
-				parseWorkspaceList(*ws);
+				ParseWorkspaceList(*ws);
 			}
 
 			Wx::WkValue* bindings = tup.TryGet("bindings");
 			if (bindings) {
-				parseBindingList(*bindings);
+				ParseBindingList(*bindings);
 			}
 
 			Wx::WkValue* autostarts = tup.TryGet("autostarts");
 			if (autostarts) {
-				parseAutostartList(*autostarts);
+				ParseAutostartList(*autostarts);
 			}
 		}
 
-		void parseWorkspaceList(Wx::WkValue const& value) {
+		void ParseWorkspaceList(Wx::WkValue const& value) {
 			if (!value.IsList()) {
 				return;
 			}
 			Wx::List<Wx::WkValue> const& list = value.AsList();
 			for (int i = 0; i < list.Count(); i++) {
-				parseWorkspace(list[i]);
+				ParseWorkspace(list[i]);
 			}
 		}
 
-		void parseWorkspace(Wx::WkValue const& value) {
+		void ParseWorkspace(Wx::WkValue const& value) {
 			if (!value.IsTuple()) {
 				return;
 			}
@@ -58,37 +58,37 @@ Config ParseConfig(Wx::WkValue const& value) {
 			}
 		}
 
-		void parseBindingList(Wx::WkValue const& value) {
+		void ParseBindingList(Wx::WkValue const& value) {
 			if (!value.IsHashTable()) return;
 
 			Wx::HashTable<Wx::String, Wx::WkValue> const& table = value.AsHashTable();
 			for (auto it = table.Iterate(); it.HasNext(); it.Next()) {
-				parseBinding(it.Get().key, it.Get().value);
+				ParseBinding(it.Get().key, it.Get().value);
 			}
 		}
 
-		void parseBinding(Wx::String const& key, Wx::WkValue const& value) {
+		void ParseBinding(Wx::String const& key, Wx::WkValue const& value) {
 			if (!value.IsTuple()) return;
 
 			ConfigBinding binding;
 
 			Wx::HashTable<Wx::String, Wx::WkValue> const& tup = value.AsTuple();
 
-			Wx::List<Wx::Span<Wx::Byte>> spans = splitKey(key, '+');
+			Wx::List<Wx::Span<Wx::Byte>> spans = SplitKey(key, '+');
 			if (spans.Count() == 1 || spans.Count() == 0) {
 				LOG("[config] invalid key combination: %s\n", key.CPtr());
 				return;
 			}
 			ModKey modKey = ModKey::None;
 			for (int i = 0; i < spans.Count() - 1; i++) {
-				ModKey mk = stringToModKey(Wx::String(spans[i].Count(), spans[i].Ptr()));
+				ModKey mk = StringToModKey(Wx::String(spans[i].Count(), spans[i].Ptr()));
 				if (mk == ModKey::None) {
 					LOG("[config] invalid mod-key: %s\n", key.CPtr());
 					return;
 				}
 				modKey |= mk;
 			}
-			Key k = stringToKey(Wx::String(spans.GetLast().Count(), spans.GetLast().Ptr()));
+			Key k = StringToKey(Wx::String(spans.GetLast().Count(), spans.GetLast().Ptr()));
 			if (k == Key::None) {
 				LOG("[config] invalid key: %s\n", key.CPtr());
 				return;
@@ -97,7 +97,7 @@ Config ParseConfig(Wx::WkValue const& value) {
 			binding.modKey = modKey;
 			binding.key = k;
 
-			ConfigCommand command = parseCommand(tup);
+			ConfigCommand command = ParseCommand(tup);
 			if (command.func != ConfigCommandFunc::None) {
 				binding.commands.Append(command);
 			}
@@ -109,7 +109,7 @@ Config ParseConfig(Wx::WkValue const& value) {
 			config.bindings.Append(binding);
 		}
 
-		ConfigCommand parseCommand(Wx::HashTable<Wx::String, Wx::WkValue> const& tup) {
+		ConfigCommand ParseCommand(Wx::HashTable<Wx::String, Wx::WkValue> const& tup) {
 			{
 				Wx::WkValue* exec = tup.TryGet("exec");
 				if (exec) {
@@ -279,12 +279,12 @@ Config ParseConfig(Wx::WkValue const& value) {
 			return {};
 		}
 
-		void parseKey(ConfigBinding& binding, Wx::WkValue const& value) {
+		void ParseKey(ConfigBinding& binding, Wx::WkValue const& value) {
 			if (!value.IsString()) return;
-			Wx::List<Wx::Span<Wx::Byte>> splited = splitKey(value.AsString(), '+');
+			Wx::List<Wx::Span<Wx::Byte>> splited = SplitKey(value.AsString(), '+');
 		}
 
-		Wx::Span<Wx::Byte> trimSpace(Wx::Span<Wx::Byte> span) {
+		Wx::Span<Wx::Byte> TrimSpace(Wx::Span<Wx::Byte> span) {
 			int k = 0;
 			for (; k < span.Count(); k++) {
 				if (span[k] != ' ') {
@@ -300,25 +300,25 @@ Config ParseConfig(Wx::WkValue const& value) {
 			return span.slice(k, j - k + 1);
 		}
 
-		Wx::List<Wx::Span<Wx::Byte>> splitKey(Wx::String const& str, Wx::Byte needle) {
+		Wx::List<Wx::Span<Wx::Byte>> SplitKey(Wx::String const& str, Wx::Byte needle) {
 			Wx::List<Wx::Span<Wx::Byte>> list;
 			int i = 0;
 			int run = 0;
 			Wx::Span<Wx::Byte> span = str.ToSpan();
 			while (i < span.Count()) {
 				if (span[i] == needle) {
-					list.Append(trimSpace(span.slice(run, i - run)));
+					list.Append(TrimSpace(span.slice(run, i - run)));
 					run = i + 1;
 				}
 				i++;
 			}
 			if (run < span.Count()) {
-				list.Append(trimSpace(span.slice(run, span.Count() - run)));
+				list.Append(TrimSpace(span.slice(run, span.Count() - run)));
 			}
 			return list;
 		}
 
-		Key stringToKey(Wx::String const& key) {
+		Key StringToKey(Wx::String const& key) {
 			if (key == "backspace") return Key::Backspace;
 			if (key == "tab") return Key::Tab;
 			if (key == "linefeed") return Key::Linefeed;
@@ -1253,7 +1253,7 @@ Config ParseConfig(Wx::WkValue const& value) {
 			return Key::None;
 		};
 
-		ModKey stringToModKey(Wx::String const& modKey) {
+		ModKey StringToModKey(Wx::String const& modKey) {
 			if (modKey == "shift") return ModKey::Shift;
 			if (modKey == "ctrl") return ModKey::Ctrl;
 			if (modKey == "alt") return ModKey::Alt;
@@ -1261,7 +1261,7 @@ Config ParseConfig(Wx::WkValue const& value) {
 			return ModKey::None;
 		}
 
-		void parseAutostartList(Wx::WkValue const& value) {
+		void ParseAutostartList(Wx::WkValue const& value) {
 			if (!value.IsList()) return;
 
 			Wx::List<Wx::WkValue> const& list = value.AsList();
@@ -1269,7 +1269,7 @@ Config ParseConfig(Wx::WkValue const& value) {
 				if (!list[i].IsTuple()) {
 					continue;
 				}
-				ConfigCommand command = parseCommand(list[i].AsTuple());
+				ConfigCommand command = ParseCommand(list[i].AsTuple());
 				if (command.func == ConfigCommandFunc::None) {
 					continue;
 				}
@@ -1280,7 +1280,7 @@ Config ParseConfig(Wx::WkValue const& value) {
 
 	Parser parser;
 
-	parser.parse(value);
+	parser.Parse(value);
 
 	return parser.config;
 }

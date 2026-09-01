@@ -15,28 +15,28 @@ X11Context::X11Context() {
 		XCB_EVENT_MASK_PROPERTY_CHANGE |
 		XCB_EVENT_MASK_BUTTON_PRESS
 	);
-	xcb_change_window_attributes(_conn->get(), _conn->getRoot(), XCB_CW_EVENT_MASK, &mask);
+	xcb_change_window_attributes(_conn->Get(), _conn->GetRoot(), XCB_CW_EVENT_MASK, &mask);
 
 	_keyboardManager = new X11KeyboardManager(_conn);
-	_keyboardManager->initialize();
+	_keyboardManager->Init();
 
 	_mouseManager = new X11MouseManager(_conn);
-	_mouseManager->initialize();
+	_mouseManager->Init();
 
 	_monitorManager = new X11MonitorManager(_conn);
-	_monitorManager->initialize();
+	_monitorManager->Init();
 
 	_clipper = new X11Clipper(_conn);
-	_clipper->initialize();
+	_clipper->Init();
 
 	_hint = new X11Hint(_conn);
-	_hint->initialize();
+	_hint->Init();
 
 	_sessionObserver = new X11SessionObserver(_conn, _hint);
 
 	// NOTE: click to focus
 	xcb_grab_button(
-		_conn->get(), 0, _conn->getScreen()->root, 
+		_conn->Get(), 0, _conn->GetScreen()->root, 
 		XCB_EVENT_MASK_BUTTON_PRESS,
 		XCB_GRAB_MODE_SYNC, XCB_GRAB_MODE_ASYNC, 
 		XCB_NONE, XCB_NONE, 1, XCB_NONE
@@ -52,49 +52,49 @@ X11Context::~X11Context() {
 	delete _conn;
 }
 
-ISessionObserver* X11Context::getSessionObserver() {
+ISessionObserver* X11Context::GetSessionObserver() {
 	return _sessionObserver;
 }
 
-void X11Context::bindMouseButton(ModKey modKey, MouseButton button) {
+void X11Context::BindMouseButton(ModKey modKey, MouseButton button) {
 	xcb_grab_button(
-		_conn->get(), 0, _conn->getRoot(), 
+		_conn->Get(), 0, _conn->GetRoot(), 
 		XCB_EVENT_MASK_BUTTON_PRESS | 
 		XCB_EVENT_MASK_BUTTON_RELEASE, 
 		XCB_GRAB_MODE_ASYNC, 
 		XCB_GRAB_MODE_ASYNC, 
-		_conn->getRoot(), XCB_NONE, _fromMouseButton(button), _fromModKey(modKey)
+		_conn->GetRoot(), XCB_NONE, FromMouseButton(button), FromModKey(modKey)
 	);
 	_conn->flush();
 }
 
-void X11Context::unbindMouseButton(ModKey modKey, MouseButton button) {
-	xcb_ungrab_button(_conn->get(), _fromMouseButton(button), _conn->getRoot(), _fromModKey(modKey));
+void X11Context::UnbindMouseButton(ModKey modKey, MouseButton button) {
+	xcb_ungrab_button(_conn->Get(), FromMouseButton(button), _conn->GetRoot(), FromModKey(modKey));
 	_conn->flush();
 }
 
-void X11Context::bindMouseMovement() {
-	xcb_grab_pointer(_conn->get(), 0, _conn->getRoot(), 
+void X11Context::BindMouseMovement() {
+	xcb_grab_pointer(_conn->Get(), 0, _conn->GetRoot(), 
 		XCB_EVENT_MASK_BUTTON_PRESS | 
 		XCB_EVENT_MASK_BUTTON_RELEASE | 
 		XCB_EVENT_MASK_BUTTON_MOTION,
-		XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, _conn->getRoot(), XCB_NONE, XCB_CURRENT_TIME
+		XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, _conn->GetRoot(), XCB_NONE, XCB_CURRENT_TIME
 	);
 	_conn->flush();
 }
 
-void X11Context::unbindMouseMovement() {
-	xcb_ungrab_pointer(_conn->get(), XCB_CURRENT_TIME);
+void X11Context::UnbindMouseMovement() {
+	xcb_ungrab_pointer(_conn->Get(), XCB_CURRENT_TIME);
 	_conn->flush();
 }
 
-void X11Context::bindKey(ModKey modKey, Key key) {
+void X11Context::BindKey(ModKey modKey, Key key) {
 	X11KeyBinding binding;
 	binding.modKey = modKey;
 	binding.key = key;
 
-	binding.keyCode = _keyboardManager->queryKeyCode(binding.key);
-	binding.modKeyCode = _fromModKey(binding.modKey);
+	binding.keyCode = _keyboardManager->QueryKeyCode(binding.key);
+	binding.modKeyCode = FromModKey(binding.modKey);
 	if (binding.keyCode == 0) {
 		LOG("ERROR: key %d is invalid\n", (int)binding.key);
 		return;
@@ -104,7 +104,7 @@ void X11Context::bindKey(ModKey modKey, Key key) {
 	_codeToKey.Set(binding.keyCode, binding.key);
 
 	xcb_grab_key(
-		_conn->get(), 0, _conn->getScreen()->root, 
+		_conn->Get(), 0, _conn->GetScreen()->root, 
 		binding.modKeyCode,
 		binding.keyCode,
 		XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC
@@ -112,33 +112,33 @@ void X11Context::bindKey(ModKey modKey, Key key) {
 	_conn->flush();
 }
 
-void X11Context::unbindKey(ModKey modKey, Key key) {
-	int modKeyCode = _fromModKey(modKey);
-	int keyCode = _keyboardManager->queryKeyCode(key);
+void X11Context::UnbindKey(ModKey modKey, Key key) {
+	int modKeyCode = FromModKey(modKey);
+	int keyCode = _keyboardManager->QueryKeyCode(key);
 	if (keyCode == 0) return;
 	xcb_ungrab_key(
-		_conn->get(),
+		_conn->Get(),
 		keyCode,
-		_conn->getScreen()->root,
+		_conn->GetScreen()->root,
 		modKeyCode
 	);
 	_conn->flush();
 }
 
-void X11Context::bindModKey(ModKey modKey) {
-	_grabWholeKeyboard();
+void X11Context::BindModKey(ModKey modKey) {
+	GrabWholeKeyboard();
 	_grabbingWholeKeyboard = true;
 	_grabbingModKey = modKey;
 	_grabbingModKeyOriginal = modKey;
 }
 
-void X11Context::unbindModKey(ModKey modKey) {
-	_ungrabWholeKeyboard();
+void X11Context::UnbindModKey(ModKey modKey) {
+	UngrabWholeKeyboard();
 	_grabbingWholeKeyboard = false;
 }
 
-Point X11Context::getMousePos() {
-	xcb_query_pointer_reply_t* pointer = xcb_query_pointer_reply(_conn->get(), xcb_query_pointer(_conn->get(), _conn->getRoot()), 0);
+Point X11Context::GetMousePos() {
+	xcb_query_pointer_reply_t* pointer = xcb_query_pointer_reply(_conn->Get(), xcb_query_pointer(_conn->Get(), _conn->GetRoot()), 0);
 	Point pos;
 	pos.x = pointer->root_x;
 	pos.y = pointer->root_y;
@@ -146,38 +146,38 @@ Point X11Context::getMousePos() {
 	return pos;
 }
 
-void X11Context::setMousePos(Point point) {
-	xcb_warp_pointer(_conn->get(), XCB_NONE, _conn->getRoot(), 0, 0, 0, 0, point.x, point.y);
+void X11Context::SetMousePos(Point point) {
+	xcb_warp_pointer(_conn->Get(), XCB_NONE, _conn->GetRoot(), 0, 0, 0, 0, point.x, point.y);
 	_conn->flush();
 }
 
-Wx::List<MonitorDef> X11Context::getConnectedMonitorDefs() {
-	return _monitorManager->getConnectedMonitorDefs();
+Wx::List<MonitorDef> X11Context::GetConnectedMonitorDefs() {
+	return _monitorManager->GetConnectedMonitorDefs();
 }
 
-void X11Context::clipWindow(Window* window, Rect rect) {
-	_clipper->clip((X11WindowBackend*)window->getBackend(), rect);
+void X11Context::ClipWindow(Window* window, Rect rect) {
+	_clipper->Clip((X11WindowBackend*)window->GetBackend(), rect);
 }
 
-void X11Context::unclipWindow(Window* window) {
-	_clipper->unclip((X11WindowBackend*)window->getBackend());
+void X11Context::UnclipWindow(Window* window) {
+	_clipper->Unclip((X11WindowBackend*)window->GetBackend());
 }
 
-void X11Context::highlightWindow(Window* window) {
+void X11Context::HighlightWindow(Window* window) {
 }
 
-void X11Context::unhighlightWindow(Window* window) {
+void X11Context::UnhighlightWindow(Window* window) {
 }
 
-Margin X11Context::getDockExtend(Window* window) {
-	return _hint->getWindowDockExtend(((X11WindowBackend*)window->getBackend())->getClientHandle());
+Margin X11Context::GetDockExtend(Window* window) {
+	return _hint->GetWindowDockExtend(((X11WindowBackend*)window->GetBackend())->getClientHandle());
 }
 
-void X11Context::run(IObserver* observer) {
-	_updateMonitors(observer);
+void X11Context::Run(IObserver* observer) {
+	UpdateMonitors(observer);
 
 	while (_running) {
-		xcb_generic_event_t* ev = xcb_wait_for_event(_conn->get());
+		xcb_generic_event_t* ev = xcb_wait_for_event(_conn->Get());
 		int type = ev->response_type & ~0x80;
 		switch (type) {
 			case XCB_CREATE_NOTIFY: {
@@ -187,15 +187,15 @@ void X11Context::run(IObserver* observer) {
 
 			case XCB_MAP_REQUEST: {
 				xcb_map_request_event_t* e = (xcb_map_request_event_t*) ev;
-				LOG("[x11] map request %08X (%s)\n", e->window, _hint->getWindowTitle(e->window).CPtr());
+				LOG("[x11] map request %08X (%s)\n", e->window, _hint->GetWindowTitle(e->window).CPtr());
 
-				Window* window = _getWindowByClient(e->window);
+				Window* window = QueryWindowByClient(e->window);
 				if (window == nullptr) {
-					xcb_get_window_attributes_cookie_t cookie = xcb_get_window_attributes(_conn->get(), e->window);
-					xcb_get_window_attributes_reply_t* attr = xcb_get_window_attributes_reply(_conn->get(), cookie, nullptr);
+					xcb_get_window_attributes_cookie_t cookie = xcb_get_window_attributes(_conn->Get(), e->window);
+					xcb_get_window_attributes_reply_t* attr = xcb_get_window_attributes_reply(_conn->Get(), cookie, nullptr);
 
 					if (attr == nullptr) {
-						xcb_map_window(_conn->get(), e->window);
+						xcb_map_window(_conn->Get(), e->window);
 						_conn->flush();
 						break;
 					}
@@ -203,7 +203,7 @@ void X11Context::run(IObserver* observer) {
 					free(attr);
 					if (unmanaged) {
 						LOG("[x11] unmanaged map request\n");
-						xcb_map_window(_conn->get(), e->window);
+						xcb_map_window(_conn->Get(), e->window);
 						_conn->flush();
 						break;
 					}
@@ -216,12 +216,12 @@ void X11Context::run(IObserver* observer) {
 					_clientWindowMap.Set(e->window, window);
 					_frameWindowMap.Set(backend->getFrameHandle(), window);
 
-					observer->onWindowCreate(event);
+					observer->OnWindowCreate(event);
 				} else {
-					window->show();
+					window->Show();
 				}
-				window->raise();
-				window->focus();
+				window->Raise();
+				window->Focus();
 				break;
 			}
 
@@ -236,9 +236,9 @@ void X11Context::run(IObserver* observer) {
 				LOG("[x11] configure request %08X\n", e->window);
 				LOG("      x: %d, y: %d, w: %d, h: %d\n", e->x, e->y, e->width, e->height);
 
-				Window* window = _getWindowByClient(e->window);
+				Window* window = QueryWindowByClient(e->window);
 				if (window) {
-					X11WindowBackend* backend = (X11WindowBackend*) window->getBackend();
+					X11WindowBackend* backend = (X11WindowBackend*) window->GetBackend();
 					backend->notifyClient();
 					// uint16_t mask = 0;
 					// uint32_t values[7];
@@ -309,7 +309,7 @@ void X11Context::run(IObserver* observer) {
 					values[i++] = e->stack_mode;
 				}
 
-				xcb_configure_window(_conn->get(), e->window, mask, values);
+				xcb_configure_window(_conn->Get(), e->window, mask, values);
 				_conn->flush();
 				break;
 			}
@@ -323,27 +323,27 @@ void X11Context::run(IObserver* observer) {
 			case XCB_UNMAP_NOTIFY: {
 				xcb_unmap_notify_event_t* e = (xcb_unmap_notify_event_t*) ev;
 				LOG("[x11] unmap notify %08X\n", e->window);
-				Window* window = _getWindowByClient(e->window);
+				Window* window = QueryWindowByClient(e->window);
 				if (window == nullptr) {
 					break;
 				}
-				window->hide();
+				window->Hide();
 				break;
 			}
 
 			case XCB_DESTROY_NOTIFY: {
 				xcb_destroy_notify_event_t* e = (xcb_destroy_notify_event_t*) ev;
 				LOG("[x11] destroy notify %08X\n", e->window);
-				Window* window = _getWindowByClient(e->window);
+				Window* window = QueryWindowByClient(e->window);
 				if (window == nullptr) {
 					break;
 				}
 				WindowEvent event;
 				event.window = window;
-				observer->onWindowDestroy(event);
+				observer->OnWindowDestroy(event);
 
 				_clientWindowMap.Remove(e->window);
-				_frameWindowMap.Remove(((X11WindowBackend*)window->getBackend())->getFrameHandle());
+				_frameWindowMap.Remove(((X11WindowBackend*)window->GetBackend())->getFrameHandle());
 
 				delete window;
 				break;
@@ -352,11 +352,11 @@ void X11Context::run(IObserver* observer) {
 			case XCB_EXPOSE: {
 				xcb_expose_event_t* e = (xcb_expose_event_t*) ev;
 				LOG("[x11] expose %08X\n", e->window);
-				Window* window = _getWindowByFrame(e->window);
+				Window* window = QueryWindowByFrame(e->window);
 				if (window == nullptr) {
 					break;
 				}
-				((X11WindowBackend*)window->getBackend())->draw();
+				((X11WindowBackend*)window->GetBackend())->draw();
 				break;
 			}
 
@@ -367,16 +367,16 @@ void X11Context::run(IObserver* observer) {
 				MouseButtonEvent event;
 				event.pos.x = e->root_x;
 				event.pos.y = e->root_y;
-				event.button = _toMouseButton(e->detail);
-				event.modKey = _toModKey(e->state);
-				event.window = _getWindowByFrame(e->child);
+				event.button = ToMouseButton(e->detail);
+				event.modKey = ToModKey(e->state);
+				event.window = QueryWindowByFrame(e->child);
 
 				if (e->detail == 1 && e->state == 0) {
-					xcb_allow_events(_conn->get(), XCB_ALLOW_REPLAY_POINTER, e->time);
+					xcb_allow_events(_conn->Get(), XCB_ALLOW_REPLAY_POINTER, e->time);
 					_conn->flush();
 				}
 
-				observer->onMousePress(event);
+				observer->OnMousePress(event);
 				break;
 			}
 
@@ -387,10 +387,10 @@ void X11Context::run(IObserver* observer) {
 				MouseButtonEvent event;
 				event.pos.x = e->root_x;
 				event.pos.y = e->root_y;
-				event.button = _toMouseButton(e->detail);
-				event.modKey = _toModKey(e->state);
-				event.window = _getWindowByFrame(e->child);
-				observer->onMouseRelease(event);
+				event.button = ToMouseButton(e->detail);
+				event.modKey = ToModKey(e->state);
+				event.window = QueryWindowByFrame(e->child);
+				observer->OnMouseRelease(event);
 				break;
 			}
 
@@ -401,7 +401,7 @@ void X11Context::run(IObserver* observer) {
 				MouseMovementEvent event;
 				event.pos.x = e->root_x;
 				event.pos.y = e->root_y;
-				observer->onMouseMove(event);
+				observer->OnMouseMove(event);
 				break;
 			}
 
@@ -413,10 +413,10 @@ void X11Context::run(IObserver* observer) {
 				}
 				LOG("[x11] key press %d\n", e->detail);
 				KeyEvent event;
-				event.modKey = _toModKey(e->state);
+				event.modKey = ToModKey(e->state);
 				event.key = *key;
 
-				observer->onKeyPress(event);
+				observer->OnKeyPress(event);
 				break;
 			}
 
@@ -424,26 +424,26 @@ void X11Context::run(IObserver* observer) {
 				xcb_key_release_event_t* e = (xcb_key_release_event_t*) ev;
 				if (_grabbingWholeKeyboard) {
 					if (WX_FLAGS_CONTAIN(_grabbingModKey, ModKey::Shift)) {
-						if (_keyboardManager->queryKeyCode(Key::ShiftL) == e->detail ||
-							_keyboardManager->queryKeyCode(Key::ShiftR) == e->detail) {
+						if (_keyboardManager->QueryKeyCode(Key::ShiftL) == e->detail ||
+							_keyboardManager->QueryKeyCode(Key::ShiftR) == e->detail) {
 							_grabbingModKey &= ~ModKey::Shift;
 						}
 					}
 					if (WX_FLAGS_CONTAIN(_grabbingModKey, ModKey::Ctrl)) {
-						if (_keyboardManager->queryKeyCode(Key::CtrlL) == e->detail ||
-							_keyboardManager->queryKeyCode(Key::CtrlR) == e->detail) {
+						if (_keyboardManager->QueryKeyCode(Key::CtrlL) == e->detail ||
+							_keyboardManager->QueryKeyCode(Key::CtrlR) == e->detail) {
 							_grabbingModKey &= ~ModKey::Ctrl;
 						}
 					}
 					if (WX_FLAGS_CONTAIN(_grabbingModKey, ModKey::Alt)) {
-						if (_keyboardManager->queryKeyCode(Key::AltL) == e->detail ||
-							_keyboardManager->queryKeyCode(Key::AltR) == e->detail) {
+						if (_keyboardManager->QueryKeyCode(Key::AltL) == e->detail ||
+							_keyboardManager->QueryKeyCode(Key::AltR) == e->detail) {
 							_grabbingModKey &= ~ModKey::Alt;
 						}
 					}
 					if (WX_FLAGS_CONTAIN(_grabbingModKey, ModKey::Super)) {
-						if (_keyboardManager->queryKeyCode(Key::SuperL) == e->detail ||
-							_keyboardManager->queryKeyCode(Key::SuperR) == e->detail) {
+						if (_keyboardManager->QueryKeyCode(Key::SuperL) == e->detail ||
+							_keyboardManager->QueryKeyCode(Key::SuperR) == e->detail) {
 							_grabbingModKey &= ~ModKey::Super;
 						}
 					}
@@ -455,7 +455,7 @@ void X11Context::run(IObserver* observer) {
 					KeyEvent event;
 					event.modKey = _grabbingModKeyOriginal;
 					event.key = Key::None;
-					observer->onKeyRelease(event);
+					observer->OnKeyRelease(event);
 					_grabbingModKey = _grabbingModKeyOriginal;
 					break;
 				}
@@ -465,9 +465,9 @@ void X11Context::run(IObserver* observer) {
 					break;
 				}
 				KeyEvent event;
-				event.modKey = _toModKey(e->state);
+				event.modKey = ToModKey(e->state);
 				event.key = *key;
-				observer->onKeyRelease(event);
+				observer->OnKeyRelease(event);
 				break;
 			}
 
@@ -475,19 +475,19 @@ void X11Context::run(IObserver* observer) {
 				xcb_client_message_event_t* e = (xcb_client_message_event_t*) ev;
 				LOG("[x11] client message %d\n", e->window);
 
-				Window* window = _getWindowByClient(e->window);
+				Window* window = QueryWindowByClient(e->window);
 				if (window == nullptr) {
-					LOG("[x11] unmanaged window id message request %d (%s)\n", e->window, _hint->atomToString(e->type).CPtr());
+					LOG("[x11] unmanaged window id message request %d (%s)\n", e->window, _hint->AtomToString(e->type).CPtr());
 					break;
 				}
 
-				if (_hint->isActiveWindow(e->type)) {
+				if (_hint->IsActiveWindow(e->type)) {
 					// SetActiveWindow(window);
 					// Context::Sync();
 					break;
 				}
 
-				if (_hint->isWindowState(e->type)) {
+				if (_hint->IsWindowState(e->type)) {
 					// uint32_t action = e->data.data32[0];
 					// xcb_atom_t state = e->data.data32[1];
 					//
@@ -545,7 +545,7 @@ void X11Context::run(IObserver* observer) {
 					break;
 				}
 
-				if (_hint->isMoveResizeProperty(e->type)) {
+				if (_hint->IsMoveResizeProperty(e->type)) {
 					Point cursor;
 					cursor.x = e->data.data32[0];
 					cursor.y = e->data.data32[1];
@@ -556,106 +556,106 @@ void X11Context::run(IObserver* observer) {
 						WindowResizingEvent event;
 						event.window = window;
 						event.area = WindowResizingArea::NorthWest;
-						observer->onWindowResizeRequest(event);
+						observer->OnWindowResizeRequest(event);
 						break;
 					}
 					if (direction == 1) {
 						WindowResizingEvent event;
 						event.window = window;
 						event.area = WindowResizingArea::North;
-						observer->onWindowResizeRequest(event);
+						observer->OnWindowResizeRequest(event);
 						break;
 					}
 					if (direction == 2) {
 						WindowResizingEvent event;
 						event.window = window;
 						event.area = WindowResizingArea::NorthEast;
-						observer->onWindowResizeRequest(event);
+						observer->OnWindowResizeRequest(event);
 						break;
 					}
 					if (direction == 3) {
 						WindowResizingEvent event;
 						event.window = window;
 						event.area = WindowResizingArea::East;
-						observer->onWindowResizeRequest(event);
+						observer->OnWindowResizeRequest(event);
 						break;
 					}
 					if (direction == 4) {
 						WindowResizingEvent event;
 						event.window = window;
 						event.area = WindowResizingArea::SouthEast;
-						observer->onWindowResizeRequest(event);
+						observer->OnWindowResizeRequest(event);
 						break;
 					}
 					if (direction == 5) {
 						WindowResizingEvent event;
 						event.window = window;
 						event.area = WindowResizingArea::South;
-						observer->onWindowResizeRequest(event);
+						observer->OnWindowResizeRequest(event);
 						break;
 					}
 					if (direction == 6) {
 						WindowResizingEvent event;
 						event.window = window;
 						event.area = WindowResizingArea::SouthWest;
-						observer->onWindowResizeRequest(event);
+						observer->OnWindowResizeRequest(event);
 						break;
 					}
 					if (direction == 7) {
 						WindowResizingEvent event;
 						event.window = window;
 						event.area = WindowResizingArea::West;
-						observer->onWindowResizeRequest(event);
+						observer->OnWindowResizeRequest(event);
 						break;
 					}
 					if (direction == 8) {
 						WindowMovementEvent event;
 						event.window = window;
 						event.offset = cursor;
-						observer->onWindowMoveRequest(event);
+						observer->OnWindowMoveRequest(event);
 						break;
 					}
 				}
 
-				LOG("uncaptured client message %d, %s\n", e->type, _hint->atomToString(e->type).CPtr());
+				LOG("uncaptured client message %d, %s\n", e->type, _hint->AtomToString(e->type).CPtr());
 				break;
 			}
 
 
 			default: {
-				if (type == _keyboardManager->getEventOffset()) {
+				if (type == _keyboardManager->GetEventOffset()) {
 					switch (ev->pad0) {
 						case XCB_XKB_NEW_KEYBOARD_NOTIFY: {
 							xcb_xkb_new_keyboard_notify_event_t* event = (xcb_xkb_new_keyboard_notify_event_t*) ev;
 							if (event->changed & XCB_XKB_NKN_DETAIL_KEYCODES) {
-								_updateKeyBindings();
+								UpdateKeyBindings();
 							}
 							break;
 						}
 						case XCB_XKB_MAP_NOTIFY:
-							_updateKeyBindings();
+							UpdateKeyBindings();
 							break;
 					}
 					break;
 				}
-				if (type == _monitorManager->getEventOffset() + XCB_RANDR_SCREEN_CHANGE_NOTIFY) {
-					_updateMonitors(observer);
+				if (type == _monitorManager->GetEventOffset() + XCB_RANDR_SCREEN_CHANGE_NOTIFY) {
+					UpdateMonitors(observer);
 					break;
 				}
 
-				if (type == _monitorManager->getEventOffset() + XCB_RANDR_NOTIFY) {
+				if (type == _monitorManager->GetEventOffset() + XCB_RANDR_NOTIFY) {
 					xcb_randr_notify_event_t* event = (xcb_randr_notify_event_t *) ev;
 					if (event->subCode == XCB_RANDR_NOTIFY_OUTPUT_CHANGE) {
 						xcb_randr_output_change_t oc = event->u.oc;
 						if (oc.connection == XCB_RANDR_CONNECTION_CONNECTED) {
-							_updateMonitors(observer);
+							UpdateMonitors(observer);
 						} else if (oc.connection == XCB_RANDR_CONNECTION_DISCONNECTED) {
-							_updateMonitors(observer);
+							UpdateMonitors(observer);
 						}
 					}
 					if (event->subCode == XCB_RANDR_NOTIFY_CRTC_CHANGE) {
 						xcb_randr_crtc_change_t cc = event->u.cc;
-						_updateMonitors(observer);
+						UpdateMonitors(observer);
 					}
 					break;
 				}
@@ -666,25 +666,25 @@ void X11Context::run(IObserver* observer) {
 	}
 }
 
-void X11Context::stop() {
+void X11Context::Stop() {
 	_running = false;
 }
 
-Window* X11Context::_getWindowByFrame(xcb_window_t handle) {
+Window* X11Context::QueryWindowByFrame(xcb_window_t handle) {
 	if (handle == XCB_NONE) return nullptr;
 	Window** window = _frameWindowMap.TryGet(handle);
 	if (window != nullptr) return *window;
 	return nullptr;
 }
 
-Window* X11Context::_getWindowByClient(xcb_window_t handle) {
+Window* X11Context::QueryWindowByClient(xcb_window_t handle) {
 	if (handle == XCB_NONE) return nullptr;
 	Window** window = _clientWindowMap.TryGet(handle);
 	if (window != nullptr) return *window;
 	return nullptr;
 }
 
-int X11Context::_fromModKey(ModKey modKey) {
+int X11Context::FromModKey(ModKey modKey) {
 	Wx::Uint32 flags = 0;
 
 	if (WX_FLAGS_CONTAIN(modKey, ModKey::Shift)) {
@@ -702,7 +702,7 @@ int X11Context::_fromModKey(ModKey modKey) {
 	return flags;
 }
 
-ModKey X11Context::_toModKey(int modKey) {
+ModKey X11Context::ToModKey(int modKey) {
 	ModKey flags = ModKey::None;
 	if (WX_FLAGS_CONTAIN(modKey, XCB_MOD_MASK_SHIFT)) {
 		flags |= ModKey::Shift;
@@ -719,21 +719,21 @@ ModKey X11Context::_toModKey(int modKey) {
 	return flags;
 }
 
-int X11Context::_fromMouseButton(MouseButton button) {
+int X11Context::FromMouseButton(MouseButton button) {
 	return (int)button;
 }
 
-MouseButton X11Context::_toMouseButton(int button) {
+MouseButton X11Context::ToMouseButton(int button) {
 	return (MouseButton)button;
 }
 
-void X11Context::_attachKeyBindings() {
+void X11Context::AttachKeyBindings() {
 	_codeToKey.Clear();
 
 	for (int i = 0; i < _keyBindings.Count(); i++) {
 		X11KeyBinding& binding = _keyBindings[i];
-		binding.keyCode = _keyboardManager->queryKeyCode(binding.key);
-		binding.modKeyCode = _fromModKey(binding.modKey);
+		binding.keyCode = _keyboardManager->QueryKeyCode(binding.key);
+		binding.modKeyCode = FromModKey(binding.modKey);
 		if (binding.keyCode == 0) {
 			LOG("ERROR: key %d is invalid\n", (int)binding.key);
 			continue;
@@ -742,7 +742,7 @@ void X11Context::_attachKeyBindings() {
 		_codeToKey.Set(binding.keyCode, binding.key);
 
 		xcb_grab_key(
-			_conn->get(), 0, _conn->getScreen()->root, 
+			_conn->Get(), 0, _conn->GetScreen()->root, 
 			binding.modKeyCode,
 			binding.keyCode,
 			XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC
@@ -751,37 +751,37 @@ void X11Context::_attachKeyBindings() {
 	_conn->flush();
 }
 
-void X11Context::_detachKeyBindings() {
+void X11Context::DetachKeyBindings() {
 	for (int i = 0; i < _keyBindings.Count(); i++) {
 		X11KeyBinding& binding = _keyBindings[i];
 		if (binding.keyCode == 0) continue;
 
 		xcb_ungrab_key(
-			_conn->get(),
+			_conn->Get(),
 			binding.keyCode,
-			_conn->getScreen()->root,
+			_conn->GetScreen()->root,
 			binding.modKeyCode
 		);
 	}
 	_conn->flush();
 }
 
-void X11Context::_updateKeyBindings() {
-	_keyboardManager->updateKeymap();
-	Wx::String layout = _keyboardManager->getLayout();
+void X11Context::UpdateKeyBindings() {
+	_keyboardManager->UpdateKeymap();
+	Wx::String layout = _keyboardManager->GetLayout();
 
 	if (layout == _activeKeyboardLayout) {
 		return;
 	}
 
-	_detachKeyBindings();
-	_attachKeyBindings();
+	DetachKeyBindings();
+	AttachKeyBindings();
 
 	LOG("changing keyboard layout to %s\n", layout.CPtr());
 	_activeKeyboardLayout = layout;
 }
 
-void X11Context::_grabWholeKeyboard() {
+void X11Context::GrabWholeKeyboard() {
 	/*
      * Now take an active keyboard grab.
      *
@@ -789,15 +789,15 @@ void X11Context::_grabWholeKeyboard() {
      * to our WM.
      */
     xcb_grab_keyboard_cookie_t cookie = xcb_grab_keyboard(
-		_conn->get(),
+		_conn->Get(),
 		0,                      // owner_events
-		_conn->getRoot(),
+		_conn->GetRoot(),
 		XCB_CURRENT_TIME,
 		XCB_GRAB_MODE_ASYNC,
 		XCB_GRAB_MODE_ASYNC
 	);
 
-    xcb_grab_keyboard_reply_t *reply = xcb_grab_keyboard_reply(_conn->get(), cookie, NULL);
+    xcb_grab_keyboard_reply_t *reply = xcb_grab_keyboard_reply(_conn->Get(), cookie, NULL);
 
     if (!reply) {
         return;
@@ -808,20 +808,20 @@ void X11Context::_grabWholeKeyboard() {
     free(reply);
 }
 
-void X11Context::_ungrabWholeKeyboard() {
-	xcb_ungrab_keyboard(_conn->get(), XCB_CURRENT_TIME);
+void X11Context::UngrabWholeKeyboard() {
+	xcb_ungrab_keyboard(_conn->Get(), XCB_CURRENT_TIME);
 	_conn->flush();
 }
 
-MonitorDef* X11Context::_getMonitorDefByPort(Wx::String const& port, Wx::List<MonitorDef>& defs) {
+MonitorDef* X11Context::QueryMonitorDefByPort(Wx::String const& port, Wx::List<MonitorDef>& defs) {
 	for (int i = 0; i < defs.Count(); i++) {
 		if (defs[i].port == port) return &defs[i];
 	}
 	return nullptr;
 }
 
-void X11Context::_updateMonitors(IObserver* observer) {
-	Wx::List<MonitorDef> currentMonitorDefs = _monitorManager->getConnectedMonitorDefs();
+void X11Context::UpdateMonitors(IObserver* observer) {
+	Wx::List<MonitorDef> currentMonitorDefs = _monitorManager->GetConnectedMonitorDefs();
 
 	Wx::List<Wx::String> connectedPorts;
 	Wx::List<Wx::String> disconnectedPorts;
@@ -830,7 +830,7 @@ void X11Context::_updateMonitors(IObserver* observer) {
 
 	for (int i = 0; i < currentMonitorDefs.Count(); i++) {
 		MonitorDef const& current = currentMonitorDefs[i];
-		MonitorDef* old = _getMonitorDefByPort(current.port, _monitorDefs);
+		MonitorDef* old = QueryMonitorDefByPort(current.port, _monitorDefs);
 		if (old == nullptr) {
 			connectedPorts.Append(current.port);
 		} else {
@@ -845,7 +845,7 @@ void X11Context::_updateMonitors(IObserver* observer) {
 	}
 	for (int i = 0; i < _monitorDefs.Count(); i++) {
 		MonitorDef const& old = _monitorDefs[i];
-		MonitorDef* current = _getMonitorDefByPort(old.port, currentMonitorDefs);
+		MonitorDef* current = QueryMonitorDefByPort(old.port, currentMonitorDefs);
 		if (current == nullptr) {
 			disconnectedPorts.Append(old.port);
 		}
@@ -854,19 +854,19 @@ void X11Context::_updateMonitors(IObserver* observer) {
 	for (int i = 0; i < connectedPorts.Count(); i++) {
 		MonitorEvent event;
 		event.port = connectedPorts[i];
-		observer->onMonitorConnect(event);
+		observer->OnMonitorConnect(event);
 	}
 
 	for (int i = 0; i < disconnectedPorts.Count(); i++) {
 		MonitorEvent event;
 		event.port = disconnectedPorts[i];
-		observer->onMonitorDisconnect(event);
+		observer->OnMonitorDisconnect(event);
 	}
 
 	for (int i = 0; i < propertyChangedPorts.Count(); i++) {
 		MonitorEvent event;
 		event.port = propertyChangedPorts[i];
-		observer->onMonitorPropertyChange(event);
+		observer->OnMonitorPropertyChange(event);
 	}
 
 	_monitorDefs = static_cast<Wx::List<MonitorDef>&&>(currentMonitorDefs);

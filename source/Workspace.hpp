@@ -11,29 +11,29 @@ class Workspace {
 public:
 	Workspace(Wx::String const& id);
 
-	Wx::String const& getID();
+	Wx::String const& GetID();
 
-	void setMonitor(Monitor* monitor);
+	void SetMonitor(Monitor* monitor);
 
-	Monitor* getMonitor();
+	Monitor* GetMonitor();
 
-	Window* getActiveWindow();
+	Window* GetActiveWindow();
 
-	void focusWindow(Window* window);
+	void FocusWindow(Window* window);
 
-	void addWindow(Window* window);
+	void AddWindow(Window* window);
 
-	void removeWindow(Window* window);
+	void RemoveWindow(Window* window);
 
-	void focus();
+	void Focus();
 
-	void blur();
+	void Blur();
 
-	void show();
+	void Show();
 
-	void hide(); 
+	void Hide(); 
 
-	Wx::List<Window*> const& getWindowList() const;
+	Wx::List<Window*> const& GetWindowList() const;
 
 private:
 	Monitor* _monitor;
