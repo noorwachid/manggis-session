@@ -59,45 +59,43 @@ Config ParseConfig(Wx::WkValue const& value) {
 		}
 
 		void parseBindingList(Wx::WkValue const& value) {
-			if (!value.IsList()) return;
-			Wx::List<Wx::WkValue> const& list = value.AsList();
-			for (int i = 0; i < list.Count(); i++) {
-				parseBinding(list[i]);
+			if (!value.IsHashTable()) return;
+
+			Wx::HashTable<Wx::String, Wx::WkValue> const& table = value.AsHashTable();
+			for (auto it = table.Iterate(); it.HasNext(); it.Next()) {
+				parseBinding(it.Get().key, it.Get().value);
 			}
 		}
 
-		void parseBinding(Wx::WkValue const& value) {
+		void parseBinding(Wx::String const& key, Wx::WkValue const& value) {
 			if (!value.IsTuple()) return;
 
 			ConfigBinding binding;
 
 			Wx::HashTable<Wx::String, Wx::WkValue> const& tup = value.AsTuple();
-			Wx::WkValue* key = tup.TryGet("key");
 
-			if (key && key->IsString()) {
-				Wx::List<Wx::Span<Wx::Byte>> spans = splitKey(key->AsString(), '+');
-				if (spans.Count() == 1 || spans.Count() == 0) {
-					LOG("[ManggisSession.Config] invalid key combination: %s\n", key->AsString().CPtr());
-					return;
-				}
-				ModKey modKey = ModKey::None;
-				for (int i = 0; i < spans.Count() - 1; i++) {
-					ModKey mk = stringToModKey(Wx::String(spans[i].Count(), spans[i].Ptr()));
-					if (mk == ModKey::None) {
-						LOG("[ManggisSession.Config] invalid mod-key: %s\n", key->AsString().CPtr());
-						return;
-					}
-					modKey |= mk;
-				}
-				Key k = stringToKey(Wx::String(spans.GetLast().Count(), spans.GetLast().Ptr()));
-				if (k == Key::None) {
-					LOG("[ManggisSession.Config] invalid key: %s\n", key->AsString().CPtr());
-					return;
-				}
-
-				binding.modKey = modKey;
-				binding.key = k;
+			Wx::List<Wx::Span<Wx::Byte>> spans = splitKey(key, '+');
+			if (spans.Count() == 1 || spans.Count() == 0) {
+				LOG("[config] invalid key combination: %s\n", key.CPtr());
+				return;
 			}
+			ModKey modKey = ModKey::None;
+			for (int i = 0; i < spans.Count() - 1; i++) {
+				ModKey mk = stringToModKey(Wx::String(spans[i].Count(), spans[i].Ptr()));
+				if (mk == ModKey::None) {
+					LOG("[config] invalid mod-key: %s\n", key.CPtr());
+					return;
+				}
+				modKey |= mk;
+			}
+			Key k = stringToKey(Wx::String(spans.GetLast().Count(), spans.GetLast().Ptr()));
+			if (k == Key::None) {
+				LOG("[config] invalid key: %s\n", key.CPtr());
+				return;
+			}
+
+			binding.modKey = modKey;
+			binding.key = k;
 
 			ConfigCommand command = parseCommand(tup);
 			if (command.func != ConfigCommandFunc::None) {
@@ -235,7 +233,7 @@ Config ParseConfig(Wx::WkValue const& value) {
 				Wx::WkValue* focusWorkspace = tup.TryGet("focusWorkspace");
 				if (focusWorkspace) {
 					if (!focusWorkspace->IsString()) {
-						LOG("[ManggisSession.Config] invalid focusWorkspace command argument, expect string\n");
+						LOG("[config] invalid focusWorkspace command argument, expect string\n");
 						return {};
 					}
 

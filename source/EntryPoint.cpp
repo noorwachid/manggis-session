@@ -39,6 +39,10 @@ int main(int argc, char **argv) {
 	Wx::String configPath = home;
 	configPath.Append("/.config/manggis-session/config.wk");
 
+	#ifdef XEPHYR_ENABLE
+	configPath = "runtime/config.wk";
+	#endif
+
 	if (access(configPath.CPtr(), F_OK) == 0) {
 		Wx::WkValue wkValue = Wx::ParseWk(ReadFile(configPath));
 		config = ParseConfig(wkValue);
