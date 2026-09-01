@@ -643,24 +643,24 @@ Monitor* Session::_queryMonitorByPos(Point pos) {
 }
 
 void Session::_relayoutMonitors() {
-	Wx::List<MonitorInfo> monitorInfos = _context->getConnectedMonitorInfos();
+	Wx::List<MonitorDef> monitorDefs = _context->getConnectedMonitorDefs();
 
-	MonitorInfo fallbackInfo;
-	fallbackInfo.port = "<fallback>";
-	_fallbackMonitor = _getOrCreateMonitor(fallbackInfo);
+	MonitorDef fallbackDef;
+	fallbackDef.port = "<fallback>";
+	_fallbackMonitor = _getOrCreateMonitor(fallbackDef);
 	_fallbackMonitor->clearWorkspaceList();
 
 	// TODO: reuse the monitor instance
 	_monitors.Clear();
 
-	if (monitorInfos.IsEmpty()) {
+	if (monitorDefs.IsEmpty()) {
 		_activeMonitor = _fallbackMonitor;
 		_monitors.Append(_activeMonitor);
 	} else {
 		Monitor* activeMonitor = nullptr;
-		for (int i = 0; i < monitorInfos.Count(); i++) {
-			MonitorInfo const& info = monitorInfos[i];
-			Monitor* monitor = _getOrCreateMonitor(info);
+		for (int i = 0; i < monitorDefs.Count(); i++) {
+			MonitorDef const& def = monitorDefs[i];
+			Monitor* monitor = _getOrCreateMonitor(def);
 			monitor->clearWorkspaceList();
 			if (_activeMonitor == monitor) {
 				activeMonitor = monitor;
@@ -748,15 +748,15 @@ void Session::_logLayout() {
 	}
 }
 
-Monitor* Session::_getOrCreateMonitor(MonitorInfo const& info) {
+Monitor* Session::_getOrCreateMonitor(MonitorDef const& def) {
 	for (int i = 0; i < _monitorDB.Count(); i++) {
 		Monitor* monitor = _monitorDB[i];
-		if (monitor->getPort() == info.port) {
-			monitor->setInfo(info);
+		if (monitor->getPort() == def.port) {
+			monitor->setDef(def);
 			return monitor;
 		}
 	}
-	Monitor* monitor = new Monitor(_context, info);
+	Monitor* monitor = new Monitor(_context, def);
 	_monitorDB.Append(monitor);
 	return monitor;
 }

@@ -3,20 +3,20 @@
 #include "Window.hpp"
 #include <cstdio>
 
-Monitor::Monitor(IContext* context, MonitorInfo info): _context{context}, _info{info} {
-	_workingRect = info.rect;
+Monitor::Monitor(IContext* context, MonitorDef def): _context{context}, _def{def} {
+	_workingRect = def.rect;
 }
 
-void Monitor::setInfo(MonitorInfo info) {
-	_info = info;
+void Monitor::setDef(MonitorDef def) {
+	_def = def;
 }
 
 Wx::String const& Monitor::getPort() const {
-	return _info.port;
+	return _def.port;
 }
 
 Rect Monitor::getRect() const {
-	return _info.rect;
+	return _def.rect;
 }
 
 Rect Monitor::getWorkingRect() const {

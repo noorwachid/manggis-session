@@ -3,7 +3,7 @@
 #include "Common/Unit.hpp"
 #include "Wx/Core/String.hpp"
 
-struct MonitorInfo {
+struct MonitorDef {
 	Wx::String port;
 	Rect rect;
 };

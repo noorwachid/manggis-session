@@ -1,6 +1,6 @@
 #pragma once
 
-#include "MonitorInfo.hpp"
+#include "MonitorDef.hpp"
 #include "Backend/IContext.hpp"
 #include "Wx/Core/List.hpp"
 #include "Wx/Core/String.hpp"
@@ -11,9 +11,9 @@ class Workspace;
 
 class Monitor {
 public:
-	Monitor(IContext* context, MonitorInfo info);
+	Monitor(IContext* context, MonitorDef def);
 
-	void setInfo(MonitorInfo info);
+	void setDef(MonitorDef def);
 
 	Wx::String const& getPort() const;
 
@@ -47,7 +47,7 @@ public:
 
 private:
 	IContext* _context;
-	MonitorInfo _info;
+	MonitorDef _def;
 	Workspace* _activeWorkspace = nullptr;
 	Wx::List<Workspace*> _workspaces;
 	Wx::List<Window*> _unmanagedWindows;

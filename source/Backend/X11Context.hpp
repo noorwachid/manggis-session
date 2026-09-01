@@ -2,7 +2,7 @@
 
 #include "Event.hpp"
 #include "IObserver.hpp"
-#include "MonitorInfo.hpp"
+#include "MonitorDef.hpp"
 #include "Window.hpp"
 #include "Common/Logger.hpp"
 #include "Backend/IContext.hpp"
@@ -58,7 +58,7 @@ public:
 
 	virtual void setMousePos(Point point) override;
 
-	virtual Wx::List<MonitorInfo> getConnectedMonitorInfos() override;
+	virtual Wx::List<MonitorDef> getConnectedMonitorDefs() override;
 
 	virtual void clipWindow(Window* window, Rect rect) override;
 
@@ -97,7 +97,7 @@ private:
 
 	void _ungrabWholeKeyboard();
 
-	MonitorInfo* _getMonitorInfoByPort(Wx::String const& port, Wx::List<MonitorInfo>& infos);
+	MonitorDef* _getMonitorDefByPort(Wx::String const& port, Wx::List<MonitorDef>& defs);
 
 	void _updateMonitors(IObserver* observer);
 
@@ -114,7 +114,7 @@ private:
 	X11MouseManager* _mouseManager;
 
 	X11MonitorManager* _monitorManager;
-	Wx::List<MonitorInfo> _monitorInfos;
+	Wx::List<MonitorDef> _monitorDefs;
 
 	X11Clipper* _clipper;
 	X11Hint* _hint;

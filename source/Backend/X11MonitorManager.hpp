@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Backend/X11Connection.hpp"
-#include "MonitorInfo.hpp"
+#include "MonitorDef.hpp"
 #include "Wx/Core/List.hpp"
 #include <xcb/randr.h>
 
@@ -13,7 +13,7 @@ public:
 
 	int getEventOffset();
 
-	Wx::List<MonitorInfo> getConnectedMonitorInfos();
+	Wx::List<MonitorDef> getConnectedMonitorDefs();
 
 
 private:

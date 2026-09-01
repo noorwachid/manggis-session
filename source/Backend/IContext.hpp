@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Common/Unit.hpp"
-#include "MonitorInfo.hpp"
+#include "MonitorDef.hpp"
 #include "IObserver.hpp"
 #include "ISessionObserver.hpp"
 #include "Input/Key.hpp"
@@ -32,7 +32,7 @@ public:
 
 	virtual void setMousePos(Point point) = 0;
 
-	virtual Wx::List<MonitorInfo> getConnectedMonitorInfos() = 0;
+	virtual Wx::List<MonitorDef> getConnectedMonitorDefs() = 0;
 
 	virtual void clipWindow(Window* window, Rect rect) = 0;
 

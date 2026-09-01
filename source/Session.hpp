@@ -2,7 +2,6 @@
 
 #include "Event.hpp"
 #include "IObserver.hpp"
-#include "MonitorInfo.hpp"
 #include "Monitor.hpp"
 #include "Workspace.hpp"
 #include "Window.hpp"
@@ -115,7 +114,7 @@ private:
 
 	void _logLayout();
 
-	Monitor* _getOrCreateMonitor(MonitorInfo const& info);
+	Monitor* _getOrCreateMonitor(MonitorDef const& def);
 
 	Workspace* _getOrCreateWorkspace(Wx::String const& id);
 

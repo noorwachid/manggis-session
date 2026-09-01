@@ -30,9 +30,9 @@ int X11MonitorManager::getEventOffset() {
 	return _eventOffset;
 }
 
-Wx::List<MonitorInfo> X11MonitorManager::getConnectedMonitorInfos() {
+Wx::List<MonitorDef> X11MonitorManager::getConnectedMonitorDefs() {
 	#ifdef XEPHYR_ENABLE
-		Wx::List<MonitorInfo> infos;
+		Wx::List<MonitorDef> defs;
 
 		#ifdef XEPHYR_EMULATE_TWO_MONITOR
 		bool left = false;
@@ -49,36 +49,36 @@ Wx::List<MonitorInfo> X11MonitorManager::getConnectedMonitorInfos() {
 		}
 
 		if (left) {
-			MonitorInfo left;
+			MonitorDef left;
 			left.port = "HDMI-1";
 			left.rect.x = 0;
 			left.rect.y = 0;
 			left.rect.width = XEPHYR_WIDTH / 2;
 			left.rect.height = XEPHYR_HEIGHT;
-			infos.Append(left);
+			defs.Append(left);
 		}
 
 		if (right) {
-			MonitorInfo right;
+			MonitorDef right;
 			right.port = "HDMI-2";
 			right.rect.x = XEPHYR_WIDTH / 2;
 			right.rect.y = 0;
 			right.rect.width = XEPHYR_WIDTH / 2;
 			right.rect.height = XEPHYR_HEIGHT;
-			infos.Append(right);
+			defs.Append(right);
 		}
 
-		return infos;
+		return defs;
 		#else
-		MonitorInfo right;
+		MonitorDef right;
 		right.port = "HDMI-1";
 		right.rect.x = 0;
 		right.rect.y = 0;
 		right.rect.width = XEPHYR_WIDTH;
 		right.rect.height = XEPHYR_HEIGHT;
-		infos.Append(right);
+		defs.Append(right);
 
-		return infos;
+		return defs;
 		#endif
 	#else
 
@@ -92,26 +92,26 @@ Wx::List<MonitorInfo> X11MonitorManager::getConnectedMonitorInfos() {
 	int outputSize = xcb_randr_get_screen_resources_current_outputs_length(res);
 	xcb_randr_output_t* outputs = xcb_randr_get_screen_resources_current_outputs(res);
 
-	Wx::List<MonitorInfo> infos;
+	Wx::List<MonitorDef> defs;
 
 	for (int i = 0; i < outputSize; i++) {
-		xcb_randr_get_output_info_cookie_t outCookie = xcb_randr_get_output_info(_conn->get(), outputs[i], XCB_CURRENT_TIME);
-		xcb_randr_get_output_info_reply_t* out = xcb_randr_get_output_info_reply(_conn->get(), outCookie, NULL);
+		xcb_randr_get_output_def_cookie_t outCookie = xcb_randr_get_output_def(_conn->get(), outputs[i], XCB_CURRENT_TIME);
+		xcb_randr_get_output_def_reply_t* out = xcb_randr_get_output_def_reply(_conn->get(), outCookie, NULL);
 
 		if (!out) continue;
 
 		if (out->connection == XCB_RANDR_CONNECTION_CONNECTED) {
-			char *name = (char *)xcb_randr_get_output_info_name(out);
-			int nameSize = xcb_randr_get_output_info_name_length(out);
+			char *name = (char *)xcb_randr_get_output_def_name(out);
+			int nameSize = xcb_randr_get_output_def_name_length(out);
 
 			if (out->crtc != XCB_NONE) {
-				xcb_randr_get_crtc_info_cookie_t crtcCookie = xcb_randr_get_crtc_info(_conn->get(), out->crtc, XCB_CURRENT_TIME);
-				xcb_randr_get_crtc_info_reply_t* crtc = xcb_randr_get_crtc_info_reply(_conn->get(), crtcCookie, NULL);
+				xcb_randr_get_crtc_def_cookie_t crtcCookie = xcb_randr_get_crtc_def(_conn->get(), out->crtc, XCB_CURRENT_TIME);
+				xcb_randr_get_crtc_def_reply_t* crtc = xcb_randr_get_crtc_def_reply(_conn->get(), crtcCookie, NULL);
 
 				if (crtc) {
 					Wx::String port(nameSize, (Wx::Byte const*)name);
 
-					MonitorInfo info = {
+					MonitorDef def = {
 						.port = port,
 						.rect = {
 							.x = crtc->x,
@@ -121,7 +121,7 @@ Wx::List<MonitorInfo> X11MonitorManager::getConnectedMonitorInfos() {
 						}
 					};
 
-					infos.Append(info);
+					defs.Append(def);
 					free(crtc);
 				}
 			}
@@ -129,7 +129,7 @@ Wx::List<MonitorInfo> X11MonitorManager::getConnectedMonitorInfos() {
 		free(out);
 	}
 	free(res);
-	return infos;
+	return defs;
 	#endif
 }
 

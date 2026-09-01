@@ -151,8 +151,8 @@ void X11Context::setMousePos(Point point) {
 	_conn->flush();
 }
 
-Wx::List<MonitorInfo> X11Context::getConnectedMonitorInfos() {
-	return _monitorManager->getConnectedMonitorInfos();
+Wx::List<MonitorDef> X11Context::getConnectedMonitorDefs() {
+	return _monitorManager->getConnectedMonitorDefs();
 }
 
 void X11Context::clipWindow(Window* window, Rect rect) {
@@ -813,24 +813,24 @@ void X11Context::_ungrabWholeKeyboard() {
 	_conn->flush();
 }
 
-MonitorInfo* X11Context::_getMonitorInfoByPort(Wx::String const& port, Wx::List<MonitorInfo>& infos) {
-	for (int i = 0; i < infos.Count(); i++) {
-		if (infos[i].port == port) return &infos[i];
+MonitorDef* X11Context::_getMonitorDefByPort(Wx::String const& port, Wx::List<MonitorDef>& defs) {
+	for (int i = 0; i < defs.Count(); i++) {
+		if (defs[i].port == port) return &defs[i];
 	}
 	return nullptr;
 }
 
 void X11Context::_updateMonitors(IObserver* observer) {
-	Wx::List<MonitorInfo> currentMonitorInfos = _monitorManager->getConnectedMonitorInfos();
+	Wx::List<MonitorDef> currentMonitorDefs = _monitorManager->getConnectedMonitorDefs();
 
 	Wx::List<Wx::String> connectedPorts;
 	Wx::List<Wx::String> disconnectedPorts;
 	Wx::List<Wx::String> propertyChangedPorts;
 	Wx::List<Wx::String> stayPorts;
 
-	for (int i = 0; i < currentMonitorInfos.Count(); i++) {
-		MonitorInfo const& current = currentMonitorInfos[i];
-		MonitorInfo* old = _getMonitorInfoByPort(current.port, _monitorInfos);
+	for (int i = 0; i < currentMonitorDefs.Count(); i++) {
+		MonitorDef const& current = currentMonitorDefs[i];
+		MonitorDef* old = _getMonitorDefByPort(current.port, _monitorDefs);
 		if (old == nullptr) {
 			connectedPorts.Append(current.port);
 		} else {
@@ -843,9 +843,9 @@ void X11Context::_updateMonitors(IObserver* observer) {
 			stayPorts.Append(current.port);
 		}
 	}
-	for (int i = 0; i < _monitorInfos.Count(); i++) {
-		MonitorInfo const& old = _monitorInfos[i];
-		MonitorInfo* current = _getMonitorInfoByPort(old.port, currentMonitorInfos);
+	for (int i = 0; i < _monitorDefs.Count(); i++) {
+		MonitorDef const& old = _monitorDefs[i];
+		MonitorDef* current = _getMonitorDefByPort(old.port, currentMonitorDefs);
 		if (current == nullptr) {
 			disconnectedPorts.Append(old.port);
 		}
@@ -869,7 +869,7 @@ void X11Context::_updateMonitors(IObserver* observer) {
 		observer->onMonitorPropertyChange(event);
 	}
 
-	_monitorInfos = static_cast<Wx::List<MonitorInfo>&&>(currentMonitorInfos);
+	_monitorDefs = static_cast<Wx::List<MonitorDef>&&>(currentMonitorDefs);
 }
 
 IContext* createContext() {
