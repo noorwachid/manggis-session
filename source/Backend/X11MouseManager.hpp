@@ -30,7 +30,7 @@ private:
 	void SetQueryCursor(char const* name) {
 		xcb_cursor_t cursorId = xcb_cursor_load_cursor(_cursor, name);
 		xcb_change_window_attributes(_conn->Get(), _conn->GetScreen()->root, XCB_CW_CURSOR, &cursorId);
-		_conn->flush();
+		_conn->Flush();
 	}
 
 private:

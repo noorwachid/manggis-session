@@ -39,7 +39,7 @@ public:
 			1,
 			&x11Rect
 		);
-		_conn->flush();
+		_conn->Flush();
 	}
 
 	void Unclip(X11WindowBackend* windowBackend) {
@@ -52,7 +52,7 @@ public:
 			0,
 			XCB_NONE
 		);
-		_conn->flush();
+		_conn->Flush();
 	}
 
 private:

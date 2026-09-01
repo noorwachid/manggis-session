@@ -27,7 +27,7 @@ extern int xephyrMonitorConfiguration;
 void Session::Run(Config const& config) {
 	_config = config;
 
-	_context = createContext();
+	_context = CreateContext();
 	_observer = _context->GetSessionObserver();
 
 	_context->BindMouseButton(ModKey::Alt, MouseButton::Left);
@@ -309,14 +309,7 @@ void Session::FocusWorkspaceID(Wx::String const& id) {
 		if (ws == nullptr) {
 			continue;
 		}
-		LOG("activate workspace %s\n", id.CPtr());
-		if (previousMonitor == mon) {
-			mon->GetActiveWorkspace()->Hide();
-		}
-		FocusMonitor(mon);
-		mon->FocusWorkspace(ws);
-		_observer->OnWorkspaceFocus(ws);
-		mon->GetActiveWorkspace()->Show();
+		FocusWorkspace(ws);
 		return;
 	}
 	LOG("no workspace with id %s\n", id.CPtr());
@@ -333,6 +326,18 @@ void Session::FocusWorkspace(Workspace* workspace) {
 	FocusMonitor(mon);
 	mon->FocusWorkspace(workspace);
 	_observer->OnWorkspaceFocus(workspace);
+
+	// if workspace is empty move the cursor in the middle of monitor
+	if (workspace->GetWindowList().IsEmpty()) {
+		// TODO: make it configurable 
+		if (true) {
+			Rect rect = mon->GetWorkingRect();
+			Point point;
+			point.x = rect.x + (rect.width / 2);
+			point.y = rect.y + (rect.height / 2);
+			_context->SetMousePos(point);
+		}
+	}
 	LOG("activate workspace %s\n", workspace->GetID().CPtr());
 }
 
@@ -405,6 +410,15 @@ void Session::FocusWindow(Window* window) {
 	FocusWorkspace(ws);
 	ws->FocusWindow(window);
 	_observer->OnWindowFocus(window);
+
+	// TODO: make it configurable 
+	if (true) {
+		Rect rect = window->GetRect();
+		Point point;
+		point.x = rect.x + (rect.width / 2);
+		point.y = rect.y + (rect.height / 2);
+		_context->SetMousePos(point);
+	}
 }
 
 static int CalculateCrossSurface(int a1, int a2, int b1, int b2) {
@@ -641,7 +655,7 @@ void Session::CycleNextWindow() {
 	}
 	if (idx == -1) return;
 	Window* nextWindow = windows[(idx + 1) % windows.Count()];
-	workspace->FocusWindow(nextWindow);
+	FocusWindow(nextWindow);
 }
 
 void Session::CyclePreviousWindow() {
@@ -660,7 +674,7 @@ void Session::CyclePreviousWindow() {
 	}
 	if (idx == -1) return;
 	Window* nextWindow = windows[(idx + windows.Count() - 1) % windows.Count()];
-	workspace->FocusWindow(nextWindow);
+	FocusWindow(nextWindow);
 }
 
 void Session::CloseWindow() {

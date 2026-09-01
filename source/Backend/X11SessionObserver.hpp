@@ -18,17 +18,17 @@ public:
 			list.Append(workspaces[i]->GetID());
 		}
 		_hint->SetWorkspaces(list);
-		_conn->flush();
+		_conn->Flush();
 	}
 
 	virtual void OnWorkspaceFocus(Workspace* workspace) override {
 		_hint->SetActiveWorkspace(workspace->GetID());
-		_conn->flush();
+		_conn->Flush();
 	}
 
 	virtual void OnWindowFocus(Window* window) override {
 		xcb_set_input_focus(_conn->Get(), XCB_INPUT_FOCUS_POINTER_ROOT, ((X11WindowBackend*) window->GetBackend())->getClientHandle(), XCB_CURRENT_TIME);
-		_conn->flush();
+		_conn->Flush();
 	}
 
 public:

@@ -30,7 +30,7 @@ public:
 		return _root;
 	}
 
-	void flush() {
+	void Flush() {
 		xcb_flush(_conn);
 	}
 

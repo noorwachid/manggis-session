@@ -65,12 +65,12 @@ void X11Context::BindMouseButton(ModKey modKey, MouseButton button) {
 		XCB_GRAB_MODE_ASYNC, 
 		_conn->GetRoot(), XCB_NONE, FromMouseButton(button), FromModKey(modKey)
 	);
-	_conn->flush();
+	_conn->Flush();
 }
 
 void X11Context::UnbindMouseButton(ModKey modKey, MouseButton button) {
 	xcb_ungrab_button(_conn->Get(), FromMouseButton(button), _conn->GetRoot(), FromModKey(modKey));
-	_conn->flush();
+	_conn->Flush();
 }
 
 void X11Context::BindMouseMovement() {
@@ -80,12 +80,12 @@ void X11Context::BindMouseMovement() {
 		XCB_EVENT_MASK_BUTTON_MOTION,
 		XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC, _conn->GetRoot(), XCB_NONE, XCB_CURRENT_TIME
 	);
-	_conn->flush();
+	_conn->Flush();
 }
 
 void X11Context::UnbindMouseMovement() {
 	xcb_ungrab_pointer(_conn->Get(), XCB_CURRENT_TIME);
-	_conn->flush();
+	_conn->Flush();
 }
 
 void X11Context::BindKey(ModKey modKey, Key key) {
@@ -100,6 +100,8 @@ void X11Context::BindKey(ModKey modKey, Key key) {
 		return;
 	}
 
+	LOG("BINDING %08X, %08X\n", binding.modKeyCode, binding.keyCode);
+
 	_keyBindings.Append(binding);
 	_codeToKey.Set(binding.keyCode, binding.key);
 
@@ -109,7 +111,7 @@ void X11Context::BindKey(ModKey modKey, Key key) {
 		binding.keyCode,
 		XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC
 	);
-	_conn->flush();
+	_conn->Flush();
 }
 
 void X11Context::UnbindKey(ModKey modKey, Key key) {
@@ -122,7 +124,7 @@ void X11Context::UnbindKey(ModKey modKey, Key key) {
 		_conn->GetScreen()->root,
 		modKeyCode
 	);
-	_conn->flush();
+	_conn->Flush();
 }
 
 void X11Context::BindModKey(ModKey modKey) {
@@ -148,7 +150,7 @@ Point X11Context::GetMousePos() {
 
 void X11Context::SetMousePos(Point point) {
 	xcb_warp_pointer(_conn->Get(), XCB_NONE, _conn->GetRoot(), 0, 0, 0, 0, point.x, point.y);
-	_conn->flush();
+	_conn->Flush();
 }
 
 Wx::List<MonitorDef> X11Context::GetConnectedMonitorDefs() {
@@ -196,7 +198,7 @@ void X11Context::Run(IObserver* observer) {
 
 					if (attr == nullptr) {
 						xcb_map_window(_conn->Get(), e->window);
-						_conn->flush();
+						_conn->Flush();
 						break;
 					}
 					bool unmanaged = attr->override_redirect;
@@ -204,7 +206,7 @@ void X11Context::Run(IObserver* observer) {
 					if (unmanaged) {
 						LOG("[x11] unmanaged map request\n");
 						xcb_map_window(_conn->Get(), e->window);
-						_conn->flush();
+						_conn->Flush();
 						break;
 					}
 
@@ -239,41 +241,7 @@ void X11Context::Run(IObserver* observer) {
 				Window* window = QueryWindowByClient(e->window);
 				if (window) {
 					X11WindowBackend* backend = (X11WindowBackend*) window->GetBackend();
-					backend->notifyClient();
-					// uint16_t mask = 0;
-					// uint32_t values[7];
-					// uint32_t i = 0;
-					// if (e->value_mask & XCB_CONFIG_WINDOW_X) {
-					// 	mask |= XCB_CONFIG_WINDOW_X;
-					// 	values[i++] = e->x;
-					// }
-					// if (e->value_mask & XCB_CONFIG_WINDOW_Y) {
-					// 	mask |= XCB_CONFIG_WINDOW_Y;
-					// 	values[i++] = e->y;
-					// }
-					// if (e->value_mask & XCB_CONFIG_WINDOW_WIDTH) {
-					// 	mask |= XCB_CONFIG_WINDOW_WIDTH;
-					// 	values[i++] = e->width;
-					// }
-					// if (e->value_mask & XCB_CONFIG_WINDOW_HEIGHT) {
-					// 	mask |= XCB_CONFIG_WINDOW_HEIGHT;
-					// 	values[i++] = e->height; 
-					// }
-					// if (e->value_mask & XCB_CONFIG_WINDOW_BORDER_WIDTH) {
-					// 	mask |= XCB_CONFIG_WINDOW_BORDER_WIDTH;
-					// 	values[i++] = e->border_width;
-					// }
-					// if (e->value_mask & XCB_CONFIG_WINDOW_SIBLING) {
-					// 	mask |= XCB_CONFIG_WINDOW_SIBLING;
-					// 	values[i++] = e->sibling;
-					// }
-					// if (e->value_mask & XCB_CONFIG_WINDOW_STACK_MODE) {
-					// 	mask |= XCB_CONFIG_WINDOW_STACK_MODE;
-					// 	values[i++] = e->stack_mode;
-					// }
-					//
-					// xcb_configure_window(_conn->get(), ((X11WindowBackend*) window->getBackend())->getFrameHandle(), mask, values);
-					// _conn->flush();
+					backend->NotifyClient();
 					break;
 				}
 				uint16_t mask = 0;
@@ -310,7 +278,7 @@ void X11Context::Run(IObserver* observer) {
 				}
 
 				xcb_configure_window(_conn->Get(), e->window, mask, values);
-				_conn->flush();
+				_conn->Flush();
 				break;
 			}
 
@@ -356,7 +324,7 @@ void X11Context::Run(IObserver* observer) {
 				if (window == nullptr) {
 					break;
 				}
-				((X11WindowBackend*)window->GetBackend())->draw();
+				((X11WindowBackend*)window->GetBackend())->Draw();
 				break;
 			}
 
@@ -373,7 +341,7 @@ void X11Context::Run(IObserver* observer) {
 
 				if (e->detail == 1 && e->state == 0) {
 					xcb_allow_events(_conn->Get(), XCB_ALLOW_REPLAY_POINTER, e->time);
-					_conn->flush();
+					_conn->Flush();
 				}
 
 				observer->OnMousePress(event);
@@ -748,7 +716,7 @@ void X11Context::AttachKeyBindings() {
 			XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC
 		);
 	}
-	_conn->flush();
+	_conn->Flush();
 }
 
 void X11Context::DetachKeyBindings() {
@@ -763,7 +731,7 @@ void X11Context::DetachKeyBindings() {
 			binding.modKeyCode
 		);
 	}
-	_conn->flush();
+	_conn->Flush();
 }
 
 void X11Context::UpdateKeyBindings() {
@@ -810,7 +778,7 @@ void X11Context::GrabWholeKeyboard() {
 
 void X11Context::UngrabWholeKeyboard() {
 	xcb_ungrab_keyboard(_conn->Get(), XCB_CURRENT_TIME);
-	_conn->flush();
+	_conn->Flush();
 }
 
 MonitorDef* X11Context::QueryMonitorDefByPort(Wx::String const& port, Wx::List<MonitorDef>& defs) {
@@ -872,7 +840,7 @@ void X11Context::UpdateMonitors(IObserver* observer) {
 	_monitorDefs = static_cast<Wx::List<MonitorDef>&&>(currentMonitorDefs);
 }
 
-IContext* createContext() {
+IContext* CreateContext() {
 	return new X11Context();
 }
 

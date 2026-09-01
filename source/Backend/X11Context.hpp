@@ -27,7 +27,7 @@ struct X11KeyBinding {
 	ModKey modKey;
 	Key key;
 	xcb_keycode_t keyCode = 0;
-	int modKeyCode = 0;
+	int modKeyCode = 1;
 };
 
 class X11Context: public IContext {

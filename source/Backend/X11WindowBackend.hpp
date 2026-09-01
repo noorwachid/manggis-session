@@ -26,7 +26,7 @@ namespace windowstyle {
 class X11WindowBackend: public IWindowBackend {
 public:
 	X11WindowBackend(X11Connection* conn, X11Hint* hint, xcb_window_t handle): _conn{conn}, _hint{hint}, _client{handle} {
-		_reparent();
+		Reparent();
 	}
 
 	virtual Rect GetRect() override {
@@ -55,7 +55,7 @@ public:
 	virtual void Raise() override {
 		uint32_t value = XCB_STACK_MODE_ABOVE;
 		xcb_configure_window(_conn->Get(), _frame, XCB_CONFIG_WINDOW_STACK_MODE, &value);
-		_conn->flush();
+		_conn->Flush();
 	}
 
 	virtual void Move(int x, int y) override {
@@ -63,8 +63,8 @@ public:
 		values[0] = x;
 		values[1] = y;
 		xcb_configure_window(_conn->Get(), _frame, XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y, values);
-		_conn->flush();
-		notifyClient();
+		_conn->Flush();
+		NotifyClient();
 	}
 
 	virtual void Resize(int width, int height) override {
@@ -81,37 +81,37 @@ public:
 			(uint32_t)height - _prop.titlebarHeight,
 		};
 		xcb_configure_window(_conn->Get(), _client, XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT, clientValues);
-		_conn->flush();
-		notifyClient();
-		draw();
+		_conn->Flush();
+		NotifyClient();
+		Draw();
 	}
 
 	virtual void Show() override {
 		xcb_map_window(_conn->Get(), _frame);
 		xcb_map_window(_conn->Get(), _client);
-		_conn->flush();
+		_conn->Flush();
 	}
 
 	virtual void Hide() override {
 		xcb_unmap_window(_conn->Get(), _frame);
-		_conn->flush();
+		_conn->Flush();
 	}
 
 	virtual void Focus() override {
 		_prop.borderColor = windowstyle::active::borderColor;
 		_prop.titlebarColor = windowstyle::active::titlebarColor;
-		draw();
+		Draw();
 	}
 
 	virtual void Blur() override {
 		_prop.borderColor = windowstyle::inactive::borderColor;
 		_prop.titlebarColor = windowstyle::inactive::titlebarColor;
-		draw();
+		Draw();
 	}
 
 	virtual void Close() override {
 		_hint->CloseWindow(_client);
-		_conn->flush();
+		_conn->Flush();
 	}
 
 	xcb_window_t getFrameHandle() {
@@ -138,7 +138,7 @@ public:
 		return _prop.titlebarHeight;
 	}
 
-	void draw() {
+	void Draw() {
 		xcb_change_window_attributes(
 			_conn->Get(),
 			_frame,
@@ -162,10 +162,10 @@ public:
 
 		xcb_change_gc(_conn->Get(), _gc, XCB_GC_FOREGROUND, &_prop.titlebarColor);
 		xcb_poly_fill_rectangle(_conn->Get(), _frame, _gc, 1, &rect);
-		_conn->flush();
+		_conn->Flush();
 	}
 
-	void notifyClient() {
+	void NotifyClient() {
 		Rect rect = GetRect();
 		xcb_configure_notify_event_t event {};
 		event.response_type = XCB_CONFIGURE_NOTIFY;
@@ -179,12 +179,12 @@ public:
 		event.above_sibling = XCB_NONE;
 		event.override_redirect = 0;
 		xcb_send_event(_conn->Get(), 0, _client, XCB_EVENT_MASK_STRUCTURE_NOTIFY, (const char *)&event);
-		_conn->flush();
+		_conn->Flush();
 	}
 
 
 private:
-	void _reparent() {
+	void Reparent() {
 		_frame = xcb_generate_id(_conn->Get());
 		
 		if (_hint->IsWindowDecorated(_client)) {
@@ -238,7 +238,7 @@ private:
 
 		_hint->SetWindowFrame(_client, _prop.borderWidth, _prop.borderWidth + _prop.titlebarHeight, _prop.borderWidth, _prop.borderWidth);
 
-		_conn->flush();
+		_conn->Flush();
 	}
 
 private:

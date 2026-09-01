@@ -95,18 +95,18 @@ Wx::List<MonitorDef> X11MonitorManager::GetConnectedMonitorDefs() {
 	Wx::List<MonitorDef> defs;
 
 	for (int i = 0; i < outputSize; i++) {
-		xcb_randr_get_output_def_cookie_t outCookie = xcb_randr_get_output_def(_conn->Get(), outputs[i], XCB_CURRENT_TIME);
-		xcb_randr_get_output_def_reply_t* out = xcb_randr_get_output_def_reply(_conn->Get(), outCookie, NULL);
+		xcb_randr_get_output_info_cookie_t outCookie = xcb_randr_get_output_info(_conn->Get(), outputs[i], XCB_CURRENT_TIME);
+		xcb_randr_get_output_info_reply_t* out = xcb_randr_get_output_info_reply(_conn->Get(), outCookie, NULL);
 
 		if (!out) continue;
 
 		if (out->connection == XCB_RANDR_CONNECTION_CONNECTED) {
-			char *name = (char *)xcb_randr_get_output_def_name(out);
-			int nameSize = xcb_randr_get_output_def_name_length(out);
+			char *name = (char *)xcb_randr_get_output_info_name(out);
+			int nameSize = xcb_randr_get_output_info_name_length(out);
 
 			if (out->crtc != XCB_NONE) {
-				xcb_randr_get_crtc_def_cookie_t crtcCookie = xcb_randr_get_crtc_def(_conn->Get(), out->crtc, XCB_CURRENT_TIME);
-				xcb_randr_get_crtc_def_reply_t* crtc = xcb_randr_get_crtc_def_reply(_conn->Get(), crtcCookie, NULL);
+				xcb_randr_get_crtc_info_cookie_t crtcCookie = xcb_randr_get_crtc_info(_conn->Get(), out->crtc, XCB_CURRENT_TIME);
+				xcb_randr_get_crtc_info_reply_t* crtc = xcb_randr_get_crtc_info_reply(_conn->Get(), crtcCookie, NULL);
 
 				if (crtc) {
 					Wx::String port(nameSize, (Wx::Byte const*)name);

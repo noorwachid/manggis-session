@@ -97,6 +97,8 @@ public:
 
 	Window* FindNearestWindow(Window* window, Direction direction, bool onlyParallelWindow);
 
+	Monitor* FindNearestMonitor(Monitor* window, Direction direction, bool onlyParallelWindow);
+
 	void CycleNextWindow();
 
 	void CyclePreviousWindow();

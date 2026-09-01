@@ -1,16 +1,16 @@
 # Manggis Session
 
 - [ ] window management
-  - [ ] reparent
-  - [ ] dragging
-    - [ ] drag window position
-    - [ ] drag across monitor
+  - [x] reparent
+  - [x] dragging
+    - [x] drag window position
+    - [x] drag across monitor
   - [ ] size constrain
   - [ ] no decoration
   - [ ] unmanaged (splash screen, notification, etc.)
   - [ ] padding calculation, (statusbar, dock, etc.)
-- [ ] workspace management
-  - [ ] clip window per monitor, detect the most window area to drop
+- [x] workspace management
+  - [x] clip window per monitor, detect the most window area to drop
 - [ ] monitor management
   - [ ] add new workspace if no configuration available
   - [ ] move the workspace of the disconnected monitor to the primary monitor
@@ -19,7 +19,7 @@
 - [ ] backend
   - [ ] x11
     - [ ] input management
-      - [ ] keyboard independent layout
+      - [x] keyboard independent layout
       - [ ] cursor shape management
     - [ ] monitor connection management
     - [ ] implement extended-hints

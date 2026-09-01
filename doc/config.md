@@ -46,35 +46,35 @@ when called `( focus: "east" )` it will focus on number 3 and automatically focu
 ### Example
 ```
 (
-	bindings: [
+	bindings: {
 
-		( key: "alt + return", exec: ["xterm"] ),
-		( key: "alt + space", exec: ["dmenu"] ),
+		"super + return": ( exec: ["xterm"] ),
+		"super + space":  ( exec: ["dmenu"] ),
 
-		( key: "alt + backspace", closeWindow: null ),
+		"super + backspace": ( closeWindow: null ),
 
-		( key: "alt + left", focusWindow: "west" ),
-		( key: "alt + right", focusWindow: "east" ),
-		( key: "alt + up", focusWindow: "north" ),
-		( key: "alt + down", focusWindow: "south" ),
+		"super + left":  ( focusWindow: "west" ),
+		"super + right": ( focusWindow: "east" ),
+		"super + up":    ( focusWindow: "north" ),
+		"super + down":  ( focusWindow: "south" ),
 
-		( key: "alt + shift + left", tileWindow: [0.0, 0.0, 0.5, 1.0] ),
-		( key: "alt + shift + right", tileWindow: [0.5, 0.0, 0.5, 1.0] ),
-		( key: "alt + shift + up", maximizeWindow: null ),
-		( key: "alt + shift + down", restoreWindow: null ),
+		"super + shift + left":  ( tileWindow: [0.0, 0.0, 0.5, 1.0] ),
+		"super + shift + right": ( tileWindow: [0.5, 0.0, 0.5, 1.0] ),
+		"super + shift + up":    ( maximizeWindow: null ),
+		"super + shift + down":  ( restoreWindow: null ),
 
-		( key: "alt + 1", focusWorkspace: "1" ),
-		( key: "alt + 2", focusWorkspace: "2" ),
-		( key: "alt + 3", focusWorkspace: "3" ),
-		( key: "alt + 4", focusWorkspace: "4" ),
-		( key: "alt + 5", focusWorkspace: "5" ),
+		"super + 1": ( focusWorkspace: "1" ),
+		"super + 2": ( focusWorkspace: "2" ),
+		"super + 3": ( focusWorkspace: "3" ),
+		"super + 4": ( focusWorkspace: "4" ),
+		"super + 5": ( focusWorkspace: "5" ),
 
-		( key: "alt + shift + 1", sendWindowToWorkspace: "1" ),
-		( key: "alt + shift + 2", sendWindowToWorkspace: "2" ),
-		( key: "alt + shift + 3", sendWindowToWorkspace: "3" ),
-		( key: "alt + shift + 4", sendWindowToWorkspace: "4" ),
-		( key: "alt + shift + 5", sendWindowToWorkspace: "5" ),
+		"super + shift + 1": ( sendWindowToWorkspace: "1" ),
+		"super + shift + 2": ( sendWindowToWorkspace: "2" ),
+		"super + shift + 3": ( sendWindowToWorkspace: "3" ),
+		"super + shift + 4": ( sendWindowToWorkspace: "4" ),
+		"super + shift + 5": ( sendWindowToWorkspace: "5" ),
 
-	],
+	},
 )
 ```
