@@ -7,6 +7,7 @@
 #include "Input/Key.hpp"
 #include "OS/Exec.hpp"
 #include <climits>
+#include <cstdlib>
 
 bool operator==(KeyIndex a, KeyIndex b) {
 	return a.modKey == b.modKey && a.key == b.key;
@@ -406,24 +407,52 @@ void Session::FocusWindow(Window* window) {
 	_observer->OnWindowFocus(window);
 }
 
+static int CalculateCrossSurface(int a1, int a2, int b1, int b2) {
+	const int start = Helper::Max(a1, b1);
+    const int end   = Helper::Min(a2, b2);
+    return Helper::Max(0, end - start);
+}
+
 void Session::FocusNearestWindow(Direction direction) {
 	LOG("FOCUS NEAREST WINDOW %d\n", (int) direction);
-	Workspace* workspace = _activeMonitor->GetActiveWorkspace();
-	Window* sourceWindow = workspace->GetActiveWindow();
+	Window* sourceWindow = _activeMonitor->GetActiveWorkspace()->GetActiveWindow();
 	if (sourceWindow == nullptr) return;
 
-	Rect sourceRect = sourceWindow->GetRect();
+	Window* nearestWindow = FindNearestWindow(sourceWindow, direction, true);
+	if (nearestWindow != nullptr) {
+		FocusWindow(nearestWindow);
+		return;
+	}
+	Window* nearestNonParalellWindow = FindNearestWindow(sourceWindow, direction, false);
+	if (nearestNonParalellWindow != nullptr) {
+		FocusWindow(nearestNonParalellWindow);
+		return;
+	}
+	// TODO: find other monitor
+}
+
+Window* Session::FindNearestWindow(Window* window, Direction direction, bool onlyParallelWindow) {
+	Workspace* workspace = window->GetWorkspace();
+	Window* sourceWindow = window;
+	if (sourceWindow == nullptr) return nullptr;
+
+	Rect source = sourceWindow->GetRect();
 
 	int shortestDistance = INT_MAX;
 	Window* shortestWindow = nullptr;
+
+	int largestSurface = 0;
+	int errorLimit = 20;
 
 	if (direction == Direction::East) {
 		for (int i = 0; i < workspace->GetWindowList().Count(); i++) {
 			Window* targetWindow = workspace->GetWindowList()[i];
 			if (targetWindow == sourceWindow) continue;
 
-			Rect targetRect = targetWindow->GetRect();
+			Rect target = targetWindow->GetRect();
 			int distance = 0;
+			int surface = CalculateCrossSurface(source.y, source.y + source.height, target.y, target.y + target.height);
+			if (onlyParallelWindow && surface == 0) continue;
 
 			// partial overlap but target is visible
 			// +---+
@@ -431,10 +460,7 @@ void Session::FocusNearestWindow(Direction direction) {
 			// | |    |
 			// | +----+
 			// +---+
-			if (IsInsideRange(sourceRect.x + sourceRect.width, targetRect.x, targetRect.x + targetRect.width)) {
-				distance = (targetRect.x) - (sourceRect.x);
-			}
-
+			bool partialOverlap = IsInsideRange(source.x + source.width, target.x, target.x + target.width);
 
 			// non overlap
 			// +---+
@@ -442,13 +468,24 @@ void Session::FocusNearestWindow(Direction direction) {
 			// |   | |    |
 			// |   | +----+
 			// +---+
-			if (targetRect.x >= sourceRect.x + sourceRect.width) {
-				distance = (targetRect.x) - (sourceRect.x);
+			bool nonOverlap = target.x >= source.x + source.width;
+
+			if (partialOverlap || nonOverlap) {
+				distance = (target.x) - (source.x);
 			}
 
-			if (distance > 0 && shortestDistance > distance) {
-				shortestDistance = distance;
-				shortestWindow = targetWindow;
+			if (distance > 0) {
+				if (abs(shortestDistance - distance) <= errorLimit) {
+					if (largestSurface <= surface) {
+						largestSurface = surface;
+						shortestDistance = distance;
+						shortestWindow = targetWindow;
+					}
+				} else if (shortestDistance > distance) {
+					largestSurface = surface;
+					shortestDistance = distance;
+					shortestWindow = targetWindow;
+				}
 			}
 		}
 	} else if (direction == Direction::West) {
@@ -456,18 +493,136 @@ void Session::FocusNearestWindow(Direction direction) {
 			Window* targetWindow = workspace->GetWindowList()[i];
 			if (targetWindow == sourceWindow) continue;
 
-			Rect targetRect = targetWindow->GetRect();
-			int distance = (sourceRect.x) - (targetRect.x + targetRect.width) ;
-			if (distance > 0 && shortestDistance > distance) {
-				shortestDistance = distance;
-				shortestWindow = targetWindow;
+			Rect target = targetWindow->GetRect();
+			int distance = 0;
+			int surface = CalculateCrossSurface(source.y, source.y + source.height, target.y, target.y + target.height);
+			if (onlyParallelWindow && surface == 0) continue;
+
+			// partial overlap but target is visible
+			//    +---+
+			// +----+ |
+			// |    | |
+			// +----+ |
+			//    +---+
+			bool partialOverLap = IsInsideRange(source.x, target.x, target.x + target.width);
+
+			// non overlap
+			//        +---+
+			// +----+ |   | 
+			// |    | |   | 
+			// +----+ |   | 
+			//        +---+
+			bool nonOverlap = target.x + target.width <= source.x;
+
+			if (partialOverLap || nonOverlap) {
+				distance = (source.x + source.width) - (target.x + target.width);
+			}
+
+			if (distance > 0) {
+				if (abs(shortestDistance - distance) <= errorLimit) {
+					if (largestSurface <= surface) {
+						largestSurface = surface;
+						shortestDistance = distance;
+						shortestWindow = targetWindow;
+					}
+				} else if (shortestDistance > distance) {
+					largestSurface = surface;
+					shortestDistance = distance;
+					shortestWindow = targetWindow;
+				}
+			}
+		}
+	} else if (direction == Direction::South) {
+		for (int i = 0; i < workspace->GetWindowList().Count(); i++) {
+			Window* targetWindow = workspace->GetWindowList()[i];
+			if (targetWindow == sourceWindow) continue;
+
+			Rect target = targetWindow->GetRect();
+			int distance = 0;
+			int surface = CalculateCrossSurface(source.x, source.x + source.width, target.x, target.x + target.width);
+			if (onlyParallelWindow && surface == 0) continue;
+
+			// partial overlap but target is visible
+			// +--------+
+			// | +----+ |
+			// +-|    |-+
+			//   +----+
+			bool partialOverLap = IsInsideRange(source.y + source.height, target.y, target.y + target.height);
+
+			// non overlap
+			// +---------+
+			// |         |
+			// +---------+
+			//   +----+
+			//   |    |
+			//   +----+
+			bool nonOverlap = target.y >= source.y + source.height;
+
+			if (partialOverLap || nonOverlap) {
+				distance = (target.y) - (source.y);
+			}
+
+			if (distance > 0) {
+				if (abs(shortestDistance - distance) <= errorLimit) {
+					if (largestSurface <= surface) {
+						largestSurface = surface;
+						shortestDistance = distance;
+						shortestWindow = targetWindow;
+					}
+				} else if (shortestDistance > distance) {
+					largestSurface = surface;
+					shortestDistance = distance;
+					shortestWindow = targetWindow;
+				}
+			}
+		}
+	} else if (direction == Direction::North) {
+		for (int i = 0; i < workspace->GetWindowList().Count(); i++) {
+			Window* targetWindow = workspace->GetWindowList()[i];
+			if (targetWindow == sourceWindow) continue;
+
+			Rect target = targetWindow->GetRect();
+			int distance = 0;
+			int surface = CalculateCrossSurface(source.x, source.x + source.width, target.x, target.x + target.width);
+			if (onlyParallelWindow && surface == 0) continue;
+
+			// partial overlap but target is visible
+			//   +----+  
+			// +-|    |-+
+			// | +----+ |
+			// +--------+
+			bool partialOverLap = IsInsideRange(source.y, target.y, target.y + target.height);
+
+			// non overlap
+			//   +----+
+			//   |    |
+			//   +----+
+			// +---------+
+			// |         |
+			// +---------+
+			bool nonOverlap = target.y + target.height <= source.y;
+
+			if (partialOverLap || nonOverlap) {
+				distance = (source.y + source.height) - (target.y + target.height);
+			}
+
+			if (distance > 0) {
+				if (abs(shortestDistance - distance) <= errorLimit) {
+					if (largestSurface <= surface) {
+						largestSurface = surface;
+						shortestDistance = distance;
+						shortestWindow = targetWindow;
+					}
+				} else if (shortestDistance > distance) {
+					largestSurface = surface;
+					shortestDistance = distance;
+					shortestWindow = targetWindow;
+				}
 			}
 		}
 	}
 
-	if (shortestWindow) {
-		FocusWindow(shortestWindow);
-	}
+	return shortestWindow;
 }
 
 void Session::CycleNextWindow() {

@@ -95,6 +95,8 @@ public:
 
 	void FocusNearestWindow(Direction direction);
 
+	Window* FindNearestWindow(Window* window, Direction direction, bool onlyParallelWindow);
+
 	void CycleNextWindow();
 
 	void CyclePreviousWindow();
@@ -102,6 +104,7 @@ public:
 	void CloseWindow();
 
 private:
+
 	void BeginDrag(DragMode mode, Window* window, WindowResizingArea area = WindowResizingArea::None);
 
 	void DoCommand(ConfigCommand const& command);
