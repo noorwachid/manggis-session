@@ -10,8 +10,8 @@ Rect X11WindowBackend::getRect() {
 	Rect rect;
 	rect.x = geom->x;
 	rect.y = geom->y;
-	rect.width = geom->width;
-	rect.height = geom->height;
+	rect.width = geom->width + 2 * _prop.borderWidth;
+	rect.height = geom->height + 2 * _prop.borderWidth;
 	free(geom);
 	return rect;
 }

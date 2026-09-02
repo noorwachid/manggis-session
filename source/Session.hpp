@@ -32,11 +32,21 @@ struct KeyIndex {
 	Key key;
 };
 
+struct MouseIndex {
+	ModKey modKey;
+};
+
 using KeyCallback = wx::Func<void()>;
+
+using MouseCallback = wx::Func<void(Window* window)>;
 
 bool operator==(KeyIndex a, KeyIndex b);
 
+bool operator==(MouseIndex a, MouseIndex b);
+
 wx::Uint32 getHash(KeyIndex index);
+
+wx::Uint32 getHash(MouseIndex index);
 
 class Monitor;
 
@@ -49,7 +59,7 @@ class Session: public IObserver {
 public:
 	void run(Config const& config);
 
-	ConfigBinding const* queryBinding(ModKey modKey, Key key);
+	KeyBinding const* queryBinding(ModKey modKey, Key key);
 
 	virtual void onWindowCreate(WindowEvent const& e) override;
 
@@ -109,7 +119,9 @@ private:
 
 	void _beginDrag(DragMode mode, Window* window, WindowResizingArea area = WindowResizingArea::None);
 
-	void _doCommand(ConfigCommand const& command);
+	void _doCommand(Command const& command);
+
+	void _doMouseCommand(CommandFunc func, Window* window);
 
 	Monitor* _queryMonitorByPort(wx::String const& port);
 
@@ -139,4 +151,5 @@ private:
 	wx::List<Workspace*> _workspaceDB;
 
 	wx::HashTable<KeyIndex, KeyCallback> _keyBindings;
+	wx::HashTable<MouseIndex, MouseCallback> _mouseBindings;
 };

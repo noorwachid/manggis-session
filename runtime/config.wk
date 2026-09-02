@@ -11,6 +11,9 @@
 
 	bindings: {
 
+		"ctrl + drag":       ( moveWindow: null ),
+		"ctrl + alt + drag": ( resizeWindow: null ),
+
 		"alt + return": ( exec: ["xterm"] ),
 		"alt + space":  ( exec: ["dmenu"] ),
 

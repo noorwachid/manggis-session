@@ -1,6 +1,7 @@
 #pragma once
 
 #include "input/Key.hpp"
+#include "input/MouseButton.hpp"
 #include "wx/core/List.hpp"
 #include "wx/core/String.hpp"
 #include "wx/serializer/WkValue.hpp"
@@ -10,7 +11,7 @@ struct ConfigWorkspace {
 	wx::List<wx::String> ports;
 };
 
-enum struct ConfigCommandFunc {
+enum struct CommandFunc {
 	None, 
 
 	Exec,
@@ -22,26 +23,35 @@ enum struct ConfigCommandFunc {
 	MaximizeWindow,
 	RestoreWindow,
 
+	MoveWindow,
+	ResizeWindow,
+
 	FocusWorkspace,
 	SendWindowToWorkspace,
 
 	Quit,
 };
 
-struct ConfigCommand {
-	ConfigCommandFunc func = ConfigCommandFunc::None;
+struct Command {
+	CommandFunc func = CommandFunc::None;
 	wx::WkValue arguments;
 };
 
-struct ConfigBinding {
+struct KeyBinding {
 	ModKey modKey = ModKey::None;
 	Key key = Key::None;
-	wx::List<ConfigCommand> commands;
+	wx::List<Command> commands;
+};
+
+struct MouseBinding {
+	ModKey modKey = ModKey::None;
+	CommandFunc func;
 };
 
 struct Config {
 	wx::List<ConfigWorkspace> workspaces;
-	wx::List<ConfigBinding> bindings;
+	wx::List<KeyBinding> keyBindings;
+	wx::List<MouseBinding> mouseBindings;
 
-	wx::List<ConfigCommand> autostarts;
+	wx::List<Command> autostarts;
 };

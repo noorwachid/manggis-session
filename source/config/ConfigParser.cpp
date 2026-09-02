@@ -71,7 +71,7 @@ Config parseConfig(wx::WkValue const& value) {
 		void parseBinding(wx::String const& key, wx::WkValue const& value) {
 			if (!value.isTuple()) return;
 
-			ConfigBinding binding;
+			KeyBinding binding;
 
 			wx::HashTable<wx::String, wx::WkValue> const& tup = value.asTuple();
 
@@ -91,6 +91,28 @@ Config parseConfig(wx::WkValue const& value) {
 			}
 			Key k = stringToKey(wx::String(spans.getLast().count(), spans.getLast().ptr()));
 			if (k == Key::None) {
+				wx::String last(spans.getLast().count(), spans.getLast().ptr());
+				if (last == "drag") {
+					wx::WkValue* moveWindow = tup.getOrNull("moveWindow");
+					if (moveWindow != nullptr) {
+						MouseBinding binding;
+						binding.func = CommandFunc::MoveWindow;
+						binding.modKey = modKey;
+						config.mouseBindings.append(binding);
+						return;
+					}
+					wx::WkValue* resizeWindow = tup.getOrNull("resizeWindow");
+					if (resizeWindow != nullptr) {
+						MouseBinding binding;
+						binding.func = CommandFunc::ResizeWindow;
+						binding.modKey = modKey;
+						config.mouseBindings.append(binding);
+						return;
+					}
+					LOG("[config] invalid drag command: %s\n", key.cptr());
+					return;
+				}
+
 				LOG("[config] invalid key: %s\n", key.cptr());
 				return;
 			}
@@ -98,19 +120,17 @@ Config parseConfig(wx::WkValue const& value) {
 			binding.modKey = modKey;
 			binding.key = k;
 
-			ConfigCommand command = parseCommand(tup);
-			if (command.func != ConfigCommandFunc::None) {
-				binding.commands.append(command);
-			}
-
-			if (binding.commands.isEmpty()) {
+			Command command = parseCommand(tup);
+			if (command.func == CommandFunc::None) {
+				LOG("[config] invalid command for key: %s\n", key.cptr());
 				return;
 			}
 
-			config.bindings.append(binding);
+			binding.commands.append(command);
+			config.keyBindings.append(binding);
 		}
 
-		ConfigCommand parseCommand(wx::HashTable<wx::String, wx::WkValue> const& tup) {
+		Command parseCommand(wx::HashTable<wx::String, wx::WkValue> const& tup) {
 			if (tup.count() != 1) {
 				LOG("[config] invalid command, expect tuple with single key as command func\n");
 				return {};
@@ -129,8 +149,8 @@ Config parseConfig(wx::WkValue const& value) {
 						}
 					}
 
-					ConfigCommand command;
-					command.func = ConfigCommandFunc::Exec;
+					Command command;
+					command.func = CommandFunc::Exec;
 					command.arguments = *exec;
 
 					return command;
@@ -145,8 +165,8 @@ Config parseConfig(wx::WkValue const& value) {
 						return {};
 					}
 
-					ConfigCommand command;
-					command.func = ConfigCommandFunc::CloseWindow;
+					Command command;
+					command.func = CommandFunc::CloseWindow;
 					return command;
 				}
 			}
@@ -159,8 +179,8 @@ Config parseConfig(wx::WkValue const& value) {
 						return {};
 					}
 
-					ConfigCommand command;
-					command.func = ConfigCommandFunc::CycleNextWindow;
+					Command command;
+					command.func = CommandFunc::CycleNextWindow;
 					return command;
 				}
 			}
@@ -173,8 +193,8 @@ Config parseConfig(wx::WkValue const& value) {
 						return {};
 					}
 
-					ConfigCommand command;
-					command.func = ConfigCommandFunc::CyclePreviousWindow;
+					Command command;
+					command.func = CommandFunc::CyclePreviousWindow;
 					return command;
 				}
 			}
@@ -202,8 +222,8 @@ Config parseConfig(wx::WkValue const& value) {
 						return {};
 					}
 
-					ConfigCommand command;
-					command.func = ConfigCommandFunc::FocusWindow;
+					Command command;
+					command.func = CommandFunc::FocusWindow;
 					command.arguments = direction;
 					return command;
 				}
@@ -231,8 +251,8 @@ Config parseConfig(wx::WkValue const& value) {
 						return {};
 					}
 
-					ConfigCommand command;
-					command.func = ConfigCommandFunc::TileWindow;
+					Command command;
+					command.func = CommandFunc::TileWindow;
 					command.arguments = *tileWindow;
 
 					return command;
@@ -247,8 +267,8 @@ Config parseConfig(wx::WkValue const& value) {
 						return {};
 					}
 
-					ConfigCommand command;
-					command.func = ConfigCommandFunc::FocusWorkspace;
+					Command command;
+					command.func = CommandFunc::FocusWorkspace;
 					command.arguments = *focusWorkspace;
 
 					return command;
@@ -263,8 +283,8 @@ Config parseConfig(wx::WkValue const& value) {
 						return {};
 					}
 
-					ConfigCommand command;
-					command.func = ConfigCommandFunc::SendWindowToWorkspace;
+					Command command;
+					command.func = CommandFunc::SendWindowToWorkspace;
 					command.arguments = *sendWindowToWorkspace;
 
 					return command;
@@ -279,8 +299,8 @@ Config parseConfig(wx::WkValue const& value) {
 						return {};
 					}
 
-					ConfigCommand command;
-					command.func = ConfigCommandFunc::Quit;
+					Command command;
+					command.func = CommandFunc::Quit;
 
 					return command;
 				}
@@ -289,7 +309,7 @@ Config parseConfig(wx::WkValue const& value) {
 			return {};
 		}
 
-		void parseKey(ConfigBinding& binding, wx::WkValue const& value) {
+		void parseKey(KeyBinding& binding, wx::WkValue const& value) {
 			if (!value.isString()) return;
 			wx::List<wx::Span<wx::Byte>> splited = splitKey(value.asString(), '+');
 		}
@@ -1279,8 +1299,8 @@ Config parseConfig(wx::WkValue const& value) {
 				if (!list[i].isTuple()) {
 					continue;
 				}
-				ConfigCommand command = parseCommand(list[i].asTuple());
-				if (command.func == ConfigCommandFunc::None) {
+				Command command = parseCommand(list[i].asTuple());
+				if (command.func == CommandFunc::None) {
 					continue;
 				}
 				config.autostarts.append(command);

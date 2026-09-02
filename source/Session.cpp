@@ -13,8 +13,16 @@ bool operator==(KeyIndex a, KeyIndex b) {
 	return a.modKey == b.modKey && a.key == b.key;
 }
 
+bool operator==(MouseIndex a, MouseIndex b) {
+	return a.modKey == b.modKey;
+}
+
 wx::Uint32 getHash(KeyIndex index) {
 	return wx::combineHash(wx::getHash((int)index.modKey), wx::getHash((int)index.key));
+}
+
+wx::Uint32 getHash(MouseIndex index) {
+	return wx::getHash((int) index.modKey);
 }
 
 class Monitor;
@@ -30,14 +38,23 @@ void Session::run(Config const& config) {
 	_context = CreateContext();
 	_observer = _context->getSessionObserver();
 
-	_context->bindMouseButton(ModKey::Alt, MouseButton::Left);
-	_context->bindMouseButton(ModKey::Alt|ModKey::Shift, MouseButton::Left);
+	for (int i = 0; i < _config.mouseBindings.count(); i++) {
+		MouseBinding const& binding = _config.mouseBindings[i];
+		_context->bindMouseButton(binding.modKey, MouseButton::Left);
+		printf("BIND MOUSE %08x\n", binding.modKey);
+		MouseIndex index;
+		index.modKey = binding.modKey;
+		_mouseBindings.set(index, [this, binding](Window* window) {
+			printf("CALLBACK TO %08x\n", binding.modKey);
+			_doMouseCommand(binding.func, window);
+		});
+	}
 
 	_context->bindKey(ModKey::Alt, Key::A);
 	_context->bindKey(ModKey::Alt, Key::M);
 
-	for (int i = 0; i < _config.bindings.count(); i++) {
-		ConfigBinding const& binding = _config.bindings[i];
+	for (int i = 0; i < _config.keyBindings.count(); i++) {
+		KeyBinding const& binding = _config.keyBindings[i];
 
 		KeyIndex index;
 		index.modKey = binding.modKey;
@@ -60,9 +77,9 @@ void Session::run(Config const& config) {
 	_context->run(this);
 }
 
-ConfigBinding const* Session::queryBinding(ModKey modKey, Key key) {
-	for (int i = 0; i < _config.bindings.count(); i++) {
-		ConfigBinding const& binding = _config.bindings[i];
+KeyBinding const* Session::queryBinding(ModKey modKey, Key key) {
+	for (int i = 0; i < _config.keyBindings.count(); i++) {
+		KeyBinding const& binding = _config.keyBindings[i];
 		if (binding.modKey == modKey && binding.key == key) {
 			return &binding;
 		}
@@ -122,13 +139,16 @@ void Session::onMousePress(MouseButtonEvent const& e) {
 		return;
 	}
 
+	printf("PRESS MOUSE %08x\n", e.modKey);
+
 	focusWindow(e.window, false);
 
 	if (e.button == MouseButton::Left) {
-		if (e.modKey == (ModKey::Alt)) {
-			_beginDrag(DragMode::Move, e.window);
-		} else if (e.modKey == (ModKey::Alt|ModKey::Shift)) {
-			_beginDrag(DragMode::Resize, e.window);
+		MouseIndex index;
+		index.modKey = e.modKey;
+		MouseCallback* callback = _mouseBindings.getOrNull(index);
+		if (callback != nullptr) {
+			(*callback)((Window*)e.window);
 		} else {
 			// titlebar grabbing
 			Rect rect = e.window->getRect();
@@ -415,7 +435,7 @@ void Session::focusWindow(Window* window, bool moveCursor) {
 	}
 }
 
-static int CalculateCrossSurface(int a1, int a2, int b1, int b2) {
+static int calculateCrossSurface(int a1, int a2, int b1, int b2) {
 	const int start = Helper::max(a1, b1);
     const int end   = Helper::min(a2, b2);
     return Helper::max(0, end - start);
@@ -459,7 +479,7 @@ Window* Session::findNearestWindow(Window* window, Direction direction, bool onl
 
 			Rect target = targetWindow->getRect();
 			int distance = 0;
-			int surface = CalculateCrossSurface(source.y, source.y + source.height, target.y, target.y + target.height);
+			int surface = calculateCrossSurface(source.y, source.y + source.height, target.y, target.y + target.height);
 			if (onlyParallelWindow && surface == 0) continue;
 
 			// partial overlap but target is visible
@@ -503,7 +523,7 @@ Window* Session::findNearestWindow(Window* window, Direction direction, bool onl
 
 			Rect target = targetWindow->getRect();
 			int distance = 0;
-			int surface = CalculateCrossSurface(source.y, source.y + source.height, target.y, target.y + target.height);
+			int surface = calculateCrossSurface(source.y, source.y + source.height, target.y, target.y + target.height);
 			if (onlyParallelWindow && surface == 0) continue;
 
 			// partial overlap but target is visible
@@ -547,7 +567,7 @@ Window* Session::findNearestWindow(Window* window, Direction direction, bool onl
 
 			Rect target = targetWindow->getRect();
 			int distance = 0;
-			int surface = CalculateCrossSurface(source.x, source.x + source.width, target.x, target.x + target.width);
+			int surface = calculateCrossSurface(source.x, source.x + source.width, target.x, target.x + target.width);
 			if (onlyParallelWindow && surface == 0) continue;
 
 			// partial overlap but target is visible
@@ -591,7 +611,7 @@ Window* Session::findNearestWindow(Window* window, Direction direction, bool onl
 
 			Rect target = targetWindow->getRect();
 			int distance = 0;
-			int surface = CalculateCrossSurface(source.x, source.x + source.width, target.x, target.x + target.width);
+			int surface = calculateCrossSurface(source.x, source.x + source.width, target.x, target.x + target.width);
 			if (onlyParallelWindow && surface == 0) continue;
 
 			// partial overlap but target is visible
@@ -725,8 +745,8 @@ void Session::_beginDrag(DragMode mode, Window* window, WindowResizingArea area)
 	_context->bindMouseMovement();
 }
 
-void Session::_doCommand(ConfigCommand const& command) {
-	if (command.func == ConfigCommandFunc::Exec) {
+void Session::_doCommand(Command const& command) {
+	if (command.func == CommandFunc::Exec) {
 		wx::List<wx::String> argv;
 		for (int i = 0; i < command.arguments.asList().count(); i++) {
 			wx::WkValue const& arg = command.arguments.asList()[i];
@@ -735,23 +755,23 @@ void Session::_doCommand(ConfigCommand const& command) {
 		exec(argv);
 		return;
 	}
-	if (command.func == ConfigCommandFunc::CloseWindow) {
+	if (command.func == CommandFunc::CloseWindow) {
 		closeWindow();
 		return;
 	}
-	if (command.func == ConfigCommandFunc::FocusWindow) {
+	if (command.func == CommandFunc::FocusWindow) {
 		focusNearestWindow((Direction) command.arguments.asInt64());
 		return;
 	}
-	if (command.func == ConfigCommandFunc::CycleNextWindow) {
+	if (command.func == CommandFunc::CycleNextWindow) {
 		cycleNextWindow();
 		return;
 	}
-	if (command.func == ConfigCommandFunc::CyclePreviousWindow) {
+	if (command.func == CommandFunc::CyclePreviousWindow) {
 		cyclePreviousWindow();
 		return;
 	}
-	if (command.func == ConfigCommandFunc::TileWindow) {
+	if (command.func == CommandFunc::TileWindow) {
 		Window* window = _activeMonitor->getActiveWorkspace()->getActiveWindow();
 		if (window == nullptr) return;
 		Rect avail = _activeMonitor->getWorkingRect();
@@ -773,16 +793,27 @@ void Session::_doCommand(ConfigCommand const& command) {
 		_clipWindow(window);
 		return;
 	}
-	if (command.func == ConfigCommandFunc::FocusWorkspace) {
+	if (command.func == CommandFunc::FocusWorkspace) {
 		focusWorkspaceID(command.arguments.asString());
 		return;
 	}
-	if (command.func == ConfigCommandFunc::SendWindowToWorkspace) {
+	if (command.func == CommandFunc::SendWindowToWorkspace) {
 		sendWindowToWorkspaceID(command.arguments.asString());
 		return;
 	}
-	if (command.func == ConfigCommandFunc::Quit) {
+	if (command.func == CommandFunc::Quit) {
 		_context->stop();
+		return;
+	}
+}
+
+void Session::_doMouseCommand(CommandFunc func, Window* window) {
+	if (func == CommandFunc::MoveWindow) {
+		_beginDrag(DragMode::Move, window);
+		return;
+	}
+	if (func == CommandFunc::ResizeWindow) {
+		_beginDrag(DragMode::Resize, window);
 		return;
 	}
 }
@@ -940,13 +971,8 @@ void Session::_clipWindow(Window* window) {
 	Monitor* monitor = window->getMonitor();
 	Rect windowRect = window->getRect();
 	WindowProp windowProp = window->getProp();
-	Rect windowBorderRect = windowRect;
-	windowBorderRect.x -= windowProp.borderWidth;
-	windowBorderRect.y -= windowProp.borderWidth;
-	windowBorderRect.width += 2 * windowProp.borderWidth;
-	windowBorderRect.height += 2 * windowProp.borderWidth;
 	Rect workingRect = monitor->getWorkingRect();
-	Rect intersectRect = intersectRectRect(workingRect, windowBorderRect);
+	Rect intersectRect = intersectRectRect(workingRect, windowRect);
 
 	if (intersectRect.width == 0 || intersectRect.height == 0) {
 		LOG("invalid intersection\n");
@@ -958,6 +984,11 @@ void Session::_clipWindow(Window* window) {
 	clipRect.y = intersectRect.y - windowRect.y;
 	clipRect.width = intersectRect.width;
 	clipRect.height = intersectRect.height;
+
+	printf("[clip] working: %d, %d, %d, %d\n", workingRect.x, workingRect.y, workingRect.x + workingRect.width, workingRect.y + workingRect.height);
+	printf("[clip] window: %d, %d, %d, %d\n", windowRect.x, windowRect.y, windowRect.x + windowRect.width, windowRect.y + windowRect.height);
+	printf("[clip] intersect: %d, %d, %d, %d\n", intersectRect.x, intersectRect.y, intersectRect.x + intersectRect.width, intersectRect.y + intersectRect.height);
+	printf("[clip] clip: %d, %d, %d, %d\n", clipRect.x, clipRect.y, clipRect.x + clipRect.width, clipRect.y + clipRect.height);
 
 	_context->clipWindow(window, clipRect);
 }

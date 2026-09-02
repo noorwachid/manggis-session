@@ -148,6 +148,9 @@ wx::List<MonitorDef> X11Context::getConnectedMonitorDefs() {
 }
 
 void X11Context::clipWindow(Window* window, Rect rect) {
+	int borderWidth = window->getProp().borderWidth;
+	rect.x -= borderWidth;
+	rect.y -= borderWidth;
 	_clipper->clip((X11WindowBackend*)window->getBackend(), rect);
 }
 
