@@ -37,6 +37,7 @@ X11Context::~X11Context() {
 	delete _sessionObserver;
 	delete _hint;
 	delete _clipper;
+	delete _monitorManager;
 	delete _mouseManager;
 	delete _keyboardManager;
 	delete _conn;

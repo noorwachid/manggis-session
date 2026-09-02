@@ -7,7 +7,7 @@
 #include <xcb/xproto.h>
 
 namespace WindowStyle {
-	constexpr int borderWidth = 5;
+	constexpr int borderWidth = 1;
 	constexpr int titlebarHeight = 20;
 
 	namespace Active {

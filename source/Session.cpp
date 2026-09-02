@@ -75,6 +75,21 @@ void Session::run(Config const& config) {
 	}
 
 	_context->run(this);
+
+	// NOTE: on why not using wx::Ref
+	//       since the lifetime is predictable and contain circular references
+	//       i pick raw pointer over reference-counted solution
+
+	// clean-up
+	for (int i = 0; i < _workspaceDB.count(); i++) {
+		for (int k = 0; k < _workspaceDB[i]->getWindowList().count(); k++) {
+			delete _workspaceDB[i]->getWindowList()[k];
+		}
+		delete _workspaceDB[i];
+	}
+	for (int i = 0; i < _monitorDB.count(); i++) {
+		delete _monitorDB[i];
+	}
 }
 
 KeyBinding const* Session::queryBinding(ModKey modKey, Key key) {
@@ -889,7 +904,7 @@ void Session::_updateLayout() {
 	for (int i = 0; i < _monitors.count(); i++) {
 		Monitor* monitor = _monitors[i];
 		if (monitor->getActiveWorkspace() == nullptr) {
-			monitor->addWorkspace(new Workspace(monitor->getPort()));
+			monitor->addWorkspace(_getOrCreateWorkspace(monitor->getPort()));
 		}
 	}
 
