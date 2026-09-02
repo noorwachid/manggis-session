@@ -289,9 +289,11 @@ bool X11Hint::IsWindowDecorated(xcb_window_t id) {
 	if (prop && prop->type != XCB_NONE && prop->value_len >= _MOTIF_WM_HINTS_ELEMENTS) {
 		MotifWmHints *hints = (MotifWmHints *) xcb_get_property_value(prop);
 		if ((hints->flags & MWM_HINTS_DECORATIONS) && hints->decorations == 0) {
+			free(prop);
 			return false;
 		}
 	}
+	free(prop);
 	return true;
 }
 
