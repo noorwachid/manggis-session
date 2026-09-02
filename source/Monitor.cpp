@@ -7,86 +7,86 @@ Monitor::Monitor(IContext* context, MonitorDef def): _context{context}, _def{def
 	_workingRect = def.rect;
 }
 
-void Monitor::SetDef(MonitorDef def) {
+void Monitor::setDef(MonitorDef def) {
 	_def = def;
 }
 
-Wx::String const& Monitor::GetPort() const {
+wx::String const& Monitor::getPort() const {
 	return _def.port;
 }
 
-Rect Monitor::GetRect() const {
+Rect Monitor::getRect() const {
 	return _def.rect;
 }
 
-Rect Monitor::GetWorkingRect() const {
+Rect Monitor::getWorkingRect() const {
 	return _workingRect;
 }
 
-Workspace* Monitor::GetActiveWorkspace() {
+Workspace* Monitor::getActiveWorkspace() {
 	return _activeWorkspace;
 }
 
-Workspace* Monitor::QueryWorkspace(Wx::String const& id) {
-	for (int i = 0; i < _workspaces.Count(); i++) {
-		if (_workspaces[i]->GetID() == id) {
+Workspace* Monitor::queryWorkspace(wx::String const& id) {
+	for (int i = 0; i < _workspaces.count(); i++) {
+		if (_workspaces[i]->getID() == id) {
 			return _workspaces[i];
 		}
 	}
 	return nullptr;
 }
 
-void Monitor::FocusWorkspace(Workspace* workspace) {
+void Monitor::focusWorkspace(Workspace* workspace) {
 	if (_activeWorkspace == workspace) return;
 	if (_activeWorkspace != nullptr) {
-		_activeWorkspace->Blur();
-		_activeWorkspace->Hide();
+		_activeWorkspace->blur();
+		_activeWorkspace->hide();
 	}
-	workspace->Focus();
-	workspace->Show();
+	workspace->focus();
+	workspace->show();
 	_activeWorkspace = workspace;
 }
 
-void Monitor::AddWorkspace(Workspace* workspace) {
+void Monitor::addWorkspace(Workspace* workspace) {
 	// TODO: check if monitor already exists
-	workspace->SetMonitor(this);
+	workspace->setMonitor(this);
 
-	_workspaces.Append(workspace);
+	_workspaces.append(workspace);
 	if (_activeWorkspace == nullptr) {
 		_activeWorkspace = workspace;
 	}
 }
 
-void Monitor::RemoveWorkspace(Workspace* workspace) {
-	int index = _workspaces.Find(workspace);
+void Monitor::removeWorkspace(Workspace* workspace) {
+	int index = _workspaces.find(workspace);
 	if (index != -1) {
 		bool activeWorkspaceRemoved = _workspaces[index] == _activeWorkspace;
-		_workspaces.Remove(index);
+		_workspaces.remove(index);
 		if (activeWorkspaceRemoved) {
 			_activeWorkspace = nullptr;
-			if (!_workspaces.IsEmpty()) {
-				FocusWorkspace(_workspaces.GetLast());
+			if (!_workspaces.isEmpty()) {
+				focusWorkspace(_workspaces.getLast());
 			}
 		}
 	}
 }
 
-void Monitor::ClearWorkspaceList() {
-	_workspaces.Clear();
+void Monitor::clearWorkspaceList() {
+	_workspaces.clear();
 }
 
-Wx::List<Workspace*> const& Monitor::GetWorkspaceList() const {
+wx::List<Workspace*> const& Monitor::getWorkspaceList() const {
 	return _workspaces;
 }
 
-void Monitor::CalculateWorkingRect() {
+void Monitor::calculateWorkingRect() {
 	Margin margin;
 
-	Rect monitorRect = GetRect();
+	Rect monitorRect = getRect();
 
-	for (int i = 0; i < _dockWindows.Count(); i++) {
+	for (int i = 0; i < _dockWindows.count(); i++) {
 		Window* window = _dockWindows[i];
-		Margin windowExtend = _context->GetDockExtend(window);
+		Margin windowExtend = _context->getDockExtend(window);
 		if (margin.top < windowExtend.top) {
 			margin.top = windowExtend.top;
 		}
@@ -113,58 +113,58 @@ void Monitor::CalculateWorkingRect() {
 
 }
 
-void Monitor::Focus() {
-	_activeWorkspace->Focus();
+void Monitor::focus() {
+	_activeWorkspace->focus();
 }
 
-void Monitor::Blur() {
-	_activeWorkspace->Blur();
+void Monitor::blur() {
+	_activeWorkspace->blur();
 }
 
-void Monitor::AddWindow(Window* window) {
-	WindowType type = window->GetType();
+void Monitor::addWindow(Window* window) {
+	WindowType type = window->getType();
 	printf("WIN TYPE %d\n", (int) type);
 	if (type == WindowType::Normal) {
 
-		Rect monitorRect = GetRect();
-		Rect windowRect = window->GetRect();
+		Rect monitorRect = getRect();
+		Rect windowRect = window->getRect();
 
 		// TODO: add variant placement
 		//
 		// centered placement
-		window->Move(
+		window->move(
 			monitorRect.x + (monitorRect.width / 2) - (windowRect.width / 2),
 			monitorRect.y + (monitorRect.height / 2) - (windowRect.height / 2)
 		);
-		_activeWorkspace->AddWindow(window);
+		_activeWorkspace->addWindow(window);
 
 	} else if (type == WindowType::Dock) {
-		_dockWindows.Append(window);
-		CalculateWorkingRect();
-		window->SetMonitor(this);
+		_dockWindows.append(window);
+		calculateWorkingRect();
+		window->setMonitor(this);
 	} else {
-		_unmanagedWindows.Append(window);
-		window->SetMonitor(this);
+		_unmanagedWindows.append(window);
+		window->setMonitor(this);
 	}
 
-	window->Show();
+	window->show();
 }
 
-void Monitor::RemoveWindow(Window* window) {
-	Workspace* ws = window->GetWorkspace();
+void Monitor::removeWindow(Window* window) {
+	Workspace* ws = window->getWorkspace();
 	if (ws != nullptr) {
-		ws->RemoveWindow(window);
+		ws->removeWindow(window);
 		return;
 	}
-	for (int i = 0; i < _dockWindows.Count(); i++) {
+	for (int i = 0; i < _dockWindows.count(); i++) {
 		if (_dockWindows[i] == window) {
-			_dockWindows.Remove(i);
+			_dockWindows.remove(i);
 			return;
 		}
 	}
-	for (int i = 0; i < _unmanagedWindows.Count(); i++) {
+	for (int i = 0; i < _unmanagedWindows.count(); i++) {
 		if (_unmanagedWindows[i] == window) {
-			_unmanagedWindows.Remove(i);
+			_unmanagedWindows.remove(i);
 			return;
 		}
 	}

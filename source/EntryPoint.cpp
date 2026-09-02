@@ -1,57 +1,59 @@
-#include "Common/Logger.hpp"
-#include "Config/Config.hpp"
-#include "Config/ConfigParser.hpp"
+#include "core/Logger.hpp"
+#include "config/Config.hpp"
+#include "config/ConfigParser.hpp"
+#include "wx/core/String.hpp"
+#include "wx/serializer/WkParser.hpp"
+#include "wx/serializer/WkValue.hpp"
 #include "Session.hpp"
-#include "Wx/Core/String.hpp"
-#include "Wx/Serializer/WkParser.hpp"
-#include "Wx/Serializer/WkValue.hpp"
 #include <cstdio>
 #include <cstdlib>
 #include <unistd.h>
 
-Wx::String ReadFile(Wx::String const& path) {
-	FILE* file = fopen(path.CPtr(), "r");
+wx::String readFile(wx::String const& path) {
+	FILE* file = fopen(path.cptr(), "r");
 	if (!file) return "";
 
 	fseek(file, 0, SEEK_END);
 	int size = ftell(file);
 	fseek(file, 0, SEEK_SET);
-	Wx::String content;
-	content.Reserve(size);
+	wx::String content;
+	content.reserve(size);
 	for (int i = 0; i < size; i++) {
-		Wx::Byte nullByte = '\0';
-		content.Append(1, &nullByte);
+		wx::Byte nullByte = '\0';
+		content.append(1, &nullByte);
 	}
-	fread(content.Ptr(), 1, size, file);
+	fread(content.ptr(), 1, size, file);
 	fclose(file);
 	return content;
 }
 
 
+
 int main(int argc, char **argv) {
-	Logger::Init();
+	Logger::init();
 
 	LOG("hello world\n");
 
 	Config config;
 
 	char* home = getenv("HOME");
-	Wx::String configPath = home;
-	configPath.Append("/.config/manggis-session/config.wk");
+	wx::String configPath = home;
+	configPath.append("/.config/manggis-session/config.wk");
 
 	#ifdef XEPHYR_ENABLE
 	configPath = "runtime/config.wk";
 	#endif
 
-	if (access(configPath.CPtr(), F_OK) == 0) {
-		Wx::WkValue wkValue = Wx::ParseWk(ReadFile(configPath));
-		config = ParseConfig(wkValue);
+	if (access(configPath.cptr(), F_OK) == 0) {
+		wx::WkValue wkValue = wx::parseWk(readFile(configPath));
+		config = parseConfig(wkValue);
 	}
 
 	Session session;
-	session.Run(config);
+	session.run(config);
 
-	Logger::Shutdown();
+	Logger::shutdown();
 
 	return 0;
 }
+

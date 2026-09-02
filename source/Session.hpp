@@ -5,13 +5,13 @@
 #include "Monitor.hpp"
 #include "Workspace.hpp"
 #include "Window.hpp"
-#include "Common/Direction.hpp"
-#include "Config/Config.hpp"
-#include "Input/Key.hpp"
-#include "Backend/IContext.hpp"
-#include "Backend/ISessionObserver.hpp"
-#include "Wx/Core/List.hpp"
-#include "Wx/Core/Func.hpp"
+#include "core/Direction.hpp"
+#include "config/Config.hpp"
+#include "input/Key.hpp"
+#include "backend/IContext.hpp"
+#include "backend/ISessionObserver.hpp"
+#include "wx/core/List.hpp"
+#include "wx/core/Func.hpp"
 
 enum struct DragMode {
 	None,
@@ -32,11 +32,11 @@ struct KeyIndex {
 	Key key;
 };
 
-using KeyCallback = Wx::Func<void()>;
+using KeyCallback = wx::Func<void()>;
 
 bool operator==(KeyIndex a, KeyIndex b);
 
-Wx::Uint32 getHash(KeyIndex index);
+wx::Uint32 getHash(KeyIndex index);
 
 class Monitor;
 
@@ -47,83 +47,83 @@ extern int xephyrMonitorConfiguration;
 
 class Session: public IObserver {
 public:
-	void Run(Config const& config);
+	void run(Config const& config);
 
-	ConfigBinding const* QueryBinding(ModKey modKey, Key key);
+	ConfigBinding const* queryBinding(ModKey modKey, Key key);
 
-	virtual void OnWindowCreate(WindowEvent const& e) override;
+	virtual void onWindowCreate(WindowEvent const& e) override;
 
-	virtual void OnWindowDestroy(WindowEvent const& e) override;
+	virtual void onWindowDestroy(WindowEvent const& e) override;
 
-	virtual void OnWindowMoveRequest(WindowMovementEvent const& e) override;
+	virtual void onWindowMoveRequest(WindowMovementEvent const& e) override;
 
-	virtual void OnWindowResizeRequest(WindowResizingEvent const& e) override;
+	virtual void onWindowResizeRequest(WindowResizingEvent const& e) override;
 
-	virtual void OnWindowMaximizeRequest(WindowActionEvent const& e) override;
+	virtual void onWindowMaximizeRequest(WindowActionEvent const& e) override;
 
-	virtual void OnWindowFullscreenRequest(WindowActionEvent const& e) override;
+	virtual void onWindowFullscreenRequest(WindowActionEvent const& e) override;
 
-	virtual void OnMousePress(MouseButtonEvent const& e) override;
+	virtual void onMousePress(MouseButtonEvent const& e) override;
 
-	virtual void OnMouseRelease(MouseButtonEvent const& e) override;
+	virtual void onMouseRelease(MouseButtonEvent const& e) override;
 
-	virtual void OnMouseMove(MouseMovementEvent const& e) override;
+	virtual void onMouseMove(MouseMovementEvent const& e) override;
 
-	virtual void OnKeyPress(KeyEvent const& e) override;
+	virtual void onKeyPress(KeyEvent const& e) override;
 
-	virtual void OnKeyRelease(KeyEvent const& e) override;
+	virtual void onKeyRelease(KeyEvent const& e) override;
 
-	virtual void OnMonitorConnect(MonitorEvent const& e) override;
+	virtual void onMonitorConnect(MonitorEvent const& e) override;
 
-	virtual void OnMonitorDisconnect(MonitorEvent const& e) override;
+	virtual void onMonitorDisconnect(MonitorEvent const& e) override;
 
-	virtual void OnMonitorPropertyChange(MonitorEvent const& e) override;
+	virtual void onMonitorPropertyChange(MonitorEvent const& e) override;
 
-	void FocusMonitor(Monitor* monitor);
+	void focusMonitor(Monitor* monitor);
 
-	void FocusWorkspaceID(Wx::String const& id);
+	void focusWorkspaceID(wx::String const& id);
 
-	void FocusWorkspace(Workspace* workspace);
+	void focusWorkspace(Workspace* workspace);
 
-	void SendWorkspaceToMonitor(Workspace* workspace, Monitor* monitor);
+	void sendWorkspaceToMonitor(Workspace* workspace, Monitor* monitor);
 
-	void SendWindowToWorkspace(Window* window, Workspace* workspace);
+	void sendWindowToWorkspace(Window* window, Workspace* workspace);
 
-	void SendWindowToWorkspaceID(Wx::String const& id);
+	void sendWindowToWorkspaceID(wx::String const& id);
 
-	void FocusWindow(Window* window, bool moveCursor);
+	void focusWindow(Window* window, bool moveCursor);
 
-	void FocusNearestWindow(Direction direction);
+	void focusNearestWindow(Direction direction);
 
-	Window* FindNearestWindow(Window* window, Direction direction, bool onlyParallelWindow);
+	Window* findNearestWindow(Window* window, Direction direction, bool onlyParallelWindow);
 
-	Monitor* FindNearestMonitor(Monitor* window, Direction direction, bool onlyParallelWindow);
+	Monitor* findNearestMonitor(Monitor* window, Direction direction, bool onlyParallelWindow);
 
-	void CycleNextWindow();
+	void cycleNextWindow();
 
-	void CyclePreviousWindow();
+	void cyclePreviousWindow();
 
-	void CloseWindow();
+	void closeWindow();
 
 private:
 
-	void BeginDrag(DragMode mode, Window* window, WindowResizingArea area = WindowResizingArea::None);
+	void _beginDrag(DragMode mode, Window* window, WindowResizingArea area = WindowResizingArea::None);
 
-	void DoCommand(ConfigCommand const& command);
+	void _doCommand(ConfigCommand const& command);
 
-	Monitor* QueryMonitorByPort(Wx::String const& port);
+	Monitor* _queryMonitorByPort(wx::String const& port);
 
-	Monitor* QueryMonitorByPos(Point pos);
+	Monitor* _queryMonitorByPos(Point pos);
 
-	void UpdateLayout();
+	void _updateLayout();
 
-	void LogLayout();
+	void _logLayout();
 
-	Monitor* GetOrCreateMonitor(MonitorDef const& def);
+	Monitor* _getOrCreateMonitor(MonitorDef const& def);
 
-	Workspace* GetOrCreateWorkspace(Wx::String const& id);
+	Workspace* _getOrCreateWorkspace(wx::String const& id);
 
-	void ClipWindow(Window* window);
+	void _clipWindow(Window* window);
 
 private:
 	IContext* _context;
@@ -131,12 +131,12 @@ private:
 
 	Monitor* _activeMonitor = nullptr;
 	Monitor* _fallbackMonitor = nullptr; // incase of all monitor disconnected all workspace/windows are here
-	Wx::List<Monitor*> _monitors;
+	wx::List<Monitor*> _monitors;
 	DragState _dragState;
 
 	Config _config;
-	Wx::List<Monitor*> _monitorDB;
-	Wx::List<Workspace*> _workspaceDB;
+	wx::List<Monitor*> _monitorDB;
+	wx::List<Workspace*> _workspaceDB;
 
-	Wx::HashTable<KeyIndex, KeyCallback> _keyBindings;
+	wx::HashTable<KeyIndex, KeyCallback> _keyBindings;
 };

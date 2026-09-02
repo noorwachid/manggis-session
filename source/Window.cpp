@@ -8,70 +8,70 @@ Window::~Window() {
 	delete _backend;
 }
 
-IWindowBackend* Window::GetBackend() {
+IWindowBackend* Window::getBackend() {
 	return _backend;
 }
 
-WindowProp Window::GetProp() {
-	return _backend->GetProp();
+WindowProp Window::getProp() {
+	return _backend->getProp();
 }
 
-WindowType Window::GetType() {
-	return _backend->GetType();
+WindowType Window::getType() {
+	return _backend->getType();
 }
 
-Wx::String Window::GetTitle() {
-	return _backend->GetTitle();
+wx::String Window::getTitle() {
+	return _backend->getTitle();
 }
 
-void Window::SetWorkspace(Workspace* workspace) {
+void Window::setWorkspace(Workspace* workspace) {
 	_workspace = workspace;
 }
 
-Workspace* Window::GetWorkspace() {
+Workspace* Window::getWorkspace() {
 	return _workspace;
 }
 
-void Window::SetMonitor(Monitor* monitor) {
+void Window::setMonitor(Monitor* monitor) {
 	_monitor = monitor;
 }
 
-Monitor* Window::GetMonitor() {
+Monitor* Window::getMonitor() {
 	return _monitor;
 }
 
-Rect Window::GetRect() {
-	return _backend->GetRect();
+Rect Window::getRect() {
+	return _backend->getRect();
 }
 
-void Window::Raise() {
-	_backend->Raise();
+void Window::raise() {
+	_backend->raise();
 }
 
-void Window::Move(int x, int y) {
-	_backend->Move(x, y);
+void Window::move(int x, int y) {
+	_backend->move(x, y);
 }
 
-void Window::Resize(int width, int height) {
-	_backend->Resize(width, height);
+void Window::resize(int width, int height) {
+	_backend->resize(width, height);
 }
 
-void Window::Show() {
-	_backend->Show();
+void Window::show() {
+	_backend->show();
 }
 
-void Window::Hide() {
-	_backend->Hide();
+void Window::hide() {
+	_backend->hide();
 }
 
-void Window::Focus() {
-	_backend->Focus();
+void Window::focus() {
+	_backend->focus();
 }
 
-void Window::Blur() {
-	_backend->Blur();
+void Window::blur() {
+	_backend->blur();
 }
 
-void Window::Close() {
-	_backend->Close();
+void Window::close() {
+	_backend->close();
 }

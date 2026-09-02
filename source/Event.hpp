@@ -1,9 +1,9 @@
 #pragma once
 
-#include "Wx/Core/String.hpp"
-#include "Common/Unit.hpp"
-#include "Input/Key.hpp"
-#include "Input/MouseButton.hpp"
+#include "core/Unit.hpp"
+#include "input/Key.hpp"
+#include "input/MouseButton.hpp"
+#include "wx/core/String.hpp"
 #include "Window.hpp"
 
 struct WindowEvent {
@@ -60,7 +60,7 @@ struct KeyEvent {
 };
 
 struct MonitorEvent {
-	Wx::String port;
+	wx::String port;
 };
 
 

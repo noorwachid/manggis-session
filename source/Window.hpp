@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Backend/IWindowBackend.hpp"
+#include "backend/IWindowBackend.hpp"
 
 class Monitor;
 class Workspace;
@@ -11,39 +11,39 @@ public:
 
 	~Window();
 
-	IWindowBackend* GetBackend();
+	IWindowBackend* getBackend();
 
-	WindowProp GetProp();
+	WindowProp getProp();
 
-	WindowType GetType();
+	WindowType getType();
 
-	Wx::String GetTitle();
+	wx::String getTitle();
 
-	void SetWorkspace(Workspace* workspace);
+	void setWorkspace(Workspace* workspace);
 
-	Workspace* GetWorkspace();
+	Workspace* getWorkspace();
 
-	void SetMonitor(Monitor* monitor);
+	void setMonitor(Monitor* monitor);
 
-	Monitor* GetMonitor();
+	Monitor* getMonitor();
 
-	Rect GetRect();
+	Rect getRect();
 
-	void Raise();
+	void raise();
 
-	void Move(int x, int y);
+	void move(int x, int y);
 
-	void Resize(int width, int height);
+	void resize(int width, int height);
 
-	void Show();
+	void show();
 
-	void Hide();
+	void hide();
 
-	void Focus();
+	void focus();
 
-	void Blur();
+	void blur();
 
-	void Close();
+	void close();
 
 private:
 	IWindowBackend* _backend;

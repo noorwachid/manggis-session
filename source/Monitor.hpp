@@ -1,9 +1,9 @@
 #pragma once
 
 #include "MonitorDef.hpp"
-#include "Backend/IContext.hpp"
-#include "Wx/Core/List.hpp"
-#include "Wx/Core/String.hpp"
+#include "backend/IContext.hpp"
+#include "wx/core/List.hpp"
+#include "wx/core/String.hpp"
 
 class Window;
 
@@ -13,45 +13,45 @@ class Monitor {
 public:
 	Monitor(IContext* context, MonitorDef def);
 
-	void SetDef(MonitorDef def);
+	void setDef(MonitorDef def);
 
-	Wx::String const& GetPort() const;
+	wx::String const& getPort() const;
 
-	Rect GetRect() const;
+	Rect getRect() const;
 
-	Rect GetWorkingRect() const;
+	Rect getWorkingRect() const;
 
-	Workspace* GetActiveWorkspace();
+	Workspace* getActiveWorkspace();
 
-	Workspace* QueryWorkspace(Wx::String const& id);
+	Workspace* queryWorkspace(wx::String const& id);
 
-	void FocusWorkspace(Workspace* workspace);
+	void focusWorkspace(Workspace* workspace);
 
-	void AddWorkspace(Workspace* workspace);
+	void addWorkspace(Workspace* workspace);
 
-	void RemoveWorkspace(Workspace* workspace);
+	void removeWorkspace(Workspace* workspace);
 
-	void ClearWorkspaceList();
+	void clearWorkspaceList();
 
-	Wx::List<Workspace*> const& GetWorkspaceList() const;
+	wx::List<Workspace*> const& getWorkspaceList() const;
 
-	void CalculateWorkingRect();
+	void calculateWorkingRect();
 
-	void Focus();
+	void focus();
 
-	void Blur();
+	void blur();
 
-	void AddWindow(Window* window);
+	void addWindow(Window* window);
 
-	void RemoveWindow(Window* window);
+	void removeWindow(Window* window);
 
 private:
 	IContext* _context;
 	MonitorDef _def;
 	Workspace* _activeWorkspace = nullptr;
-	Wx::List<Workspace*> _workspaces;
-	Wx::List<Window*> _unmanagedWindows;
-	Wx::List<Window*> _dockWindows;
+	wx::List<Workspace*> _workspaces;
+	wx::List<Window*> _unmanagedWindows;
+	wx::List<Window*> _dockWindows;
 	Rect _workingRect;
 };
 
