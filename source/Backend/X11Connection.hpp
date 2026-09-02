@@ -4,35 +4,17 @@
 
 class X11Connection {
 public:
-	X11Connection() {
-		_conn = xcb_connect(NULL, NULL);
+	X11Connection();
 
-		if (xcb_connection_has_error(_conn))
-			return;
+	~X11Connection();
 
-		_screen = xcb_setup_roots_iterator(xcb_get_setup(_conn)).data;
-		_root = _screen->root;
-	}
+	xcb_connection_t* Get();
 
-	~X11Connection() {
-		xcb_disconnect(_conn);
-	}
+	xcb_screen_t* GetScreen();
 
-	xcb_connection_t* Get() {
-		return _conn;
-	}
+	xcb_window_t GetRoot();
 
-	xcb_screen_t* GetScreen() {
-		return _screen;
-	}
-
-	xcb_window_t GetRoot() {
-		return _root;
-	}
-
-	void Flush() {
-		xcb_flush(_conn);
-	}
+	void Flush();
 
 private:
 	xcb_connection_t* _conn;

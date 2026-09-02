@@ -13,8 +13,14 @@ set(SOURCES
 	source/Window.cpp
 	source/Session.cpp
 	source/Common/Logger.cpp
+	source/Backend/X11Connection.cpp
 	source/Backend/X11Context.cpp
 	source/Backend/X11MonitorManager.cpp
+	source/Backend/X11KeyboardManager.cpp
+	source/Backend/X11MouseManager.cpp
+	source/Backend/X11Clipper.cpp
+	source/Backend/X11SessionObserver.cpp
+	source/Backend/X11WindowBackend.cpp
 	source/Backend/X11Hint.cpp
 	source/OS/Exec.cpp
 	source/Config/ConfigParser.cpp

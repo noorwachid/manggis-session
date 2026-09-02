@@ -122,7 +122,7 @@ void Session::OnMousePress(MouseButtonEvent const& e) {
 		return;
 	}
 
-	FocusWindow(e.window);
+	FocusWindow(e.window, false);
 
 	if (e.button == MouseButton::Left) {
 		if (e.modKey == (ModKey::Alt)) {
@@ -316,13 +316,7 @@ void Session::FocusWorkspaceID(Wx::String const& id) {
 }
 
 void Session::FocusWorkspace(Workspace* workspace) {
-	Monitor* previousMonitor = _activeMonitor;
 	Monitor* mon = workspace->GetMonitor();
-	if (previousMonitor == mon) {
-		if (previousMonitor->GetActiveWorkspace() != workspace) {
-			mon->GetActiveWorkspace()->Hide();
-		}
-	}
 	FocusMonitor(mon);
 	mon->FocusWorkspace(workspace);
 	_observer->OnWorkspaceFocus(workspace);
@@ -402,7 +396,7 @@ void Session::SendWindowToWorkspaceID(Wx::String const& id) {
 	LOG("no workspace with id %s\n", id.CPtr());
 }
 
-void Session::FocusWindow(Window* window) {
+void Session::FocusWindow(Window* window, bool moveCursor) {
 	// raise to top (if background wallpaper or desktop orginizer you dont have to move it forward)
 	window->Raise();
 	
@@ -412,7 +406,7 @@ void Session::FocusWindow(Window* window) {
 	_observer->OnWindowFocus(window);
 
 	// TODO: make it configurable 
-	if (true) {
+	if (moveCursor) {
 		Rect rect = window->GetRect();
 		Point point;
 		point.x = rect.x + (rect.width / 2);
@@ -434,12 +428,12 @@ void Session::FocusNearestWindow(Direction direction) {
 
 	Window* nearestWindow = FindNearestWindow(sourceWindow, direction, true);
 	if (nearestWindow != nullptr) {
-		FocusWindow(nearestWindow);
+		FocusWindow(nearestWindow, true);
 		return;
 	}
 	Window* nearestNonParalellWindow = FindNearestWindow(sourceWindow, direction, false);
 	if (nearestNonParalellWindow != nullptr) {
-		FocusWindow(nearestNonParalellWindow);
+		FocusWindow(nearestNonParalellWindow, true);
 		return;
 	}
 	// TODO: find other monitor
@@ -655,7 +649,7 @@ void Session::CycleNextWindow() {
 	}
 	if (idx == -1) return;
 	Window* nextWindow = windows[(idx + 1) % windows.Count()];
-	FocusWindow(nextWindow);
+	FocusWindow(nextWindow, true);
 }
 
 void Session::CyclePreviousWindow() {
@@ -674,7 +668,7 @@ void Session::CyclePreviousWindow() {
 	}
 	if (idx == -1) return;
 	Window* nextWindow = windows[(idx + windows.Count() - 1) % windows.Count()];
-	FocusWindow(nextWindow);
+	FocusWindow(nextWindow, true);
 }
 
 void Session::CloseWindow() {
@@ -761,11 +755,11 @@ void Session::DoCommand(ConfigCommand const& command) {
 		Window* window = _activeMonitor->GetActiveWorkspace()->GetActiveWindow();
 		if (window == nullptr) return;
 		Rect avail = _activeMonitor->GetWorkingRect();
-		Wx::List<Wx::WkValue> const& args = command.arguments.AsList();
-		Wx::Float64 x = args[0].AsFloat64();
-		Wx::Float64 y = args[1].AsFloat64();
-		Wx::Float64 width = args[2].AsFloat64();
-		Wx::Float64 height = args[3].AsFloat64();
+		Wx::HashTable<Wx::String, Wx::WkValue> const& args = command.arguments.AsHashTable();
+		Wx::Float64 x = args.Get("x").AsFloat64();
+		Wx::Float64 y = args.Get("y").AsFloat64();
+		Wx::Float64 width = args.Get("width").AsFloat64();
+		Wx::Float64 height = args.Get("height").AsFloat64();
 		Rect target;
 		target.x = avail.x + (avail.width * x);
 		target.y = avail.y + (avail.height * y);

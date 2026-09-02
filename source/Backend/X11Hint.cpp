@@ -6,9 +6,7 @@
 #include <xcb/xcb_ewmh.h>
 
 X11Hint::X11Hint(X11Connection* conn): _conn{conn} {
-}
 
-void X11Hint::Init() {
 	xcb_intern_atom_cookie_t* cookies = xcb_ewmh_init_atoms(_conn->Get(), &_ewmh);
 	if (!xcb_ewmh_init_atoms_replies(&_ewmh, cookies, nullptr)) {
 		printf("ERROR: failed to initialize EWMH atoms\n");
@@ -107,7 +105,7 @@ void X11Hint::Init() {
 	xcb_ewmh_set_supporting_wm_check(&_ewmh, _wmWindowId, _wmWindowId);
 }
 
-void X11Hint::Shutdown() {
+X11Hint::~X11Hint() {
 	xcb_destroy_window(_conn->Get(), _wmWindowId);
 	xcb_ewmh_connection_wipe(&_ewmh);
 }

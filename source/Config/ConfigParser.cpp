@@ -3,6 +3,7 @@
 #include "Config/Config.hpp"
 #include "Config/ConfigParser.hpp"
 #include "Input/Key.hpp"
+#include "Wx/Core/HashTable.hpp"
 #include "Wx/Serializer/WkValue.hpp"
 
 Config ParseConfig(Wx::WkValue const& value) {
@@ -110,6 +111,10 @@ Config ParseConfig(Wx::WkValue const& value) {
 		}
 
 		ConfigCommand ParseCommand(Wx::HashTable<Wx::String, Wx::WkValue> const& tup) {
+			if (tup.Count() != 1) {
+				LOG("[config] invalid command, expect tuple with single key as command func\n");
+				return {};
+			}
 			{
 				Wx::WkValue* exec = tup.TryGet("exec");
 				if (exec) {
@@ -207,20 +212,25 @@ Config ParseConfig(Wx::WkValue const& value) {
 			{
 				Wx::WkValue* tileWindow = tup.TryGet("tileWindow");
 				if (tileWindow) {
-					if (!tileWindow->IsList()) {
-						LOG("[config] invalid tileWindow command argument, expect list");
+					if (!tileWindow->IsTuple()) {
+						LOG("[config] invalid tileWindow command argument, expect tuple");
 						return {};
 					}
-					if (tileWindow->AsList().Count() != 4) {
-						LOG("[config] invalid tileWindow command argument, expect list with 4 items");
+					Wx::HashTable<Wx::String, Wx::WkValue> const& args = tileWindow->AsTuple();
+					Wx::WkValue* x = args.TryGet("x");
+					Wx::WkValue* y = args.TryGet("y");
+					Wx::WkValue* width = args.TryGet("width");
+					Wx::WkValue* height = args.TryGet("height");
+
+					if (x == nullptr || y == nullptr || width == nullptr || height == nullptr) {
+						LOG("[config] invalid tileWindow command argument, expect tuple x, y, width, height");
 						return {};
 					}
-					for (int i = 0; i < tileWindow->AsList().Count(); i++) {
-						if (!tileWindow->AsList()[i].IsFloat64()) {
-							LOG("[config] invalid tileWindow command argument, expect list of float\n");
-							return {};
-						}
+					if (!x->IsFloat64() || !y->IsFloat64() || !width->IsFloat64() || !height->IsFloat64()) {
+						LOG("[config] invalid tileWindow command argument, expect tuple x, y, width, height of floats");
+						return {};
 					}
+
 					ConfigCommand command;
 					command.func = ConfigCommandFunc::TileWindow;
 					command.arguments = *tileWindow;

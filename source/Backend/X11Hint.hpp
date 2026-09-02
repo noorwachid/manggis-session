@@ -11,9 +11,7 @@ class X11Hint {
 public:
 	X11Hint(X11Connection* conn);
 
-	void Init();
-
-	void Shutdown();
+	~X11Hint();
 
 	WindowType GetWindowType(xcb_window_t id);
 

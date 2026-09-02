@@ -1,10 +1,8 @@
 #pragma once
 
-#include "Event.hpp"
 #include "IObserver.hpp"
 #include "MonitorDef.hpp"
 #include "Window.hpp"
-#include "Common/Logger.hpp"
 #include "Backend/IContext.hpp"
 #include "Backend/X11Clipper.hpp"
 #include "Backend/X11Connection.hpp"
@@ -13,13 +11,11 @@
 #include "Backend/X11MonitorManager.hpp"
 #include "Backend/X11MouseManager.hpp"
 #include "Backend/X11SessionObserver.hpp"
-#include "Backend/X11WindowBackend.hpp"
 #include "Input/Key.hpp"
 #include "Input/MouseButton.hpp"
 #include "Wx/Core/List.hpp"
 #include "Wx/Core/HashTable.hpp"
 #include "Wx/Core/String.hpp"
-#include <cstdlib>
 #include <xcb/randr.h>
 #include <xcb/xproto.h>
 

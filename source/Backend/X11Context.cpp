@@ -1,7 +1,6 @@
 #include "Event.hpp"
 #include "Monitor.hpp"
 #include "Backend/IContext.hpp"
-#include "Backend/IWindowBackend.hpp"
 #include "Backend/X11WindowBackend.hpp"
 #include "Backend/X11Context.hpp"
 #include "Input/Key.hpp"
@@ -18,20 +17,10 @@ X11Context::X11Context() {
 	xcb_change_window_attributes(_conn->Get(), _conn->GetRoot(), XCB_CW_EVENT_MASK, &mask);
 
 	_keyboardManager = new X11KeyboardManager(_conn);
-	_keyboardManager->Init();
-
 	_mouseManager = new X11MouseManager(_conn);
-	_mouseManager->Init();
-
 	_monitorManager = new X11MonitorManager(_conn);
-	_monitorManager->Init();
-
 	_clipper = new X11Clipper(_conn);
-	_clipper->Init();
-
 	_hint = new X11Hint(_conn);
-	_hint->Init();
-
 	_sessionObserver = new X11SessionObserver(_conn, _hint);
 
 	// NOTE: click to focus
@@ -172,7 +161,7 @@ void X11Context::UnhighlightWindow(Window* window) {
 }
 
 Margin X11Context::GetDockExtend(Window* window) {
-	return _hint->GetWindowDockExtend(((X11WindowBackend*)window->GetBackend())->getClientHandle());
+	return _hint->GetWindowDockExtend(((X11WindowBackend*)window->GetBackend())->GetClientHandle());
 }
 
 void X11Context::Run(IObserver* observer) {
@@ -216,7 +205,7 @@ void X11Context::Run(IObserver* observer) {
 					event.window = window;
 
 					_clientWindowMap.Set(e->window, window);
-					_frameWindowMap.Set(backend->getFrameHandle(), window);
+					_frameWindowMap.Set(backend->GetFrameHandle(), window);
 
 					observer->OnWindowCreate(event);
 				} else {
@@ -311,7 +300,7 @@ void X11Context::Run(IObserver* observer) {
 				observer->OnWindowDestroy(event);
 
 				_clientWindowMap.Remove(e->window);
-				_frameWindowMap.Remove(((X11WindowBackend*)window->GetBackend())->getFrameHandle());
+				_frameWindowMap.Remove(((X11WindowBackend*)window->GetBackend())->GetFrameHandle());
 
 				delete window;
 				break;

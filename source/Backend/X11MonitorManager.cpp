@@ -8,9 +8,7 @@ int xephyrMonitorConfiguration = 0;
 
 
 X11MonitorManager::X11MonitorManager(X11Connection* conn): _conn{conn} {
-}
 
-void X11MonitorManager::Init() {
 	const xcb_query_extension_reply_t* ext = xcb_get_extension_data(_conn->Get(), &xcb_randr_id);
 	if (!ext || !ext->present) {
 		printf("X.RandR extension is not available\n");

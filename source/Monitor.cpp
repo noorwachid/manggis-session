@@ -40,8 +40,10 @@ void Monitor::FocusWorkspace(Workspace* workspace) {
 	if (_activeWorkspace == workspace) return;
 	if (_activeWorkspace != nullptr) {
 		_activeWorkspace->Blur();
+		_activeWorkspace->Hide();
 	}
 	workspace->Focus();
+	workspace->Show();
 	_activeWorkspace = workspace;
 }
 

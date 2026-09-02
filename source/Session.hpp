@@ -91,7 +91,7 @@ public:
 
 	void SendWindowToWorkspaceID(Wx::String const& id);
 
-	void FocusWindow(Window* window);
+	void FocusWindow(Window* window, bool moveCursor);
 
 	void FocusNearestWindow(Direction direction);
 
