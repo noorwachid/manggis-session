@@ -6,9 +6,12 @@
     - [x] drag window position
     - [x] drag across monitor
   - [ ] size constrain
-  - [ ] no decoration
+  - [x] no decoration
   - [ ] unmanaged (splash screen, notification, etc.)
   - [ ] padding calculation, (statusbar, dock, etc.)
+  - [ ] maximize
+  - [ ] minimize
+  - [ ] fullscreen (per workspace)
 - [x] workspace management
   - [x] clip window per monitor, detect the most window area to drop
 - [ ] monitor management

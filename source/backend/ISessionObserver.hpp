@@ -8,6 +8,8 @@
 
 class ISessionObserver {
 public:
+	virtual void onMonitorConfigure(wx::List<Monitor*> const& monitor) = 0;
+
 	virtual void onWorkspaceConfigure(wx::List<Workspace*> const& workspaces) = 0;
 
 	virtual void onWorkspaceFocus(Workspace* workspace) = 0;

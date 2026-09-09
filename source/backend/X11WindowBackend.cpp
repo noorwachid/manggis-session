@@ -40,7 +40,7 @@ void X11WindowBackend::move(int x, int y) {
 	values[1] = y;
 	xcb_configure_window(_conn->get(), _frame, XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y, values);
 	_conn->flush();
-	_notifyClient();
+	notifyClient();
 }
 
 void X11WindowBackend::resize(int width, int height) {
@@ -53,12 +53,12 @@ void X11WindowBackend::resize(int width, int height) {
 	LOG("[x11.window] resize to %d, %d\n", values[0], values[1]);
 
 	uint32_t clientValues[] = {
-		(uint32_t)width,
-		(uint32_t)height - _prop.titlebarHeight,
+		values[0],
+		values[1] - _prop.titlebarHeight,
 	};
 	xcb_configure_window(_conn->get(), _client, XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT, clientValues);
 	_conn->flush();
-	_notifyClient();
+	notifyClient();
 	draw();
 }
 
@@ -125,8 +125,10 @@ void X11WindowBackend::draw() {
 	_conn->flush();
 }
 
-void X11WindowBackend::_notifyClient() {
+void X11WindowBackend::notifyClient() {
 	Rect rect = getRect();
+	rect.width -= _prop.borderWidth * 2;
+	rect.height -= _prop.borderWidth * 2;
 	xcb_configure_notify_event_t event {};
 	event.response_type = XCB_CONFIGURE_NOTIFY;
 	event.window = _client;
@@ -138,6 +140,7 @@ void X11WindowBackend::_notifyClient() {
 	event.border_width = _prop.borderWidth;
 	event.above_sibling = XCB_NONE;
 	event.override_redirect = 0;
+	LOG("[x11.window] notify %d, %d, %d, %d\n", event.x, event.y, event.width, event.height);
 	xcb_send_event(_conn->get(), 0, _client, XCB_EVENT_MASK_STRUCTURE_NOTIFY, (const char *)&event);
 	_conn->flush();
 }

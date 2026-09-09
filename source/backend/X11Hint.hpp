@@ -39,9 +39,13 @@ public:
 
 	void setWindowFrame(xcb_window_t id, int left, int top, int right, int bottom);
 
+	void setWorkspaceWorkingRect(wx::List<Rect> const& rects);
+
 	void setWorkspaces(wx::List<wx::String> const& workspaces);
 
 	void setActiveWorkspace(wx::String const& workspace);
+
+	void setWindows(wx::List<xcb_window_t> const& ids);
 
 	bool isMoveResizeProperty(xcb_atom_t atom);
 

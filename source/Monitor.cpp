@@ -1,6 +1,7 @@
 #include "Monitor.hpp"
 #include "Workspace.hpp"
 #include "Window.hpp"
+#include "backend/IWindowBackend.hpp"
 #include <cstdio>
 
 Monitor::Monitor(IContext* context, MonitorDef def): _context{context}, _def{def} {
@@ -50,10 +51,10 @@ void Monitor::focusWorkspace(Workspace* workspace) {
 void Monitor::addWorkspace(Workspace* workspace) {
 	// TODO: check if monitor already exists
 	workspace->setMonitor(this);
-
 	_workspaces.append(workspace);
+
 	if (_activeWorkspace == nullptr) {
-		_activeWorkspace = workspace;
+		focusWorkspace(workspace);
 	}
 }
 
@@ -123,8 +124,8 @@ void Monitor::blur() {
 
 void Monitor::addWindow(Window* window) {
 	WindowType type = window->getType();
-	printf("WIN TYPE %d\n", (int) type);
-	if (type == WindowType::Normal) {
+
+	if (type == WindowType::Normal || type == WindowType::Dialog) {
 
 		Rect monitorRect = getRect();
 		Rect windowRect = window->getRect();
@@ -137,6 +138,7 @@ void Monitor::addWindow(Window* window) {
 			monitorRect.y + (monitorRect.height / 2) - (windowRect.height / 2)
 		);
 		_activeWorkspace->addWindow(window);
+		_activeWorkspace->focusWindow(window);
 
 	} else if (type == WindowType::Dock) {
 		_dockWindows.append(window);

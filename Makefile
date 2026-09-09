@@ -1,6 +1,9 @@
 test:
 	make vmon & sleep 1 && make run & tail -f /tmp/manggis-session.log
 
+debug:
+	make vmon & sleep 1 && gdb --args env DISPLAY=:1 ./build/manggis-session
+
 run:
 	env DISPLAY=:1 ./build/manggis-session
 

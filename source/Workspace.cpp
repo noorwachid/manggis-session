@@ -28,6 +28,13 @@ void Workspace::focusWindow(Window* window) {
 	window->raise();
 	window->focus();
 	_activeWindow = window;
+
+	// reorder window based on z-index
+	int idx = _windows.find(window);
+	if (idx != -1) {
+		_windows.remove(idx);
+		_windows.append(window);
+	}
 }
 
 void Workspace::addWindow(Window* window) {
@@ -36,7 +43,10 @@ void Workspace::addWindow(Window* window) {
 	window->setWorkspace(this);
 
 	_windows.append(window);
-	focusWindow(window);
+
+	if (_activeWindow == nullptr) {
+		focusWindow(window);
+	}
 }
 
 void Workspace::removeWindow(Window* window) {

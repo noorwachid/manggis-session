@@ -60,7 +60,7 @@ public:
 
 	void draw();
 
-	void _notifyClient();
+	void notifyClient();
 
 
 private:

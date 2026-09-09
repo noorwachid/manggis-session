@@ -10,6 +10,8 @@ class X11SessionObserver: public ISessionObserver {
 public:
 	X11SessionObserver(X11Connection* conn, X11Hint* hint);
 
+	virtual void onMonitorConfigure(wx::List<Monitor*> const& monitors) override;
+
 	virtual void onWorkspaceConfigure(wx::List<Workspace*> const& workspaces) override;
 
 	virtual void onWorkspaceFocus(Workspace* workspace) override;
@@ -19,4 +21,5 @@ public:
 public:
 	X11Connection* _conn;
 	X11Hint* _hint;
+	wx::List<Monitor*> _monitors;
 };

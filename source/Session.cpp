@@ -41,11 +41,9 @@ void Session::run(Config const& config) {
 	for (int i = 0; i < _config.mouseBindings.count(); i++) {
 		MouseBinding const& binding = _config.mouseBindings[i];
 		_context->bindMouseButton(binding.modKey, MouseButton::Left);
-		printf("BIND MOUSE %08x\n", binding.modKey);
 		MouseIndex index;
 		index.modKey = binding.modKey;
 		_mouseBindings.set(index, [this, binding](Window* window) {
-			printf("CALLBACK TO %08x\n", binding.modKey);
 			_doMouseCommand(binding.func, window);
 		});
 	}
@@ -114,7 +112,11 @@ void Session::onWindowCreate(WindowEvent const& e) {
 		focusMonitor(monitor);
 	}
 	_activeMonitor->addWindow(e.window);
-	_observer->onWindowFocus(e.window);
+
+	WindowType type = e.window->getType();
+	if (type == WindowType::Normal || type == WindowType::Dialog) {
+		_observer->onWindowFocus(e.window);
+	}
 
 	LOG("ACTIEV MON %p\n", _activeMonitor);
 	LOG("WINDOW CREATE %p, WS: %p, MON: %p\n", e.window, e.window->getWorkspace(), e.window->getMonitor());
@@ -124,6 +126,11 @@ void Session::onWindowCreate(WindowEvent const& e) {
 void Session::onWindowDestroy(WindowEvent const& e) {
 	Monitor* monitor = e.window->getMonitor();
 	monitor->removeWindow(e.window);
+
+	Window* window = monitor->getActiveWorkspace()->getActiveWindow();
+	if (window) {
+		_observer->onWindowFocus(window);
+	}
 }
 
 void Session::onWindowMoveRequest(WindowMovementEvent const& e) {
@@ -153,8 +160,6 @@ void Session::onMousePress(MouseButtonEvent const& e) {
 	if (type != WindowType::Normal) {
 		return;
 	}
-
-	printf("PRESS MOUSE %08x\n", e.modKey);
 
 	focusWindow(e.window, false);
 
@@ -205,9 +210,9 @@ void Session::onMouseRelease(MouseButtonEvent const& e) {
 		}
 
 		if (_activeMonitor != bestMonitor) {
-			focusWorkspace(bestMonitor->getActiveWorkspace());
 			window->getWorkspace()->removeWindow(window);
 			bestMonitor->getActiveWorkspace()->addWindow(window);
+			focusWorkspace(bestMonitor->getActiveWorkspace(), false);
 		}
 
 		_clipWindow(window);
@@ -334,6 +339,10 @@ void Session::focusMonitor(Monitor* monitor) {
 	_activeMonitor = monitor;
 	_activeMonitor->focus();
 	_observer->onWorkspaceFocus(_activeMonitor->getActiveWorkspace());
+	Window* window = _activeMonitor->getActiveWorkspace()->getActiveWindow();
+	if (window) {
+		_observer->onWindowFocus(window);
+	}
 }
 
 void Session::focusWorkspaceID(wx::String const& id) {
@@ -344,13 +353,13 @@ void Session::focusWorkspaceID(wx::String const& id) {
 		if (ws == nullptr) {
 			continue;
 		}
-		focusWorkspace(ws);
+		focusWorkspace(ws, true);
 		return;
 	}
 	LOG("no workspace with id %s\n", id.cptr());
 }
 
-void Session::focusWorkspace(Workspace* workspace) {
+void Session::focusWorkspace(Workspace* workspace, bool moveCursor) {
 	Monitor* mon = workspace->getMonitor();
 	focusMonitor(mon);
 	mon->focusWorkspace(workspace);
@@ -359,15 +368,26 @@ void Session::focusWorkspace(Workspace* workspace) {
 	// if workspace is empty move the cursor in the middle of monitor
 	if (workspace->getWindowList().isEmpty()) {
 		// TODO: make it configurable 
-		if (true) {
+		if (moveCursor) {
 			Rect rect = mon->getWorkingRect();
 			Point point;
 			point.x = rect.x + (rect.width / 2);
 			point.y = rect.y + (rect.height / 2);
 			_context->setMousePos(point);
 		}
+	} else {
+		if (moveCursor) {
+			Rect rect = workspace->getActiveWindow()->getRect();
+			Point point;
+			point.x = rect.x + (rect.width / 2);
+			point.y = rect.y + (rect.height / 2);
+			_context->setMousePos(point);
+		}
 	}
-	LOG("activate workspace %s\n", workspace->getID().cptr());
+	Window* window = _activeMonitor->getActiveWorkspace()->getActiveWindow();
+	if (window) {
+		_observer->onWindowFocus(window);
+	}
 }
 
 void Session::sendWorkspaceToMonitor(Workspace* workspace, Monitor* monitor) {
@@ -410,8 +430,13 @@ void Session::sendWindowToWorkspace(Window* window, Workspace* workspace) {
 		_clipWindow(window);
 	}
 
-	window->getWorkspace()->removeWindow(window);
+	previousWorkspace->removeWindow(window);
+
 	workspace->addWindow(window);
+	workspace->focusWindow(window);
+	workspace->blur();
+
+	previousWorkspace->focus();
 }
 
 void Session::sendWindowToWorkspaceID(wx::String const& id) {
@@ -432,11 +457,8 @@ void Session::sendWindowToWorkspaceID(wx::String const& id) {
 }
 
 void Session::focusWindow(Window* window, bool moveCursor) {
-	// raise to top (if background wallpaper or desktop orginizer you dont have to move it forward)
-	window->raise();
-	
 	Workspace* ws = window->getWorkspace();
-	focusWorkspace(ws);
+	focusWorkspace(ws, false);
 	ws->focusWindow(window);
 	_observer->onWindowFocus(window);
 
@@ -924,6 +946,7 @@ void Session::_updateLayout() {
 		}
 	}
 
+	_observer->onMonitorConfigure(_monitors);
 	_observer->onWorkspaceConfigure(workspaces);
 	_logLayout();
 }
@@ -999,11 +1022,6 @@ void Session::_clipWindow(Window* window) {
 	clipRect.y = intersectRect.y - windowRect.y;
 	clipRect.width = intersectRect.width;
 	clipRect.height = intersectRect.height;
-
-	printf("[clip] working: %d, %d, %d, %d\n", workingRect.x, workingRect.y, workingRect.x + workingRect.width, workingRect.y + workingRect.height);
-	printf("[clip] window: %d, %d, %d, %d\n", windowRect.x, windowRect.y, windowRect.x + windowRect.width, windowRect.y + windowRect.height);
-	printf("[clip] intersect: %d, %d, %d, %d\n", intersectRect.x, intersectRect.y, intersectRect.x + intersectRect.width, intersectRect.y + intersectRect.height);
-	printf("[clip] clip: %d, %d, %d, %d\n", clipRect.x, clipRect.y, clipRect.x + clipRect.width, clipRect.y + clipRect.height);
 
 	_context->clipWindow(window, clipRect);
 }

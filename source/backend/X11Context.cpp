@@ -5,6 +5,8 @@
 #include "backend/X11Context.hpp"
 #include "input/Key.hpp"
 #include "core/Logger.hpp"
+#include <iostream>
+#include <unistd.h>
 
 X11Context::X11Context() {
 	_conn = new X11Connection();
@@ -77,6 +79,7 @@ void X11Context::bindMouseMovement() {
 void X11Context::unbindMouseMovement() {
 	xcb_ungrab_pointer(_conn->get(), XCB_CURRENT_TIME);
 	_conn->flush();
+	printf("UNGRAB POINTER\n");
 }
 
 void X11Context::bindKey(ModKey modKey, Key key) {
@@ -140,8 +143,41 @@ Point X11Context::getMousePos() {
 }
 
 void X11Context::setMousePos(Point point) {
-	xcb_warp_pointer(_conn->get(), XCB_NONE, _conn->getRoot(), 0, 0, 0, 0, point.x, point.y);
-	_conn->flush();
+	auto conn = _conn->get();
+	auto root = _conn->getRoot();
+	auto cookie = xcb_query_pointer(conn, root);
+	auto reply = xcb_query_pointer_reply(conn, cookie, nullptr);
+
+	if (reply) {
+		std::cout << "BEFORE: "
+			<< reply->root_x << ", "
+			<< reply->root_y << '\n';
+
+		free(reply);
+	}
+
+	xcb_warp_pointer(
+			conn,
+			XCB_NONE,
+			root,
+			0, 0, 0, 0,
+			point.x, point.y
+			);
+
+	xcb_flush(conn);
+
+	usleep(10000);
+
+	cookie = xcb_query_pointer(conn, root);
+	reply = xcb_query_pointer_reply(conn, cookie, nullptr);
+
+	if (reply) {
+		std::cout << "AFTER: "
+			<< reply->root_x << ", "
+			<< reply->root_y << '\n';
+
+		free(reply);
+	}
 }
 
 wx::List<MonitorDef> X11Context::getConnectedMonitorDefs() {
@@ -235,7 +271,7 @@ void X11Context::run(IObserver* observer) {
 				Window* window = _queryWindowByClient(e->window);
 				if (window) {
 					X11WindowBackend* backend = (X11WindowBackend*) window->getBackend();
-					backend->_notifyClient();
+					backend->notifyClient();
 					break;
 				}
 				uint16_t mask = 0;

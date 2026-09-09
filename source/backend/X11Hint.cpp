@@ -1,6 +1,7 @@
 #include "core/Unit.hpp"
 #include "backend/X11Hint.hpp"
 #include "backend/X11Connection.hpp"
+#include "wx/core/List.hpp"
 #include <cstdio>
 #include <xcb/xcb_icccm.h>
 #include <xcb/xcb_ewmh.h>
@@ -36,6 +37,7 @@ X11Hint::X11Hint(X11Connection* conn): _conn{conn} {
 
 		_ewmh._NET_CLIENT_LIST,
 		_ewmh._NET_FRAME_EXTENTS,
+		_ewmh._NET_WORKAREA,
 
 		_ewmh._NET_WM_NAME,
 		_ewmh._NET_WM_MOVERESIZE,
@@ -339,6 +341,19 @@ void X11Hint::setWindowFrame(xcb_window_t id, int left, int top, int right, int 
 	xcb_ewmh_set_frame_extents(&_ewmh, id, left, right, top, bottom);
 }
 
+void X11Hint::setWorkspaceWorkingRect(wx::List<Rect> const& rects) {
+	wx::List<xcb_ewmh_geometry_t> list;
+	for (int i = 0; i < rects.count(); i++) {
+		xcb_ewmh_geometry_t item;
+		item.x = rects[i].x;
+		item.y = rects[i].y;
+		item.width = rects[i].width;
+		item.height = rects[i].height;
+		list.append(item);
+	}
+	xcb_ewmh_set_workarea(&_ewmh, _screenNumber, list.count(), list.ptr());
+}
+
 void X11Hint::setWorkspaces(wx::List<wx::String> const& workspaces) {
 	_workspaces = workspaces;
 	xcb_ewmh_set_number_of_desktops(&_ewmh, _screenNumber, _workspaces.count());
@@ -359,6 +374,11 @@ void X11Hint::setActiveWorkspace(wx::String const& workspace) {
 			return;
 		}
 	}
+}
+
+void X11Hint::setWindows(wx::List<xcb_window_t> const& ids) {
+	xcb_ewmh_set_client_list(&_ewmh, _screenNumber, ids.count(), ids.ptr());
+	xcb_ewmh_set_client_list_stacking(&_ewmh, _screenNumber, ids.count(), ids.ptr());
 }
 
 bool X11Hint::isMoveResizeProperty(xcb_atom_t atom) {

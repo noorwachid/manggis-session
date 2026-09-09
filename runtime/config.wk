@@ -47,17 +47,16 @@
 
 	styles: (
 		frame: (
+			titlebarHeight: 20,
+			borderWidth: 1,
+
 			active: (
-				titlebarHeight: 20,
 				titlebarColor: "#00FFFF",
-				borderWidth: 1,
 				borderColor: "#2288FF",
 			),
 
 			inactive: (
-				titlebarHeight: 20,
 				titlebarColor: "#00FFFF",
-				borderWidth: 1,
 				borderColor: "#2288FF",
 			),
 		)

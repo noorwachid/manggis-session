@@ -93,7 +93,7 @@ public:
 
 	void focusWorkspaceID(wx::String const& id);
 
-	void focusWorkspace(Workspace* workspace);
+	void focusWorkspace(Workspace* workspace, bool moveCursor);
 
 	void sendWorkspaceToMonitor(Workspace* workspace, Monitor* monitor);
 
