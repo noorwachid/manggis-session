@@ -52,4 +52,4 @@ public:
 	}
 };
 
-IContext* CreateContext();
+IContext* createContext();

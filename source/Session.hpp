@@ -117,6 +117,8 @@ public:
 
 private:
 
+	wx::List<Workspace*> _getWorkspaceList();
+
 	void _beginDrag(DragMode mode, Window* window, WindowResizingArea area = WindowResizingArea::None);
 
 	void _doCommand(Command const& command);

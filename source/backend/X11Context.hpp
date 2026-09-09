@@ -71,6 +71,8 @@ public:
 	virtual void stop() override;
 
 private:
+	void _unmanagedWindowList(IObserver* observer);
+
 	Window* _queryWindowByFrame(xcb_window_t handle);
 
 	Window* _queryWindowByClient(xcb_window_t handle);

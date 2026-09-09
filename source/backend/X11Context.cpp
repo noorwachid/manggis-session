@@ -1,4 +1,5 @@
 #include "Event.hpp"
+#include "IObserver.hpp"
 #include "Monitor.hpp"
 #include "backend/IContext.hpp"
 #include "backend/X11WindowBackend.hpp"
@@ -207,6 +208,8 @@ Margin X11Context::getDockExtend(Window* window) {
 
 void X11Context::run(IObserver* observer) {
 	_updateMonitors(observer);
+
+	_unmanagedWindowList(observer);
 
 	while (_running) {
 		xcb_generic_event_t* ev = xcb_wait_for_event(_conn->get());
@@ -668,6 +671,51 @@ void X11Context::stop() {
 	_running = false;
 }
 
+void X11Context::_unmanagedWindowList(IObserver* observer) {
+	xcb_query_tree_cookie_t cookie = xcb_query_tree(_conn->get(), _conn->getRoot());
+	xcb_query_tree_reply_t *tree = xcb_query_tree_reply(_conn->get(), cookie, NULL);
+
+	if (!tree)
+		return;
+
+	int n = xcb_query_tree_children_length(tree);
+	xcb_window_t *children = xcb_query_tree_children(tree);
+
+	for (int i = 0; i < n; i++) {
+		xcb_window_t win = children[i];
+
+		xcb_get_window_attributes_cookie_t ac = xcb_get_window_attributes(_conn->get(), win);
+		xcb_get_window_attributes_reply_t *attr = xcb_get_window_attributes_reply(_conn->get(), ac, NULL);
+
+		if (!attr)
+			continue;
+
+		if (attr->override_redirect) {
+			free(attr);
+			continue;
+		}
+
+		if (attr->map_state == XCB_MAP_STATE_VIEWABLE) {
+			Window* window = _queryWindowByClient(win);
+			if (!window) {
+				X11WindowBackend* backend = new X11WindowBackend(_conn, _hint, win);
+				window = new Window(backend);
+				WindowEvent event;
+				event.window = window;
+
+				_clientWindowMap.set(win, window);
+				_frameWindowMap.set(backend->getFrameHandle(), window);
+
+				observer->onWindowCreate(event);
+			}
+		}
+
+		free(attr);
+	}
+
+	free(tree);
+}
+
 Window* X11Context::_queryWindowByFrame(xcb_window_t handle) {
 	if (handle == XCB_NONE) return nullptr;
 	Window** window = _frameWindowMap.getOrNull(handle);
@@ -870,7 +918,7 @@ void X11Context::_updateMonitors(IObserver* observer) {
 	_monitorDefs = static_cast<wx::List<MonitorDef>&&>(currentMonitorDefs);
 }
 
-IContext* CreateContext() {
+IContext* createContext() {
 	return new X11Context();
 }
 

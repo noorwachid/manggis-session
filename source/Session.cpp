@@ -35,7 +35,7 @@ extern int xephyrMonitorConfiguration;
 void Session::run(Config const& config) {
 	_config = config;
 
-	_context = CreateContext();
+	_context = createContext();
 	_observer = _context->getSessionObserver();
 
 	for (int i = 0; i < _config.mouseBindings.count(); i++) {
@@ -116,6 +116,9 @@ void Session::onWindowCreate(WindowEvent const& e) {
 	WindowType type = e.window->getType();
 	if (type == WindowType::Normal || type == WindowType::Dialog) {
 		_observer->onWindowFocus(e.window);
+	}
+	if (type == WindowType::Dock) {
+		_observer->onMonitorConfigure(_monitors);
 	}
 
 	LOG("ACTIEV MON %p\n", _activeMonitor);
@@ -736,6 +739,25 @@ void Session::closeWindow() {
 	}
 }
 
+wx::List<Workspace*> Session::_getWorkspaceList() {
+	wx::List<Workspace*> workspaces;
+
+	for (int i = 0; i < _monitors.count(); i++) {
+		Monitor* monitor = _monitors[i];
+		for (int j = 0; j < monitor->getWorkspaceList().count(); j++) {
+			Workspace* workspace = monitor->getWorkspaceList()[j];
+			workspaces.append(workspace);
+			for (int k = 0; k < workspace->getWindowList().count(); k++) {
+				Window* window = workspace->getWindowList()[k];
+				// reclip window
+				_clipWindow(window);
+			}
+		}
+	}
+
+	return workspaces;
+}
+
 void Session::_beginDrag(DragMode mode, Window* window, WindowResizingArea area) {
 	_dragState.mode = mode;
 	_dragState.window = window;
@@ -930,24 +952,23 @@ void Session::_updateLayout() {
 		}
 	}
 
-	// collect living workspace list
-	wx::List<Workspace*> workspaces;
-
 	for (int i = 0; i < _monitors.count(); i++) {
 		Monitor* monitor = _monitors[i];
 		for (int j = 0; j < monitor->getWorkspaceList().count(); j++) {
 			Workspace* workspace = monitor->getWorkspaceList()[j];
-			workspaces.append(workspace);
 			for (int k = 0; k < workspace->getWindowList().count(); k++) {
 				Window* window = workspace->getWindowList()[k];
 				// reclip window
 				_clipWindow(window);
 			}
 		}
+
+		monitor->getActiveWorkspace()->focus();
+		monitor->getActiveWorkspace()->show();
 	}
 
 	_observer->onMonitorConfigure(_monitors);
-	_observer->onWorkspaceConfigure(workspaces);
+	_observer->onWorkspaceConfigure(_getWorkspaceList());
 	_logLayout();
 }
 
@@ -970,7 +991,7 @@ void Session::_logLayout() {
 
 			for (int k = 0; k < ws->getWindowList().count(); k++) {
 				Window* win = ws->getWindowList()[k];
-				LOG("      win %p: (ws: %s, mon: %s)", win, win->getWorkspace()->getID().cptr(), win->getMonitor()->getPort().cptr());
+				LOG("      win %p: (ws: %s, mon: %s) %s", win, win->getWorkspace()->getID().cptr(), win->getMonitor()->getPort().cptr(), win->getTitle().cptr());
 				if (win == ws->getActiveWindow()) {
 					LOG(" # active");
 				}
