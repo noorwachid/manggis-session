@@ -486,22 +486,47 @@ void Session::focusNearestWindow(Direction direction) {
 	Window* sourceWindow = _activeMonitor->getActiveWorkspace()->getActiveWindow();
 	if (sourceWindow == nullptr) return;
 
-	Window* nearestWindow = findNearestWindow(sourceWindow, direction, true);
+	Window* nearestWindow = findNearestWindow(sourceWindow, sourceWindow->getWorkspace()->getWindowList(), direction, true);
 	if (nearestWindow != nullptr) {
 		focusWindow(nearestWindow, true);
 		return;
 	}
-	Window* nearestNonParalellWindow = findNearestWindow(sourceWindow, direction, false);
+	Window* nearestNonParalellWindow = findNearestWindow(sourceWindow, sourceWindow->getWorkspace()->getWindowList(), direction, false);
 	if (nearestNonParalellWindow != nullptr) {
 		focusWindow(nearestNonParalellWindow, true);
 		return;
 	}
-	// TODO: find other monitor
+
+	Monitor* nearestMonitor = findNearestMonitor(_activeMonitor, direction, true);
+	if (nearestMonitor != nullptr) {
+		Window* nearestWindow = findNearestWindow(sourceWindow, nearestMonitor->getActiveWorkspace()->getWindowList(), direction, true);
+		if (nearestWindow != nullptr) {
+			focusWindow(nearestWindow, true);
+			return;
+		}
+		Window* nearestNonParalellWindow = findNearestWindow(sourceWindow, nearestMonitor->getActiveWorkspace()->getWindowList(), direction, false);
+		if (nearestNonParalellWindow != nullptr) {
+			focusWindow(nearestNonParalellWindow, true);
+			return;
+		}
+	}
+
+	Monitor* nearestNonParalellMonitor = findNearestMonitor(_activeMonitor, direction, true);
+	if (nearestNonParalellMonitor != nullptr) {
+		Window* nearestWindow = findNearestWindow(sourceWindow, nearestNonParalellMonitor->getActiveWorkspace()->getWindowList(), direction, true);
+		if (nearestWindow != nullptr) {
+			focusWindow(nearestWindow, true);
+			return;
+		}
+		Window* nearestNonParalellWindow = findNearestWindow(sourceWindow, nearestNonParalellMonitor->getActiveWorkspace()->getWindowList(), direction, false);
+		if (nearestNonParalellWindow != nullptr) {
+			focusWindow(nearestNonParalellWindow, true);
+			return;
+		}
+	}
 }
 
-Window* Session::findNearestWindow(Window* window, Direction direction, bool onlyParallelWindow) {
-	Workspace* workspace = window->getWorkspace();
-	Window* sourceWindow = window;
+Window* Session::findNearestWindow(Window* sourceWindow, wx::List<Window*> const& targetWindows, Direction direction, bool onlyParallelWindow) {
 	if (sourceWindow == nullptr) return nullptr;
 
 	Rect source = sourceWindow->getRect();
@@ -513,8 +538,8 @@ Window* Session::findNearestWindow(Window* window, Direction direction, bool onl
 	int errorLimit = 20;
 
 	if (direction == Direction::East) {
-		for (int i = 0; i < workspace->getWindowList().count(); i++) {
-			Window* targetWindow = workspace->getWindowList()[i];
+		for (int i = 0; i < targetWindows.count(); i++) {
+			Window* targetWindow = targetWindows[i];
 			if (targetWindow == sourceWindow) continue;
 
 			Rect target = targetWindow->getRect();
@@ -557,8 +582,8 @@ Window* Session::findNearestWindow(Window* window, Direction direction, bool onl
 			}
 		}
 	} else if (direction == Direction::West) {
-		for (int i = 0; i < workspace->getWindowList().count(); i++) {
-			Window* targetWindow = workspace->getWindowList()[i];
+		for (int i = 0; i < targetWindows.count(); i++) {
+			Window* targetWindow = targetWindows[i];
 			if (targetWindow == sourceWindow) continue;
 
 			Rect target = targetWindow->getRect();
@@ -601,8 +626,8 @@ Window* Session::findNearestWindow(Window* window, Direction direction, bool onl
 			}
 		}
 	} else if (direction == Direction::South) {
-		for (int i = 0; i < workspace->getWindowList().count(); i++) {
-			Window* targetWindow = workspace->getWindowList()[i];
+		for (int i = 0; i < targetWindows.count(); i++) {
+			Window* targetWindow = targetWindows[i];
 			if (targetWindow == sourceWindow) continue;
 
 			Rect target = targetWindow->getRect();
@@ -645,8 +670,8 @@ Window* Session::findNearestWindow(Window* window, Direction direction, bool onl
 			}
 		}
 	} else if (direction == Direction::North) {
-		for (int i = 0; i < workspace->getWindowList().count(); i++) {
-			Window* targetWindow = workspace->getWindowList()[i];
+		for (int i = 0; i < targetWindows.count(); i++) {
+			Window* targetWindow = targetWindows[i];
 			if (targetWindow == sourceWindow) continue;
 
 			Rect target = targetWindow->getRect();
@@ -693,6 +718,196 @@ Window* Session::findNearestWindow(Window* window, Direction direction, bool onl
 	return shortestWindow;
 }
 
+Monitor* Session::findNearestMonitor(Monitor* sourceMonitor, Direction direction, bool onlyParallel) {
+	if (sourceMonitor == nullptr) return nullptr;
+
+	Rect source = sourceMonitor->getRect();
+
+	int shortestDistance = INT_MAX;
+	Monitor* shortestMonitor = nullptr;
+
+	int largestSurface = 0;
+	int errorLimit = 20;
+
+	if (direction == Direction::East) {
+		for (int i = 0; i < _monitors.count(); i++) {
+			Monitor* targetMonitor = _monitors[i];
+			if (targetMonitor == sourceMonitor) continue;
+			Rect target = targetMonitor->getRect();
+			int distance = 0;
+			int surface = calculateCrossSurface(source.y, source.y + source.height, target.y, target.y + target.height);
+			if (onlyParallel && surface == 0) continue;
+
+			// partial overlap but target is visible
+			// +---+
+			// | +----+
+			// | |    |
+			// | +----+
+			// +---+
+			bool partialOverlap = isInsideRange(source.x + source.width, target.x, target.x + target.width);
+
+			// non overlap
+			// +---+
+			// |   | +----+
+			// |   | |    |
+			// |   | +----+
+			// +---+
+			bool nonOverlap = target.x >= source.x + source.width;
+
+			if (partialOverlap || nonOverlap) {
+				distance = (target.x) - (source.x);
+			}
+
+			if (distance > 0) {
+				if (abs(shortestDistance - distance) <= errorLimit) {
+					if (largestSurface <= surface) {
+						largestSurface = surface;
+						shortestDistance = distance;
+						shortestMonitor = targetMonitor;
+					}
+				} else if (shortestDistance > distance) {
+					largestSurface = surface;
+					shortestDistance = distance;
+					shortestMonitor = targetMonitor;
+				}
+			}
+		}
+	} else if (direction == Direction::West) {
+		for (int i = 0; i < _monitors.count(); i++) {
+			Monitor* targetMonitor = _monitors[i];
+			if (targetMonitor == sourceMonitor) continue;
+
+			Rect target = targetMonitor->getRect();
+			int distance = 0;
+			int surface = calculateCrossSurface(source.y, source.y + source.height, target.y, target.y + target.height);
+			if (onlyParallel && surface == 0) continue;
+
+			// partial overlap but target is visible
+			//    +---+
+			// +----+ |
+			// |    | |
+			// +----+ |
+			//    +---+
+			bool partialOverLap = isInsideRange(source.x, target.x, target.x + target.width);
+
+			// non overlap
+			//        +---+
+			// +----+ |   | 
+			// |    | |   | 
+			// +----+ |   | 
+			//        +---+
+			bool nonOverlap = target.x + target.width <= source.x;
+
+			if (partialOverLap || nonOverlap) {
+				distance = (source.x + source.width) - (target.x + target.width);
+			}
+
+			if (distance > 0) {
+				if (abs(shortestDistance - distance) <= errorLimit) {
+					if (largestSurface <= surface) {
+						largestSurface = surface;
+						shortestDistance = distance;
+						shortestMonitor = targetMonitor;
+					}
+				} else if (shortestDistance > distance) {
+					largestSurface = surface;
+					shortestDistance = distance;
+					shortestMonitor = targetMonitor;
+				}
+			}
+		}
+	} else if (direction == Direction::South) {
+		for (int i = 0; i < _monitors.count(); i++) {
+			Monitor* targetMonitor = _monitors[i];
+			if (targetMonitor == sourceMonitor) continue;
+
+			Rect target = targetMonitor->getRect();
+			int distance = 0;
+			int surface = calculateCrossSurface(source.x, source.x + source.width, target.x, target.x + target.width);
+			if (onlyParallel && surface == 0) continue;
+
+			// partial overlap but target is visible
+			// +--------+
+			// | +----+ |
+			// +-|    |-+
+			//   +----+
+			bool partialOverLap = isInsideRange(source.y + source.height, target.y, target.y + target.height);
+
+			// non overlap
+			// +---------+
+			// |         |
+			// +---------+
+			//   +----+
+			//   |    |
+			//   +----+
+			bool nonOverlap = target.y >= source.y + source.height;
+
+			if (partialOverLap || nonOverlap) {
+				distance = (target.y) - (source.y);
+			}
+
+			if (distance > 0) {
+				if (abs(shortestDistance - distance) <= errorLimit) {
+					if (largestSurface <= surface) {
+						largestSurface = surface;
+						shortestDistance = distance;
+						shortestMonitor = targetMonitor;
+					}
+				} else if (shortestDistance > distance) {
+					largestSurface = surface;
+					shortestDistance = distance;
+					shortestMonitor = targetMonitor;
+				}
+			}
+		}
+	} else if (direction == Direction::North) {
+		for (int i = 0; i < _monitors.count(); i++) {
+			Monitor* targetMonitor = _monitors[i];
+			if (targetMonitor == sourceMonitor) continue;
+
+			Rect target = targetMonitor->getRect();
+			int distance = 0;
+			int surface = calculateCrossSurface(source.x, source.x + source.width, target.x, target.x + target.width);
+			if (onlyParallel && surface == 0) continue;
+
+			// partial overlap but target is visible
+			//   +----+  
+			// +-|    |-+
+			// | +----+ |
+			// +--------+
+			bool partialOverLap = isInsideRange(source.y, target.y, target.y + target.height);
+
+			// non overlap
+			//   +----+
+			//   |    |
+			//   +----+
+			// +---------+
+			// |         |
+			// +---------+
+			bool nonOverlap = target.y + target.height <= source.y;
+
+			if (partialOverLap || nonOverlap) {
+				distance = (source.y + source.height) - (target.y + target.height);
+			}
+
+			if (distance > 0) {
+				if (abs(shortestDistance - distance) <= errorLimit) {
+					if (largestSurface <= surface) {
+						largestSurface = surface;
+						shortestDistance = distance;
+						shortestMonitor = targetMonitor;
+					}
+				} else if (shortestDistance > distance) {
+					largestSurface = surface;
+					shortestDistance = distance;
+					shortestMonitor = targetMonitor;
+				}
+			}
+		}
+	}
+
+	return shortestMonitor;
+}
 void Session::cycleNextWindow() {
 	Workspace* workspace = _activeMonitor->getActiveWorkspace();
 	if (workspace->getWindowList().count() < 2) return;

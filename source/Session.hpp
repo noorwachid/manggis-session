@@ -105,9 +105,9 @@ public:
 
 	void focusNearestWindow(Direction direction);
 
-	Window* findNearestWindow(Window* window, Direction direction, bool onlyParallelWindow);
+	Window* findNearestWindow(Window* sourceWindow,  wx::List<Window*> const& targetWindows, Direction direction, bool onlyParallelWindow);
 
-	Monitor* findNearestMonitor(Monitor* window, Direction direction, bool onlyParallelWindow);
+	Monitor* findNearestMonitor(Monitor* sourceMonitor, Direction direction, bool onlyParallelWindow);
 
 	void cycleNextWindow();
 
