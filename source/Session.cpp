@@ -155,8 +155,10 @@ void Session::onWindowMaximizeRequest(WindowActionEvent const& e) {
 
 	if (action == WindowAction::Enable) {
 		Rect target = _activeMonitor->getWorkingRect();
-		Rect source = e.window->getRect();
-		_windowRestoreRects.set((uintptr_t)e.window, source);
+
+		if (!_windowRestoreRects.has((uintptr_t)e.window)) {
+			_windowRestoreRects.set((uintptr_t)e.window, e.window->getRect());
+		}
 
 		e.window->move(target.x, target.y);
 		e.window->resize(target.width, target.height);
@@ -183,9 +185,15 @@ void Session::onWindowFullscreenRequest(WindowActionEvent const& e) {
 	WindowAction action = e.action;
 
 	if (action == WindowAction::Enable) {
+		if (workspace->isFullscreen()) return;
+		workspace->setFullscreen(true);
+
 		Rect target = _activeMonitor->getRect();
-		Rect source = e.window->getRect();
-		_windowRestoreRects.set((uintptr_t)e.window, source);
+
+		if (!_windowRestoreRects.has((uintptr_t)e.window)) {
+			_windowRestoreRects.set((uintptr_t)e.window, e.window->getRect());
+		}
+
 		_activeMonitor->hideDocks();
 
 		WindowProp prop;
@@ -201,6 +209,7 @@ void Session::onWindowFullscreenRequest(WindowActionEvent const& e) {
 		_clipWindow(e.window);
 	}
 	if (action == WindowAction::Disable) {
+		workspace->setFullscreen(false);
 		_activeMonitor->showDocks();
 
 		WindowProp prop;
@@ -241,6 +250,13 @@ void Session::onMousePress(MouseButtonEvent const& e) {
 		MouseIndex index;
 		index.modKey = e.modKey;
 		MouseCallback* callback = _mouseBindings.getOrNull(index);
+
+		Rect* target = _windowRestoreRects.getOrNull((uintptr_t)e.window);
+		if (target) {
+			e.window->resize(target->width, target->height);
+			_windowRestoreRects.remove((uintptr_t)e.window);
+		}
+
 		if (callback != nullptr) {
 			(*callback)((Window*)e.window);
 		} else {
@@ -1018,11 +1034,29 @@ void Session::cyclePreviousWindow() {
 }
 
 void Session::closeWindow() {
-	Workspace* ws = _activeMonitor->getActiveWorkspace();
-	Window* window = ws->getActiveWindow();
+	Workspace* workspace = _activeMonitor->getActiveWorkspace();
+	Window* window = workspace->getActiveWindow();
 	if (window) {
+		if (workspace->isFullscreen() && WX_FLAGS_CONTAIN(window->getState(), WindowState::Fullscreen)) {
+			restoreWindow();
+		}
 		window->close();
 	}
+}
+
+void Session::fullscreenWindow() {
+	Workspace* workspace = _activeMonitor->getActiveWorkspace();
+	Window* window = workspace->getActiveWindow();
+	if (window == nullptr) return;
+}
+
+void Session::maximizeWindow() {
+	Workspace* workspace = _activeMonitor->getActiveWorkspace();
+	Window* window = workspace->getActiveWindow();
+	if (window == nullptr) return;
+}
+
+void Session::restoreWindow() {
 }
 
 wx::List<Workspace*> Session::_getWorkspaceList() {
@@ -1119,6 +1153,11 @@ void Session::_doCommand(Command const& command) {
 	if (command.func == CommandFunc::TileWindow) {
 		Window* window = _activeMonitor->getActiveWorkspace()->getActiveWindow();
 		if (window == nullptr) return;
+
+		if (!_windowRestoreRects.has((uintptr_t)window)) {
+			_windowRestoreRects.set((uintptr_t)window, window->getRect());
+		}
+
 		Rect avail = _activeMonitor->getWorkingRect();
 		wx::HashTable<wx::String, wx::WkValue> const& args = command.arguments.asHashTable();
 		wx::Float64 x = args.get("x").asFloat64();

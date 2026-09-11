@@ -115,6 +115,12 @@ public:
 
 	void closeWindow();
 
+	void fullscreenWindow();
+
+	void maximizeWindow();
+
+	void restoreWindow();
+
 private:
 
 	wx::List<Workspace*> _getWorkspaceList();
