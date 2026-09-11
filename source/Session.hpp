@@ -154,4 +154,6 @@ private:
 
 	wx::HashTable<KeyIndex, KeyCallback> _keyBindings;
 	wx::HashTable<MouseIndex, MouseCallback> _mouseBindings;
+
+	wx::HashTable<wx::Uint64, Rect> _windowRestoreRects;
 };

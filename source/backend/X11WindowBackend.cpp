@@ -1,7 +1,10 @@
 #include "backend/X11WindowBackend.hpp"
+#include "backend/IWindowBackend.hpp"
 #include "core/Logger.hpp"
+#include "WindowStyle.hpp"
 
 X11WindowBackend::X11WindowBackend(X11Connection* conn, X11Hint* hint, xcb_window_t handle): _conn{conn}, _hint{hint}, _client{handle} {
+	_state = WindowState::None;
 	_reparent();
 }
 
@@ -16,6 +19,22 @@ Rect X11WindowBackend::getRect() {
 	return rect;
 }
 
+void X11WindowBackend::setProp(WindowProp prop) {
+	_prop = prop;
+	if (!_hint->isWindowDecorated(_client)) {
+		_prop.borderWidth = 0;
+		_prop.titlebarHeight = 0;
+	}
+
+	uint32_t values[2];
+	values[0] = 0;
+	values[1] = _prop.titlebarHeight;
+	xcb_configure_window(_conn->get(), _client, XCB_CONFIG_WINDOW_X | XCB_CONFIG_WINDOW_Y, values);
+
+	_hint->setWindowFrame(_client, _prop.borderWidth, _prop.borderWidth + _prop.titlebarHeight, _prop.borderWidth, _prop.borderWidth);
+	_conn->flush();
+}
+
 WindowProp X11WindowBackend::getProp() {
 	return _prop;
 }
@@ -26,6 +45,16 @@ WindowType X11WindowBackend::getType() {
 
 wx::String X11WindowBackend::getTitle() {
 	return _hint->getWindowTitle(_client);
+}
+
+void X11WindowBackend::setState(WindowState state) {
+	_state = state;
+	_hint->setWindowState(_client, state);
+	_conn->flush();
+}
+
+WindowState X11WindowBackend::getState() {
+	return _state;
 }
 
 void X11WindowBackend::raise() {

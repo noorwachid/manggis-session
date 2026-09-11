@@ -1,3 +1,5 @@
+#include "Event.hpp"
+#include "WindowStyle.hpp"
 #include "core/Logger.hpp"
 #include "core/Collider.hpp"
 #include "core/Direction.hpp"
@@ -145,9 +147,78 @@ void Session::onWindowResizeRequest(WindowResizingEvent const& e) {
 }
 
 void Session::onWindowMaximizeRequest(WindowActionEvent const& e) {
+	Workspace* workspace = e.window->getWorkspace();
+	if (workspace == nullptr) {
+		return;
+	}
+	WindowAction action = e.action;
+
+	if (action == WindowAction::Enable) {
+		Rect target = _activeMonitor->getWorkingRect();
+		Rect source = e.window->getRect();
+		_windowRestoreRects.set((uintptr_t)e.window, source);
+
+		e.window->move(target.x, target.y);
+		e.window->resize(target.width, target.height);
+		e.window->setState(e.window->getState() | WindowState::Maximized);
+		_clipWindow(e.window);
+	}
+	if (action == WindowAction::Disable) {
+		Rect* target = _windowRestoreRects.getOrNull((uintptr_t)e.window);
+		if (target) {
+			e.window->move(target->x, target->y);
+			e.window->resize(target->width, target->height);
+			_windowRestoreRects.remove((uintptr_t)e.window);
+		}
+		e.window->setState(e.window->getState() & ~WindowState::Maximized);
+		_clipWindow(e.window);
+	}
 }
 
 void Session::onWindowFullscreenRequest(WindowActionEvent const& e) {
+	Workspace* workspace = e.window->getWorkspace();
+	if (workspace == nullptr) {
+		return;
+	}
+	WindowAction action = e.action;
+
+	if (action == WindowAction::Enable) {
+		Rect target = _activeMonitor->getRect();
+		Rect source = e.window->getRect();
+		_windowRestoreRects.set((uintptr_t)e.window, source);
+		_activeMonitor->hideDocks();
+
+		WindowProp prop;
+		prop.borderWidth = 0;
+		prop.titlebarHeight = 0;
+		prop.borderColor = 0x000000FF;
+		prop.titlebarColor = 0x000000FF;
+
+		e.window->setProp(prop);
+		e.window->move(target.x, target.y);
+		e.window->resize(target.width, target.height);
+		e.window->setState(e.window->getState() | WindowState::Fullscreen);
+		_clipWindow(e.window);
+	}
+	if (action == WindowAction::Disable) {
+		_activeMonitor->showDocks();
+
+		WindowProp prop;
+		prop.borderWidth = WindowStyle::borderWidth;
+		prop.titlebarHeight = WindowStyle::titlebarHeight;
+		prop.borderColor = WindowStyle::Active::borderColor;
+		prop.titlebarColor = WindowStyle::Active::titlebarColor;
+		e.window->setProp(prop);
+
+		Rect* target = _windowRestoreRects.getOrNull((uintptr_t)e.window);
+		if (target) {
+			e.window->move(target->x, target->y);
+			e.window->resize(target->width, target->height);
+			_windowRestoreRects.remove((uintptr_t)e.window);
+		}
+		e.window->setState(e.window->getState() & ~WindowState::Fullscreen);
+		_clipWindow(e.window);
+	}
 }
 
 void Session::onMousePress(MouseButtonEvent const& e) {
@@ -1059,9 +1130,6 @@ void Session::_doCommand(Command const& command) {
 		target.y = avail.y + (avail.height * y);
 		target.width = (avail.width * width);
 		target.height = (avail.height * height);
-		LOG("[session] avail: (%d, %d, %d, %d)\n", avail.x, avail.y, avail.width, avail.height);
-		LOG("[session] multiplier: (%g, %g, %g, %g)\n", x, y, width, height);
-		LOG("[session] computed: (%d, %d, %d, %d)\n", target.x, target.y, target.width, target.height);
 		window->move(target.x, target.y);
 		window->resize(target.width, target.height);
 		_clipWindow(window);

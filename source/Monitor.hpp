@@ -45,6 +45,10 @@ public:
 
 	void removeWindow(Window* window);
 
+	void showDocks();
+
+	void hideDocks();
+
 private:
 	IContext* _context;
 	MonitorDef _def;

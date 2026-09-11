@@ -489,60 +489,34 @@ void X11Context::run(IObserver* observer) {
 				}
 
 				if (_hint->isWindowState(e->type)) {
-					// uint32_t action = e->data.data32[0];
-					// xcb_atom_t state = e->data.data32[1];
-					//
-					// WindowState hintState = _hint->atomToWindowState(state);
-					// LOG("client message state %s with action %d", _hint->atomToString(e->data.data32[1]).cptr(), action);
-					//
-					// if (hintState == WindowState::Unknown) {
-					// 	break;
-					// }
-					//
-					// if (hintState == WindowState::Fullscreen) {
-					// 	// SetActiveWindow(window);
-					//
-					// 	Workspace* workspace = window->getWorkspace();
-					// 	if (action == 2) {
-					// 		if (workspace->CanRestoreActiveWindow()) {
-					// 			action = 0;
-					// 		} else {
-					// 			action = 1;
-					// 		}
-					// 	}
-					// 	if (action == 1) {
-					// 		workspace->FullscreenActiveWindow();
-					// 	}
-					// 	if (action == 0) {
-					// 		workspace->RestoreActiveWindow();
-					// 	}
-					// }
-					//
-					// if (hintState == Hint::WindowState::MaximizedHorizontal || hintState == Hint::WindowState::MaximizedVertical) {
-					// 	SetActiveWindow(window);
-					//
-					// 	Workspace* workspace = window->GetWorkspace();
-					// 	if (action == 2) {
-					// 		if (workspace->CanRestoreActiveWindow()) {
-					// 			action = 0;
-					// 		} else {
-					// 			action = 1;
-					// 		}
-					// 	}
-					// 	if (action == 1) {
-					// 		workspace->MaximizeActiveWindow(
-					// 			Unit::CreatePercentage(0.0),
-					// 			Unit::CreatePercentage(0.0),
-					// 			Unit::CreatePercentage(1.0),
-					// 			Unit::CreatePercentage(1.0)
-					// 		);
-					// 	}
-					// 	if (action == 0) {
-					// 		workspace->RestoreActiveWindow();
-					// 	}
-					// }
-					//
-					// Context::Sync();
+					uint32_t action = e->data.data32[0];
+					xcb_atom_t state = e->data.data32[1];
+
+					WindowState hintState = _hint->atomToWindowState(state);
+					LOG("client message state %s with action %d\n", _hint->atomToString(e->data.data32[1]).cptr(), action);
+
+					if (hintState == WindowState::None) {
+						break;
+					}
+
+					if (hintState == WindowState::Fullscreen) {
+						WindowActionEvent e;
+						e.window = window;
+						if (action == 2) e.action = WindowAction::Toggle;
+						if (action == 1) e.action = WindowAction::Enable;
+						if (action == 0) e.action = WindowAction::Disable;
+						observer->onWindowFullscreenRequest(e);
+					}
+
+					if (hintState == WindowState::Maximized) {
+						WindowActionEvent e;
+						e.window = window;
+						if (action == 2) e.action = WindowAction::Toggle;
+						if (action == 1) e.action = WindowAction::Enable;
+						if (action == 0) e.action = WindowAction::Disable;
+						printf("MAXIMIZED %d\n", action);
+						observer->onWindowMaximizeRequest(e);
+					}
 					break;
 				}
 

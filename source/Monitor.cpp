@@ -172,3 +172,16 @@ void Monitor::removeWindow(Window* window) {
 	}
 }
 
+void Monitor::showDocks() {
+	for (int i = 0; i < _dockWindows.count(); i++) {
+		_dockWindows[i]->show();
+	}
+	calculateWorkingRect();
+}
+
+void Monitor::hideDocks() {
+	for (int i = 0; i < _dockWindows.count(); i++) {
+		_dockWindows[i]->hide();
+	}
+	_workingRect = getRect();
+}

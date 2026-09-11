@@ -35,10 +35,20 @@ public:
 
 	wx::List<Window*> const& getWindowList() const;
 
+	bool isFullscreen() const {
+		return _fullscreen;
+	}
+
+	void setFullscreen(bool fullscreen) {
+		_fullscreen = fullscreen;
+	}
+
 private:
 	Monitor* _monitor;
 	Window* _activeWindow = nullptr;
 	wx::String _id;
 	wx::List<Window*> _windows;
+
+	bool _fullscreen = false;
 };
 

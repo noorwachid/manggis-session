@@ -1,3 +1,4 @@
+#include "Monitor.hpp"
 #include "Workspace.hpp"
 #include "Window.hpp"
 
@@ -75,11 +76,19 @@ void Workspace::show() {
 	for (int i = 0; i < _windows.count(); i++) {
 		_windows[i]->show();
 	}
+	if (isFullscreen()) {
+		_monitor->hideDocks();
+	} else {
+		_monitor->showDocks();
+	}
 }
 
 void Workspace::hide() {
 	for (int i = 0; i < _windows.count(); i++) {
 		_windows[i]->hide();
+	}
+	if (isFullscreen()) {
+		_monitor->hideDocks();
 	}
 }
 

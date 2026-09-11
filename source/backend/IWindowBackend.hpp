@@ -2,6 +2,7 @@
 
 #include "core/Unit.hpp"
 #include "wx/core/String.hpp"
+#include "wx/core/Flags.hpp"
 #include <cstdint>
 
 struct WindowProp {
@@ -29,30 +30,32 @@ enum struct WindowType {
 };
 
 enum struct WindowState {
-	Unknown,
-	Modal,
-	Sticky,
-	MaximizedVertical,
-	MaximizedHorizontal,
-	Shaded,
-	SkipTaskbar,
-	SkipPager,
-	Hidden,
-	Fullscreen,
-	Above,
-	Below,
-	DemandsAttention,
+	None = 0,
+	Modal = 1 << 0,
+	Sticky = 1 << 1,
+	Maximized = 1 << 2,
+	Fullscreen = 1 << 3,
+	AlwaysOnTop = 1 << 4,
+	AlwaysOnBottom = 1 << 5,
 };
+
+WX_FLAGS(WindowState)
 
 class IWindowBackend {
 public:
 	virtual Rect getRect() = 0;
+
+	virtual void setProp(WindowProp prop) = 0;
 
 	virtual WindowProp getProp() = 0;
 
 	virtual WindowType getType() = 0;
 
 	virtual wx::String getTitle() = 0;
+
+	virtual WindowState getState() = 0;
+
+	virtual void setState(WindowState state) = 0;
 
 	virtual void raise() = 0;
 

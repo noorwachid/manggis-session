@@ -6,37 +6,23 @@
 #include "backend/X11Hint.hpp"
 #include <xcb/xproto.h>
 
-namespace WindowStyle {
-	constexpr int borderWidth = 1;
-	constexpr int titlebarHeight = 20;
-
-	namespace Active {
-		#ifdef XEPHYR_ENABLE
-		constexpr uint32_t borderColor = 0x1238DF;
-		constexpr uint32_t titlebarColor = 0x3258FF;
-		#else
-		constexpr uint32_t borderColor = 0xDF1238;
-		constexpr uint32_t titlebarColor = 0xFF3258;
-		#endif
-	}
-
-	namespace Inactive {
-		constexpr uint32_t borderColor = 0x888888;
-		constexpr uint32_t titlebarColor = 0x888888;
-	}
-}
-
 class X11WindowBackend: public IWindowBackend {
 public:
 	X11WindowBackend(X11Connection* conn, X11Hint* hint, xcb_window_t handle);
 
 	virtual Rect getRect() override;
 
+	virtual void setProp(WindowProp prop) override;
+
 	virtual WindowProp getProp() override;
 
 	virtual WindowType getType() override;
 
 	virtual wx::String getTitle() override; 
+
+	virtual void setState(WindowState state) override;
+
+	virtual WindowState getState() override;
 
 	virtual void raise() override;
 
@@ -74,6 +60,7 @@ private:
 	xcb_gcontext_t _gc;
 
 	WindowProp _prop;
+	WindowState _state;
 };
 
 

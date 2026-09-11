@@ -13,6 +13,8 @@ public:
 
 	IWindowBackend* getBackend();
 
+	void setProp(WindowProp prop);
+
 	WindowProp getProp();
 
 	WindowType getType();
@@ -28,6 +30,10 @@ public:
 	Monitor* getMonitor();
 
 	Rect getRect();
+
+	WindowState getState();
+
+	void setState(WindowState state);
 
 	void raise();
 

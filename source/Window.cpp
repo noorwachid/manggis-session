@@ -12,6 +12,10 @@ IWindowBackend* Window::getBackend() {
 	return _backend;
 }
 
+void Window::setProp(WindowProp prop) {
+	_backend->setProp(prop);
+}
+
 WindowProp Window::getProp() {
 	return _backend->getProp();
 }
@@ -42,6 +46,14 @@ Monitor* Window::getMonitor() {
 
 Rect Window::getRect() {
 	return _backend->getRect();
+}
+
+WindowState Window::getState() {
+	return _backend->getState();
+}
+
+void Window::setState(WindowState state) {
+	return _backend->setState(state);
 }
 
 void Window::raise() {

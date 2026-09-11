@@ -27,9 +27,7 @@ public:
 
 	WindowState atomToWindowState(xcb_atom_t atom);
 
-	xcb_atom_t windowStateToAtom(WindowState state);
-
-	void setWindowState(xcb_window_t id, wx::List<WindowState> const& states);
+	void setWindowState(xcb_window_t id, WindowState state);
 
 	bool isWindowDecorated(xcb_window_t id);
 

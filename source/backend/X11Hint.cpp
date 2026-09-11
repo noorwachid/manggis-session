@@ -198,17 +198,30 @@ wx::String X11Hint::getWindowTitle(xcb_window_t id) {
 	return content;
 }
 
-void X11Hint::setWindowState(xcb_window_t id, wx::List<WindowState> const& states) {
+void X11Hint::setWindowState(xcb_window_t id, WindowState state) {
 	int count = 0;
 	xcb_atom_t atoms[12];
-	for (int i = 0; i < states.count(); i++) {
-		WindowState state = states[i];
-		xcb_atom_t atom = windowStateToAtom(state);
-		if (atom == XCB_NONE) {
-			continue;
-		}
-		atoms[count++] = atom;
+
+	if (WX_FLAGS_CONTAIN(state, WindowState::Modal)) {
+		atoms[count++] = _ewmh._NET_WM_STATE_MODAL;
 	}
+	if (WX_FLAGS_CONTAIN(state, WindowState::Sticky)) {
+		atoms[count++] = _ewmh._NET_WM_STATE_STICKY;
+	}
+	if (WX_FLAGS_CONTAIN(state, WindowState::Maximized)) {
+		atoms[count++] = _ewmh._NET_WM_STATE_MAXIMIZED_HORZ;
+		atoms[count++] = _ewmh._NET_WM_STATE_MAXIMIZED_VERT;
+	}
+	if (WX_FLAGS_CONTAIN(state, WindowState::Fullscreen)) {
+		atoms[count++] = _ewmh._NET_WM_STATE_FULLSCREEN;
+	}
+	if (WX_FLAGS_CONTAIN(state, WindowState::AlwaysOnTop)) {
+		atoms[count++] = _ewmh._NET_WM_STATE_ABOVE;
+	}
+	if (WX_FLAGS_CONTAIN(state, WindowState::AlwaysOnBottom)) {
+		atoms[count++] = _ewmh._NET_WM_STATE_BELOW;
+	}
+
 	xcb_ewmh_set_wm_state(&_ewmh, id, count, atoms);
 }
 
@@ -223,35 +236,13 @@ bool X11Hint::isActiveWindow(xcb_atom_t atom) {
 WindowState X11Hint::atomToWindowState(xcb_atom_t atom) {
 	if (_ewmh._NET_WM_STATE_MODAL == atom) return WindowState::Modal;
 	if (_ewmh._NET_WM_STATE_STICKY == atom) return WindowState::Sticky;
-	if (_ewmh._NET_WM_STATE_MAXIMIZED_VERT == atom) return WindowState::MaximizedVertical;
-	if (_ewmh._NET_WM_STATE_MAXIMIZED_HORZ == atom) return WindowState::MaximizedHorizontal;
-	if (_ewmh._NET_WM_STATE_SHADED == atom) return WindowState::Shaded;
-	if (_ewmh._NET_WM_STATE_SKIP_TASKBAR == atom) return WindowState::SkipTaskbar;
-	if (_ewmh._NET_WM_STATE_SKIP_PAGER == atom) return WindowState::SkipPager;
-	if (_ewmh._NET_WM_STATE_HIDDEN == atom) return WindowState::Hidden;
+	if (_ewmh._NET_WM_STATE_MAXIMIZED_VERT == atom) return WindowState::Maximized;
+	if (_ewmh._NET_WM_STATE_MAXIMIZED_HORZ == atom) return WindowState::Maximized;
 	if (_ewmh._NET_WM_STATE_FULLSCREEN == atom) return WindowState::Fullscreen;
-	if (_ewmh._NET_WM_STATE_ABOVE == atom) return WindowState::Above;
-	if (_ewmh._NET_WM_STATE_BELOW == atom) return WindowState::Below;
-	if (_ewmh._NET_WM_STATE_DEMANDS_ATTENTION == atom) return WindowState::DemandsAttention;
+	if (_ewmh._NET_WM_STATE_ABOVE == atom) return WindowState::AlwaysOnTop;
+	if (_ewmh._NET_WM_STATE_BELOW == atom) return WindowState::AlwaysOnBottom;
 
-	return WindowState::Unknown;
-}
-
-xcb_atom_t X11Hint::windowStateToAtom(WindowState state) {
-	if (WindowState::Modal == state) return _ewmh._NET_WM_STATE_MODAL;
-	if (WindowState::Sticky == state) return _ewmh._NET_WM_STATE_STICKY;
-	if (WindowState::MaximizedVertical == state) return _ewmh._NET_WM_STATE_MAXIMIZED_VERT;
-	if (WindowState::MaximizedHorizontal == state) return _ewmh._NET_WM_STATE_MAXIMIZED_HORZ;
-	if (WindowState::Shaded == state) return _ewmh._NET_WM_STATE_SHADED;
-	if (WindowState::SkipTaskbar == state) return _ewmh._NET_WM_STATE_SKIP_TASKBAR;
-	if (WindowState::SkipPager == state) return _ewmh._NET_WM_STATE_SKIP_PAGER;
-	if (WindowState::Hidden == state) return _ewmh._NET_WM_STATE_HIDDEN;
-	if (WindowState::Fullscreen == state) return _ewmh._NET_WM_STATE_FULLSCREEN;
-	if (WindowState::Above == state) return _ewmh._NET_WM_STATE_ABOVE;
-	if (WindowState::Below == state) return _ewmh._NET_WM_STATE_BELOW;
-	if (WindowState::DemandsAttention == state) return _ewmh._NET_WM_STATE_DEMANDS_ATTENTION;
-
-	return XCB_NONE;
+	return WindowState::None;
 }
 
 #define _MOTIF_WM_HINTS_ELEMENTS 5
