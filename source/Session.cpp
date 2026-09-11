@@ -251,12 +251,6 @@ void Session::onMousePress(MouseButtonEvent const& e) {
 		index.modKey = e.modKey;
 		MouseCallback* callback = _mouseBindings.getOrNull(index);
 
-		Rect* target = _windowRestoreRects.getOrNull((uintptr_t)e.window);
-		if (target) {
-			e.window->resize(target->width, target->height);
-			_windowRestoreRects.remove((uintptr_t)e.window);
-		}
-
 		if (callback != nullptr) {
 			(*callback)((Window*)e.window);
 		} else {
@@ -1082,6 +1076,11 @@ void Session::_beginDrag(DragMode mode, Window* window, WindowResizingArea area)
 	_dragState.mode = mode;
 	_dragState.window = window;
 
+	Rect* target = _windowRestoreRects.getOrNull((uintptr_t)window);
+	if (target) {
+		window->resize(target->width, target->height);
+		_windowRestoreRects.remove((uintptr_t)window);
+	}
 
 	Rect windowRect = _dragState.window->getRect();
 	Point mousePos = _context->getMousePos();
