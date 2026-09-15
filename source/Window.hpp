@@ -41,6 +41,8 @@ public:
 
 	void resize(int width, int height);
 
+	bool isShown();
+
 	void show();
 
 	void hide();
@@ -55,4 +57,5 @@ private:
 	IWindowBackend* _backend;
 	Monitor* _monitor = nullptr;
 	Workspace* _workspace = nullptr;
+	bool _shown = false;
 };

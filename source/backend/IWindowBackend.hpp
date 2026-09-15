@@ -10,6 +10,7 @@ struct WindowProp {
 	uint32_t borderWidth = 1;
 	uint32_t titlebarColor = 0xFF3258; 
 	uint32_t titlebarHeight = 20; 
+	uint32_t buttonColor = 20; 
 };
 
 enum struct WindowType {

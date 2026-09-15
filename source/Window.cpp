@@ -68,11 +68,17 @@ void Window::resize(int width, int height) {
 	_backend->resize(width, height);
 }
 
+bool Window::isShown() {
+	return _shown;
+}
+
 void Window::show() {
+	_shown = true;
 	_backend->show();
 }
 
 void Window::hide() {
+	_shown = false;
 	_backend->hide();
 }
 

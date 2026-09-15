@@ -105,12 +105,14 @@ void X11WindowBackend::hide() {
 void X11WindowBackend::focus() {
 	_prop.borderColor = WindowStyle::Active::borderColor;
 	_prop.titlebarColor = WindowStyle::Active::titlebarColor;
+	_prop.buttonColor = WindowStyle::Active::buttonColor;
 	draw();
 }
 
 void X11WindowBackend::blur() {
 	_prop.borderColor = WindowStyle::Inactive::borderColor;
 	_prop.titlebarColor = WindowStyle::Inactive::titlebarColor;
+	_prop.buttonColor = WindowStyle::Inactive::buttonColor;
 	draw();
 }
 
@@ -125,6 +127,55 @@ xcb_window_t X11WindowBackend::getFrameHandle() {
 
 xcb_window_t X11WindowBackend::getClientHandle() {
 	return _client;
+}
+
+static void createCircleImage(wx::List<wx::Uint32>& pixels, int size, uint32_t color, uint32_t background, int samples = 4) {
+	const float radius = size / 2.0f;
+    const float cx = radius;
+    const float cy = radius;
+
+    const float invSamples = 1.0f / samples;
+    const int totalSamples = samples * samples;
+
+    const uint8_t srcR = (color >> 16) & 0xff;
+    const uint8_t srcG = (color >> 8)  & 0xff;
+    const uint8_t srcB = color & 0xff;
+
+    const uint8_t bgR = (background >> 16) & 0xff;
+    const uint8_t bgG = (background >> 8)  & 0xff;
+    const uint8_t bgB = background & 0xff;
+
+    for (int y = 0; y < size; ++y) {
+        for (int x = 0; x < size; ++x) {
+
+            int inside = 0;
+
+            for (int sy = 0; sy < samples; ++sy) {
+                for (int sx = 0; sx < samples; ++sx) {
+
+                    float px = x + (sx + 0.5f) * invSamples;
+                    float py = y + (sy + 0.5f) * invSamples;
+
+                    float dx = px - cx;
+                    float dy = py - cy;
+
+                    if (dx * dx + dy * dy <= radius * radius)
+                        ++inside;
+                }
+            }
+
+            float coverage = static_cast<float>(inside) / totalSamples;
+            uint8_t r = static_cast<uint8_t>( srcR * coverage + bgR * (1.0f - coverage));
+            uint8_t g = static_cast<uint8_t>( srcG * coverage + bgG * (1.0f - coverage));
+            uint8_t b = static_cast<uint8_t>( srcB * coverage + bgB * (1.0f - coverage));
+
+            pixels[y * size + x] = (
+                (r << 16) |
+                (g << 8) |
+                b
+            );
+        }
+    }
 }
 
 void X11WindowBackend::draw() {
@@ -151,6 +202,67 @@ void X11WindowBackend::draw() {
 
 	xcb_change_gc(_conn->get(), _gc, XCB_GC_FOREGROUND, &_prop.titlebarColor);
 	xcb_poly_fill_rectangle(_conn->get(), _frame, _gc, 1, &rect);
+
+
+	if (_prop.titlebarHeight > 0) {
+		int x = WindowStyle::buttonPadding;
+		int size = WindowStyle::buttonSize;
+
+		wx::List<wx::Uint32> pixels;
+		pixels.reserve(size * size);
+		for (int i = 0; i < size * size; i++) {
+			pixels.append(0);
+		}
+
+		createCircleImage(pixels, size, _prop.buttonColor, _prop.titlebarColor);
+
+		xcb_put_image(
+			_conn->get(),
+			XCB_IMAGE_FORMAT_Z_PIXMAP,
+			_frame,
+			_gc,
+			size,
+			size,
+			x,
+			WindowStyle::buttonPadding,
+			0,
+			_conn->getScreen()->root_depth,
+			pixels.count() * sizeof(wx::Uint32),
+			reinterpret_cast<const uint8_t*>(pixels.ptr())
+		);
+
+		x += size + WindowStyle::buttonGap;
+		xcb_put_image(
+			_conn->get(),
+			XCB_IMAGE_FORMAT_Z_PIXMAP,
+			_frame,
+			_gc,
+			size,
+			size,
+			x,
+			WindowStyle::buttonPadding,
+			0,
+			_conn->getScreen()->root_depth,
+			pixels.count() * sizeof(wx::Uint32),
+			reinterpret_cast<const uint8_t*>(pixels.ptr())
+		);
+
+		x += size + WindowStyle::buttonGap;
+		xcb_put_image(
+			_conn->get(),
+			XCB_IMAGE_FORMAT_Z_PIXMAP,
+			_frame,
+			_gc,
+			size,
+			size,
+			x,
+			WindowStyle::buttonPadding,
+			0,
+			_conn->getScreen()->root_depth,
+			pixels.count() * sizeof(wx::Uint32),
+			reinterpret_cast<const uint8_t*>(pixels.ptr())
+		);
+	}
 	_conn->flush();
 }
 

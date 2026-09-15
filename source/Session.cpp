@@ -258,7 +258,31 @@ void Session::onMousePress(MouseButtonEvent const& e) {
 			Rect rect = e.window->getRect();
 			WindowProp prop = e.window->getProp();
 			if (e.pos.y < rect.y + prop.titlebarHeight) {
-				_beginDrag(DragMode::Move, e.window);
+				int x = e.pos.x - rect.x;
+				int y = e.pos.y - rect.y;
+				int size = WindowStyle::buttonSize;
+				int gap = WindowStyle::buttonGap;
+				int pad = WindowStyle::buttonPadding;
+				int x1 = pad;
+				int x2 = pad + size + gap;
+				int x3 = pad + size + gap + size + gap;
+
+				if (x >= x1 && y >= pad && x <= x1 + size && y <= pad + size) {
+					printf("CLOSE WINDOW\n");
+					focusWindow(e.window, false);
+					closeWindow();
+				} else if (x >= x2 && y >= pad && x <= x2 + size && y <= pad + size) {
+					printf("MINIMIZE WINDOW\n");
+				} else if (x >= x3 && y >= pad && x <= x3 + size && y <= pad + size) {
+					printf("MAXIMIZE WINDOW\n");
+					focusWindow(e.window, false);
+					WindowActionEvent se;
+					se.action = WindowAction::Enable;
+					se.window = e.window;
+					onWindowMaximizeRequest(se);
+				} else {
+					_beginDrag(DragMode::Move, e.window);
+				}
 			}
 		}
 	}
@@ -622,6 +646,7 @@ Window* Session::findNearestWindow(Window* sourceWindow, wx::List<Window*> const
 		for (int i = 0; i < targetWindows.count(); i++) {
 			Window* targetWindow = targetWindows[i];
 			if (targetWindow == sourceWindow) continue;
+			if (!targetWindow->isShown()) continue;
 
 			Rect target = targetWindow->getRect();
 			int distance = 0;
@@ -1048,6 +1073,7 @@ void Session::maximizeWindow() {
 	Workspace* workspace = _activeMonitor->getActiveWorkspace();
 	Window* window = workspace->getActiveWindow();
 	if (window == nullptr) return;
+
 }
 
 void Session::restoreWindow() {

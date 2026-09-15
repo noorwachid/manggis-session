@@ -1,4 +1,17 @@
 (
+	monitors: [
+		
+		(
+			port: "eDP-1"
+			primary: true,
+		),
+		(
+			port: "HDMI-2",
+			leftOf: "eDP-1", # could be mirrorOf, rightOf, below, above
+		),
+
+	],
+
 	workspaces: [
 
 		( id: "1" ),
