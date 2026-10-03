@@ -10,6 +10,8 @@ class X11WindowBackend: public IWindowBackend {
 public:
 	X11WindowBackend(X11Connection* conn, X11Hint* hint, xcb_window_t handle);
 
+	~X11WindowBackend();
+
 	virtual Rect getRect() override;
 
 	virtual void setProp(WindowProp prop) override;
@@ -52,6 +54,15 @@ public:
 private:
 	void _reparent();
 
+	bool _detectClientTransparency();
+
+	xcb_visualid_t _findARGBVisual(uint8_t& depth) const;
+
+	uint32_t _opaqueColor(uint32_t color) const;
+
+	void _clearClientArea();
+
+
 private:
 	X11Connection* _conn;
 	X11Hint* _hint;
@@ -61,6 +72,16 @@ private:
 
 	WindowProp _prop;
 	WindowState _state;
+
+	// Add to X11WindowBackend class
+
+	xcb_visualid_t _frameVisual = XCB_NONE;
+	uint8_t _frameDepth = 0;
+	xcb_colormap_t _frameColormap = XCB_NONE;
+
+	// True when the client uses a 32-bit ARGB-capable visual.
+	bool _clientSupportsTransparency = false;
+
 };
 
 

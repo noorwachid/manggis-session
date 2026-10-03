@@ -55,7 +55,6 @@
 	},
 
 	autostarts: [
-		( exec: ["polybar"] ),
 	],
 
 	styles: (
