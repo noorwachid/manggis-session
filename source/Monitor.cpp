@@ -127,15 +127,15 @@ void Monitor::addWindow(Window* window) {
 
 	if (type == WindowType::Normal || type == WindowType::Dialog) {
 
-		Rect monitorRect = getRect();
+		Rect workingRect = getWorkingRect();
 		Rect windowRect = window->getRect();
 
 		// TODO: add variant placement
 		//
 		// centered placement
 		window->move(
-			monitorRect.x + (monitorRect.width / 2) - (windowRect.width / 2),
-			monitorRect.y + (monitorRect.height / 2) - (windowRect.height / 2)
+			workingRect.x + (workingRect.width / 2) - (windowRect.width / 2),
+			workingRect.y + (workingRect.height / 2) - (windowRect.height / 2)
 		);
 		_activeWorkspace->addWindow(window);
 		_activeWorkspace->focusWindow(window);

@@ -320,7 +320,7 @@ void Session::onMouseRelease(MouseButtonEvent const& e) {
 		if (_activeMonitor != bestMonitor) {
 			window->getWorkspace()->removeWindow(window);
 			bestMonitor->getActiveWorkspace()->addWindow(window);
-			focusWorkspace(bestMonitor->getActiveWorkspace(), false);
+			focusWindow(window, false);
 		}
 
 		_clipWindow(window);
